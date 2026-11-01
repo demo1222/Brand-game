@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools (Aftman)
+        uses: ok-nick/setup-aftman@v0.4.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lint (Selene)
+        run: selene src
+
+      - name: Unit tests (Lune)
+        run: lune run tests/run
+
+      - name: Build place (Rojo)
+        run: rojo build default.project.json -o AbyssSalvage.rbxl
+
+      - name: Format check (StyLua, advisory)
+        continue-on-error: true
+        run: stylua --check src tests tools

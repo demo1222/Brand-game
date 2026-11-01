@@ -1,5 +1,5 @@
 {
-  "name": "Brand game",
+  "name": "Abyss Salvage",
   "tree": {
     "$className": "DataModel",
     "ServerScriptService": {
@@ -21,6 +21,12 @@
       "$className": "ReplicatedStorage",
       "Shared": {
         "$path": "src/shared"
+      }
+    },
+    "Players": {
+      "$className": "Players",
+      "$properties": {
+        "RespawnTime": 3
       }
     }
   }
