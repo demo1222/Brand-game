@@ -1,0 +1,1654 @@
+From 784c7815ff7180850c2b90dd90610828be34aeb8 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 1 Nov 2026 06:29:39 +0000
+Subject: [PATCH] feat(ui): visual overhaul phase 2 for world visuals, feedback
+ and remaining screens
+
+World and feedback:
+- Loot nodes: a sand mound with a glinting edge, a gem and sparkles instead
+  of a neon ball. Every node looks the same, so nothing leaks about the
+  server-side roll.
+- Sonar: expanding pulse, rarity-chip markers, and pinged nodes' sparkles
+  burst in the revealed rarity colour (client-only).
+- FXController (client-only): dock relics bob and spin, with rarity glow
+  rings, sparkles for Legendary+ and a light pillar for Mythic+. Capped at
+  60 stands within 110 studs, 30 Hz.
+- CoinBurst remote: floating "+amount" pop-up and coins flying into the
+  HUD coin badge on collect, sell, sell-commons and offline claim.
+
+Screens:
+- Quests: login calendar reward tiles, quest cards with progress bars and
+  reward pills.
+- Tide Pass: horizontal free/premium reward track that scrolls to the
+  current tier. TierReward moved to shared Formulas so previews match grants.
+- Rebirth: NOW -> AFTER cards, requirement progress, keep/reset summary,
+  talent cards with pips.
+- Leaderboards: board tabs, top-3 podium, ranked rows.
+- Players: avatar headshots. Trade: offers as relic cards with ready
+  states, card-grid storage picker.
+- Popups: backdrop, hero icon badge and accent glow for offers, confirm,
+  death, robbed and offline screens.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01FawWwJeiZra1BJ6euR1d3g
+---
+ docs/IMPLEMENTATION_STATUS.md               |   2 +-
+ docs/UI_OVERHAUL_PLAN.md                    |  33 +-
+ src/client/Controllers/AudioController.luau |   3 +-
+ src/client/Controllers/FXController.luau    | 285 +++++++++++
+ src/client/Controllers/HUDController.luau   |  15 +
+ src/client/Controllers/MenuController.luau  | 527 ++++++++++++++------
+ src/client/Controllers/OfferController.luau |  88 +++-
+ src/client/Controllers/SonarController.luau | 101 +++-
+ src/client/init.client.luau                 |   1 +
+ src/server/Services/DockService.luau        |   7 +-
+ src/server/Services/InventoryService.luau   |   4 +-
+ src/server/Services/LootService.luau        |  61 ++-
+ src/server/Services/QuestService.luau       |  19 +-
+ src/shared/Formulas.luau                    |  20 +
+ src/shared/Net.luau                         |   1 +
+ 15 files changed, 961 insertions(+), 206 deletions(-)
+ create mode 100644 src/client/Controllers/FXController.luau
+
+diff --git a/docs/IMPLEMENTATION_STATUS.md b/docs/IMPLEMENTATION_STATUS.md
+index 396c690..bf1dd35 100644
+--- a/docs/IMPLEMENTATION_STATUS.md
++++ b/docs/IMPLEMENTATION_STATUS.md
+@@ -94,7 +94,7 @@ Requirements and multipliers follow the plan, plus a talent tree with 4 talents.
+ - Rarity is shown with icons as well as colours, so it works for colour-blind players.
+ - **Visual overhaul, Phase 1** ([`UI_OVERHAUL_PLAN.md`](UI_OVERHAUL_PLAN.md)): every relic has a live 3D render (`RelicView`) on collectible cards (`RelicCard`). The Bag & Dock screen is a card grid with a detail panel, and the Codex is a 3D grid with silhouettes for undiscovered relics. The reveal is full-screen with rays and a spinning model. The HUD has currency pills, menu tiles and a responsive scale, the Shop is a tile grid, and Upgrades has progress bars and a 3D suit helmet. Window chrome adds a backdrop and header badges.
+ - Icons are emoji in gradient badges (`client/UI/Icons.luau`). Put uploaded `rbxassetid://` ids in `Icons.Images` and they replace the emoji with no code changes.
+-- 🟡 Quests, Tide Pass, Rebirth, Leaderboards and Trade use the new Kit styling, but not yet their Phase 2 layouts.
++- **Visual overhaul, Phase 2:** buried "glint" loot nodes, a sonar pulse with rarity-tinted node sparkles, animated dock displays with rarity rings, auras and pillars, and coin pop-ups that fly into the HUD. Also restyled: Quests, a horizontal Tide Pass track, a Rebirth before/after view, a Leaderboards podium, Players with avatars, Trade with relic cards, and popup modals.
+ - 📋 Localization and final UI art. The UI is built in code with plain Instances, not Fusion, so it has no dependencies.
+ 
+ ## Section 19 · Art and audio 🟡
+diff --git a/docs/UI_OVERHAUL_PLAN.md b/docs/UI_OVERHAUL_PLAN.md
+index a522440..a9e8126 100644
+--- a/docs/UI_OVERHAUL_PLAN.md
++++ b/docs/UI_OVERHAUL_PLAN.md
+@@ -48,16 +48,31 @@ the `rbxassetid://` there and the UI switches from emoji to the image with no ot
+ 11. Fix the Lune test harness (it yielded inside a metamethod and crashed on Lune 0.8.9), and
+     add RelicArt coverage tests.
+ 
+-## Phase 2 — World & feedback
++## Phase 2 — World & feedback (done)
+ 
+-- Loot nodes in the world: a glinting relic-shaped silhouette instead of a plain ball, with
+-  rarity-tinted particles after a sonar ping.
+-- Dock stands: a rarity-coloured pedestal ring, a slow bob and spin, and particle auras for
+-  Legendary and above.
+-- Floating "+1,240" coin pop-ups on collection (§18.3), and coin fly-to-HUD on collection.
+-- Restyle the Quests, Tide Pass track (horizontal reward track), Rebirth (before/after
+-  multiplier cards), Leaderboards (podium for the top 3), Trade (side-by-side relic cards) and
+-  Offer modals.
++- **Loot nodes:** a sand mound with a glinting gold edge, a gem and sparkles replaces the neon
++  ball. Every node looks the same, so the look leaks nothing about the server-side roll. After
++  a sonar ping, the node's sparkles burst in the pinged rarity's colour.
++- **Sonar:** an expanding pulse around the diver, and markers restyled as rounded rarity
++  chips with a pointer.
++- **Dock displays** (`FXController`, client-only): relics on stands bob and spin, and stands get
++  a rarity-coloured glow ring. Legendary+ relics get sparkles and Mythic+ a light pillar.
++  Animation is limited to 60 stands within 110 studs and runs at 30 Hz.
++- **Coin feedback (§18.3):** a floating "+1.24K" with a caption, and coins that fly into the HUD
++  coin badge. Used for collecting, selling, Sell Commons and the offline claim (`CoinBurst`
++  remote).
++- **Quests:** a 7-day login calendar of reward tiles, and quest cards with progress bars and
++  reward pills.
++- **Tide Pass:** a horizontal free/premium reward track that scrolls to your tier. Previews use
++  `Formulas.TierReward`, now shared with the server.
++- **Rebirth:** NOW → AFTER comparison cards, a requirements progress bar, keep/reset
++  summary and a talent tree with level pips.
++- **Leaderboards:** board tabs, a podium for the top 3 and ranked rows below.
++- **Players:** avatar headshots (`rbxthumb://`, no upload needed).
++- **Trade:** both offers side by side as relic cards with ready states, and a card grid
++  picker for your storage.
++- **Popups:** offers, confirms, death, robbed and offline popups have a dim backdrop, a hero
++  icon badge and an accent glow.
+ 
+ ## Phase 3 — Real art pass
+ 
+diff --git a/src/client/Controllers/AudioController.luau b/src/client/Controllers/AudioController.luau
+index ebc3962..39636c8 100644
+--- a/src/client/Controllers/AudioController.luau
++++ b/src/client/Controllers/AudioController.luau
+@@ -18,6 +18,7 @@ local SOUND_IDS = {
+ 	Roar = "", -- Leviathan wind-up
+ 	Reveal = "", -- rarity reveal (pitched per tier)
+ 	Alarm = "", -- dock intruder bell
++	Coins = "", -- coin burst (collect / sell)
+ }
+ 
+ local AudioController = {}
+@@ -61,7 +62,7 @@ function AudioController.Start()
+ 	for _, n in { "ReefMusic", "DeepDrone", "HuntLayer", "Heartbeat" } do
+ 		make(n, true)
+ 	end
+-	for _, n in { "Roar", "Reveal", "Alarm" } do
++	for _, n in { "Roar", "Reveal", "Alarm", "Coins" } do
+ 		make(n, false)
+ 	end
+ 	Net.PredatorHint.OnClientEvent:Connect(function(hint)
+diff --git a/src/client/Controllers/FXController.luau b/src/client/Controllers/FXController.luau
+new file mode 100644
+index 0000000..6e291b9
+--- /dev/null
++++ b/src/client/Controllers/FXController.luau
+@@ -0,0 +1,285 @@
++-- FXController (UI/Visual Overhaul Plan, Phase 2): client-only juice.
++--   • Coin bursts: "+1,240" pop-up text and coins that fly into the HUD coin badge (§18.3).
++--   • Dock displays: relics on stands bob and spin, stand a rarity-coloured glow ring, and
++--     Legendary+ get sparkles (Mythic+ also a light pillar). All local, so it costs the server
++--     nothing and never replicates.
++
++local RunService = game:GetService("RunService")
++local TweenService = game:GetService("TweenService")
++local Workspace = game:GetService("Workspace")
++local ReplicatedStorage = game:GetService("ReplicatedStorage")
++
++local Shared = ReplicatedStorage:WaitForChild("Shared")
++local Net = require(Shared.Net)
++local NumberFormat = require(Shared.NumberFormat)
++local Rarities = require(Shared.Config.Rarities)
++local Kit = require(script.Parent.Parent.UI.Kit)
++local Icons = require(script.Parent.Parent.UI.Icons)
++
++local New, T = Kit.New, Kit.Theme
++local FXController = {}
++local controllers
++
++local DISPLAY_RANGE = 110 -- studs from the camera within which stand relics animate
++local MAX_ANIMATED = 60
++
++function FXController.Init(c)
++	controllers = c
++end
++
++------------------------------------------------------------------------------------------
++-- Coin burst
++------------------------------------------------------------------------------------------
++local function screenPointOf(worldPos: Vector3?): Vector2
++	local cam = Workspace.CurrentCamera
++	local overlay = controllers.UIController.Overlay :: ScreenGui
++	local size = overlay.AbsoluteSize
++	if worldPos and cam then
++		local p, onScreen = cam:WorldToScreenPoint(worldPos)
++		if onScreen then
++			return Vector2.new(p.X, p.Y)
++		end
++	end
++	return Vector2.new(size.X / 2, size.Y * 0.45)
++end
++
++function FXController.CoinBurst(amount: number, worldPos: Vector3?, caption: string?)
++	local overlay = controllers.UIController.Overlay :: ScreenGui
++	local start = screenPointOf(worldPos)
++	local hud = controllers.HUDController
++	local target = hud.CoinTarget and hud.CoinTarget() or Vector2.new(60, 40)
++
++	-- Floating "+amount" text
++	local pop = New("Frame", {
++		BackgroundTransparency = 1,
++		AnchorPoint = Vector2.new(0.5, 0.5),
++		Position = UDim2.fromOffset(start.X, start.Y),
++		Size = UDim2.fromOffset(260, 70),
++		ZIndex = 30,
++		Parent = overlay,
++	})
++	local value = Kit.Title({
++		Text = `+{NumberFormat.short(amount)}`,
++		TextSize = 40,
++		TextColor3 = T.Gold,
++		TextStrokeTransparency = 0,
++		TextStrokeColor3 = Color3.fromRGB(70, 40, 0),
++		TextXAlignment = Enum.TextXAlignment.Center,
++		Position = UDim2.fromOffset(0, 22),
++		Size = UDim2.new(1, 0, 0, 44),
++		TextWrapped = false,
++		ZIndex = 30,
++		Parent = pop,
++	})
++	local cap
++	if caption then
++		cap = Kit.Title({
++			Text = caption,
++			TextSize = 18,
++			TextXAlignment = Enum.TextXAlignment.Center,
++			Size = UDim2.new(1, 0, 0, 22),
++			TextWrapped = false,
++			ZIndex = 30,
++			Parent = pop,
++		})
++	end
++	Kit.Pop(pop)
++	TweenService:Create(pop, TweenInfo.new(1.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
++		Position = UDim2.fromOffset(start.X, start.Y - 80),
++	}):Play()
++	task.delay(0.8, function()
++		local fade = TweenInfo.new(0.5)
++		TweenService:Create(value, fade, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
++		if cap then
++			TweenService:Create(cap, fade, { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
++		end
++		task.wait(0.55)
++		pop:Destroy()
++	end)
++
++	-- Flying coins
++	local count = math.clamp(math.floor(3 + math.log10(math.max(amount, 1)) * 2), 4, 14)
++	local rng = Random.new()
++	for i = 1, count do
++		local coin = New("TextLabel", {
++			BackgroundTransparency = 1,
++			Text = Icons.Get("Coins"),
++			TextScaled = true,
++			AnchorPoint = Vector2.new(0.5, 0.5),
++			Position = UDim2.fromOffset(start.X, start.Y),
++			Size = UDim2.fromOffset(30, 30),
++			ZIndex = 29,
++			Parent = overlay,
++		})
++		local spread = start + Vector2.new(rng:NextNumber(-90, 90), rng:NextNumber(-70, 40))
++		local out = TweenService:Create(coin, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
++			Position = UDim2.fromOffset(spread.X, spread.Y),
++			Rotation = rng:NextNumber(-40, 40),
++		})
++		out:Play()
++		task.delay(0.28 + i * 0.045, function()
++			local fly = TweenService:Create(coin, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
++				Position = UDim2.fromOffset(target.X, target.Y),
++				Size = UDim2.fromOffset(18, 18),
++			})
++			fly:Play()
++			fly.Completed:Wait()
++			coin:Destroy()
++			if hud.BumpCoins then
++				hud.BumpCoins()
++			end
++		end)
++	end
++	if controllers.AudioController then
++		controllers.AudioController.Play("Coins", 1)
++	end
++end
++
++------------------------------------------------------------------------------------------
++-- Dock displays
++------------------------------------------------------------------------------------------
++type Display = {
++	model: Model,
++	base: CFrame,
++	phase: number,
++	extras: { Instance },
++}
++local displays: { [Model]: Display } = {}
++local extrasFolder: Folder
++
++local function removeDisplay(model: Model)
++	local d = displays[model]
++	if d then
++		for _, x in d.extras do
++			x:Destroy()
++		end
++		displays[model] = nil
++	end
++end
++
++local function addDisplay(model: Model)
++	if displays[model] then
++		return
++	end
++	local rarityName = model:GetAttribute("Rarity")
++	local rarity = rarityName and Rarities[rarityName]
++	local color = Kit.RarityColor(rarityName, Rarities)
++	local tier = if type(rarity) == "table" then rarity.Tier else 1
++	local base = model:GetPivot()
++	local _, size = model:GetBoundingBox()
++	local extras = {}
++
++	local ring = Instance.new("Part")
++	ring.Name = "DisplayRing"
++	ring.Shape = Enum.PartType.Cylinder
++	ring.Anchored = true
++	ring.CanCollide = false
++	ring.CanQuery = false
++	ring.CanTouch = false
++	ring.CastShadow = false
++	ring.Material = Enum.Material.Neon
++	ring.Color = color
++	ring.Transparency = 0.35
++	local d = math.max(size.X, size.Z) + 1
++	ring.Size = Vector3.new(0.12, d, d)
++	ring.CFrame = CFrame.new(base.Position - Vector3.new(0, size.Y / 2 + 0.6, 0)) * CFrame.Angles(0, 0, math.rad(90))
++	ring.Parent = extrasFolder
++	table.insert(extras, ring)
++
++	if tier >= 5 then
++		local root = model.PrimaryPart
++		if root then
++			local attach = Instance.new("Attachment")
++			attach.Name = "DisplaySparkles"
++			attach.Parent = root
++			local pe = Instance.new("ParticleEmitter")
++			pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
++			pe.Color = ColorSequence.new(color)
++			pe.LightEmission = 1
++			pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 0) })
++			pe.Lifetime = NumberRange.new(1, 1.6)
++			pe.Rate = 4 + (tier - 5) * 6
++			pe.Speed = NumberRange.new(0.6, 1.6)
++			pe.SpreadAngle = Vector2.new(180, 180)
++			pe.Parent = attach
++			table.insert(extras, attach)
++		end
++	end
++	if tier >= 6 then
++		local pillar = ring:Clone()
++		pillar.Name = "LightPillar"
++		pillar.Size = Vector3.new(14, d * 0.6, d * 0.6)
++		pillar.Transparency = 0.82
++		pillar.CFrame = CFrame.new(base.Position + Vector3.new(0, 5, 0)) * CFrame.Angles(0, 0, math.rad(90))
++		pillar.Parent = extrasFolder
++		table.insert(extras, pillar)
++	end
++
++	displays[model] = { model = model, base = base, phase = math.random() * math.pi * 2, extras = extras }
++	model.AncestryChanged:Connect(function(_, parent)
++		if not parent then
++			removeDisplay(model)
++		end
++	end)
++end
++
++local function watchDocks(docks: Instance)
++	for _, d in docks:GetDescendants() do
++		if d:IsA("Model") and d.Name == "RelicModel" then
++			task.defer(addDisplay, d)
++		end
++	end
++	docks.DescendantAdded:Connect(function(d)
++		if d:IsA("Model") and d.Name == "RelicModel" then
++			-- wait a frame so the model's parts and pivot have replicated
++			task.delay(0.1, function()
++				if d.Parent then
++					addDisplay(d)
++				end
++			end)
++		end
++	end)
++end
++
++local accumulator = 0
++local function animate(dt: number)
++	accumulator += dt
++	if accumulator < 1 / 30 then
++		return
++	end
++	accumulator = 0
++	local cam = Workspace.CurrentCamera
++	if not cam then
++		return
++	end
++	local camPos = cam.CFrame.Position
++	local t = os.clock()
++	local animated = 0
++	for model, d in displays do
++		if animated >= MAX_ANIMATED then
++			break
++		end
++		if (d.base.Position - camPos).Magnitude < DISPLAY_RANGE then
++			animated += 1
++			local bob = math.sin(t * 1.6 + d.phase) * 0.25
++			model:PivotTo(d.base * CFrame.new(0, bob, 0) * CFrame.Angles(0, t * 0.7 + d.phase, 0))
++		end
++	end
++end
++
++function FXController.Start()
++	Net.CoinBurst.OnClientEvent:Connect(FXController.CoinBurst)
++	extrasFolder = Instance.new("Folder")
++	extrasFolder.Name = "LocalDisplayFX"
++	extrasFolder.Parent = Workspace
++	RunService.Heartbeat:Connect(animate)
++	task.spawn(function()
++		local root = Workspace:WaitForChild("AbyssWorld", 60)
++		local docks = root and root:WaitForChild("Docks", 30)
++		if docks then
++			watchDocks(docks)
++		end
++	end)
++end
++
++return FXController
+diff --git a/src/client/Controllers/HUDController.luau b/src/client/Controllers/HUDController.luau
+index 0d6fc2d..3436b6b 100644
+--- a/src/client/Controllers/HUDController.luau
++++ b/src/client/Controllers/HUDController.luau
+@@ -366,6 +366,21 @@ local function build()
+ 	end
+ end
+ 
++-- Screen position of the coin badge (FXController flies coins here)
++function HUDController.CoinTarget(): Vector2?
++	local b = refs.coinBadge
++	if not b then
++		return nil
++	end
++	return b.AbsolutePosition + b.AbsoluteSize / 2
++end
++
++function HUDController.BumpCoins()
++	if refs.coinBadge then
++		bump(refs.coinBadge)
++	end
++end
++
+ local function refreshCurrencies()
+ 	local S = controllers.State
+ 	local coins = S.Get("Coins") or 0
+diff --git a/src/client/Controllers/MenuController.luau b/src/client/Controllers/MenuController.luau
+index 969ccd6..20681cd 100644
+--- a/src/client/Controllers/MenuController.luau
++++ b/src/client/Controllers/MenuController.luau
+@@ -35,13 +35,6 @@ function MenuController.Init(c)
+ 	S = c.State
+ end
+ 
+-local function relicLine(relic): string
+-	local def = Relics.ById[relic.id]
+-	local mut = if #relic.mutations > 0 then table.concat(relic.mutations, " ") .. " " else ""
+-	local huge = if relic.size >= 1.35 then "HUGE " else ""
+-	return `{huge}{mut}{def.Name}`
+-end
+-
+ local function row(parent: Instance, order: number, height: number?)
+ 	return Kit.Card({
+ 		Size = UDim2.new(1, -8, 0, height or 56),
+@@ -50,8 +43,8 @@ local function row(parent: Instance, order: number, height: number?)
+ 	})
+ end
+ 
+-local function header(parent: Instance, order: number, text: string)
+-	return Kit.Header(parent, order, text)
++local function header(parent: Instance, order: number, text: string, color: Color3?)
++	return Kit.Header(parent, order, text, color)
+ end
+ 
+ local function scrollBody(body: Frame, top: number?)
+@@ -610,6 +603,79 @@ local function questDef(id: string)
+ 	return nil
+ end
+ 
++local QUEST_ICONS = {
++	Salvage = "⛏️",
++	Escape = "🏝️",
++	RarePlus = "◆",
++	Mutated = "✨",
++	Collect = Icons.Get("Coins"),
++	Upgrade = "⬆️",
++	ReachZone3 = "⚓",
++	Sell = Icons.Get("Sell"),
++	LeviathanEscape = "🐉",
++	Steal = "🦹",
++	Mut_Bioluminescent = "💡",
++	EpicPlus = "★",
++}
++
++-- Icon, short text and colour for a reward table ({Coins}, {Pearls}, {Relic}, {Boost})
++local function rewardInfo(reward): (string, string, Color3)
++	if reward.Relic then
++		local r = Rarities[reward.Relic]
++		return (if type(r) == "table" then r.Icon else "◆"), `{reward.Relic} relic`, Kit.RarityColor(reward.Relic, Rarities)
++	elseif reward.Boost then
++		return Icons.Get(reward.Boost), if reward.Boost == "LuckPotion" then "Luck potion" else "Mutation potion", Color3.fromRGB(170, 100, 255)
++	elseif reward.Coins and reward.Pearls then
++		return Icons.Get("Coins"), `{NumberFormat.short(reward.Coins)} + {reward.Pearls}{Icons.Get("Pearls")}`, T.Gold
++	elseif reward.Pearls then
++		return Icons.Get("Pearls"), `{reward.Pearls} Pearls`, T.Pearl
++	end
++	return Icons.Get("Coins"), NumberFormat.short(reward.Coins or 0), T.Gold
++end
++
++local function rewardTile(parent: Instance, reward, state: string, order: number, onClick, labelTop: string?)
++	-- state: "claimable" | "claimed" | "locked" | "future"
++	local icon, text, color = rewardInfo(reward)
++	local claimable = state == "claimable"
++	local tile = Kit.Button("", if claimable then Kit.Darken(T.Gold, 0.1) else Kit.Darken(color, 0.65), onClick, {
++		Size = UDim2.fromOffset(88, 100),
++		LayoutOrder = order,
++		Parent = parent,
++	})
++	tile:FindFirstChildOfClass("UICorner").CornerRadius = UDim.new(0, 14)
++	local stroke = tile:FindFirstChildOfClass("UIStroke")
++	stroke.Color = if claimable then Color3.new(1, 1, 1) else color
++	stroke.Transparency = if state == "future" or state == "locked" then 0.6 else 0.05
++	if labelTop then
++		Kit.Title({ Text = labelTop, TextSize = 13, TextXAlignment = Enum.TextXAlignment.Center, Position = UDim2.fromOffset(0, 3), Size = UDim2.new(1, 0, 0, 16), TextWrapped = false, Parent = tile })
++	end
++	local badge = Kit.IconBadge(icon, color, 42, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 22), Parent = tile })
++	Kit.Label({
++		Text = text,
++		Font = T.Bold,
++		TextSize = 11,
++		TextXAlignment = Enum.TextXAlignment.Center,
++		TextColor3 = if claimable then T.DarkText else T.Text,
++		Position = UDim2.new(0, 3, 1, -32),
++		Size = UDim2.new(1, -6, 0, 28),
++		Parent = tile,
++	})
++	if state == "claimed" then
++		local check = Kit.IconBadge("✓", T.Good, 30, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 4, 0, -4), ZIndex = 4, Parent = tile })
++		check.ZIndex = 4
++		tile.BackgroundTransparency = 0.4
++	elseif state == "locked" then
++		badge.BackgroundTransparency = 0.5
++		Kit.IconBadge(Icons.Get("Lock"), T.PanelDark, 26, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 2, 0, -2), Parent = tile })
++	elseif state == "future" then
++		tile.BackgroundTransparency = 0.35
++	elseif claimable then
++		Kit.Shine(tile, 1.2)
++	end
++	return tile
++end
++
++local tideTrackScroll = nil
+ local function renderQuests()
+ 	Kit.Clear(questScroll)
+ 	local order = 0
+@@ -620,96 +686,112 @@ local function renderQuests()
+ 	-- Login calendar
+ 	local streak = S.Get("LoginStreak") or 1
+ 	local claimedToday = (S.Get("LastDailyClaimDay") or 0) == os.time() // 86400
+-	header(questScroll, o(), `DAILY LOGIN · streak {streak} day{streak == 1 and "" or "s"}`)
+-	local cal = row(questScroll, o(), 70)
+-	cal.BackgroundTransparency = 1
+-	Kit.List(4, true).Parent = cal
++	header(questScroll, o(), `🔥 DAILY LOGIN · {streak} day streak`)
++	local cal = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 108), LayoutOrder = o(), Parent = questScroll }, { Kit.List(6, true) })
+ 	local dayInCycle = ((streak - 1) % #Economy.DailyRewards) + 1
+ 	for i, reward in Economy.DailyRewards do
+-		local label = if reward.Coins and reward.Pearls
+-			then `{NumberFormat.short(reward.Coins)}🪙\n{reward.Pearls}🫧`
+-			elseif reward.Coins then `{NumberFormat.short(reward.Coins)}🪙`
+-			elseif reward.Pearls then `{reward.Pearls}🫧`
+-			elseif reward.Relic then `{reward.Relic}\nrelic`
+-			else "Luck\npotion"
+ 		local isToday = i == dayInCycle
+-		Kit.Button(`Day {i}\n{label}`, if isToday and not claimedToday then T.Gold elseif i < dayInCycle or (isToday and claimedToday) then T.Good else T.PanelLight, function()
+-			if isToday and not claimedToday then
++		local state = if isToday and not claimedToday then "claimable" elseif i < dayInCycle or (isToday and claimedToday) then "claimed" else "future"
++		rewardTile(cal, reward, state, i, function()
++			if state == "claimable" then
+ 				Net.RequestClaimDaily:FireServer()
+ 			end
+-		end, { Size = UDim2.fromOffset(82, 66), TextSize = 12, LayoutOrder = i, Parent = cal })
++		end, `Day {i}`)
+ 	end
+ 
+ 	local q = S.Get("Quests") or {}
+-	for _, section in { { "DAILY QUESTS", q.Daily or {} }, { "WEEKLY QUESTS", q.Weekly or {} } } do
++	for _, section in { { "📜 DAILY QUESTS", q.Daily or {} }, { "🗓️ WEEKLY QUESTS", q.Weekly or {} } } do
+ 		header(questScroll, o(), section[1])
+ 		for _, entry in section[2] do
+ 			local def = questDef(entry.Id)
+ 			if def then
+-				local r = row(questScroll, o(), 54)
+-				local reward = (def.Coins and `{NumberFormat.short(def.Coins)} Coins` or "") .. (def.Pearls and `{def.Pearls} Pearls` or "")
+-				Kit.Label({ Text = def.Text, Font = T.Bold, Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -150, 0, 24), Parent = r })
+-				Kit.Label({
+-					Text = `{entry.Progress}/{def.Goal} · {reward} · +{def.Xp} Tide XP`,
+-					TextColor3 = T.Muted,
+-					TextSize = 13,
+-					Position = UDim2.fromOffset(10, 28),
+-					Size = UDim2.new(1, -150, 0, 22),
+-					Parent = r,
+-				})
+ 				local done = entry.Progress >= def.Goal
+-				Kit.Button(if entry.Claimed then "Claimed" elseif done then "Claim" else "…", if done and not entry.Claimed then T.Gold else T.PanelLight, function()
++				local r = row(questScroll, o(), 78)
++				if done and not entry.Claimed then
++					local s = r:FindFirstChildOfClass("UIStroke")
++					s.Color, s.Transparency, s.Thickness = T.Gold, 0, 2
++				end
++				Kit.IconBadge(QUEST_ICONS[def.Stat] or "📜", if done then T.Good else T.AccentDeep, 52, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Parent = r })
++				Kit.Title({ Text = def.Text, TextSize = 17, Position = UDim2.fromOffset(72, 6), Size = UDim2.new(1, -220, 0, 22), TextWrapped = false, TextTruncate = Enum.TextTruncate.AtEnd, Parent = r })
++				local _, setBar = Kit.Bar({ Position = UDim2.fromOffset(72, 32), Size = UDim2.new(1, -220, 0, 16), TextSize = 11, Color = if done then T.Good else T.Accent, Parent = r })
++				setBar(entry.Progress / def.Goal, nil, `{math.min(entry.Progress, def.Goal)}/{def.Goal}`)
++				local pills = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(72, 52), Size = UDim2.new(1, -220, 0, 20), Parent = r }, { Kit.List(4, true) })
++				if def.Coins then
++					Kit.Pill(`{Icons.Get("Coins")} {NumberFormat.short(def.Coins)}`, Kit.Darken(T.Gold, 0.55), { TextColor3 = T.Gold, LayoutOrder = 1, Parent = pills })
++				end
++				if def.Pearls then
++					Kit.Pill(`{Icons.Get("Pearls")} {def.Pearls}`, Kit.Darken(T.Pearl, 0.6), { TextColor3 = T.Pearl, LayoutOrder = 2, Parent = pills })
++				end
++				Kit.Pill(`🌊 +{def.Xp} XP`, Kit.Darken(T.Accent, 0.6), { TextColor3 = T.Accent, LayoutOrder = 3, Parent = pills })
++				local b = Kit.Button(if entry.Claimed then "✓ Done" elseif done then "Claim!" else "In progress", if entry.Claimed then T.Good elseif done then T.Gold else T.PanelLight, function()
+ 					if done and not entry.Claimed then
+ 						Net.RequestClaimQuest:FireServer(entry.Id)
+ 					end
+-				end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(120, 44), Parent = r })
++				end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(128, 48), TextSize = 15, Parent = r })
++				if done and not entry.Claimed then
++					Kit.Shine(b, 1)
++				end
+ 			end
+ 		end
+ 	end
+ 
+-	-- Tide Pass
++	-- Tide Pass: horizontal reward track
+ 	local tp = S.Get("TidePass") or { XP = 0, Premium = false, ClaimedFree = {}, ClaimedPremium = {} }
+-	local tier = tp.XP // Economy.TidePass.XpPerTier
+-	header(questScroll, o(), `TIDE PASS {Economy.TidePass.SeasonId} · Tier {tier}/{Economy.TidePass.Tiers} ({tp.XP % Economy.TidePass.XpPerTier}/{Economy.TidePass.XpPerTier} XP)`)
++	local TPc = Economy.TidePass
++	local tier = tp.XP // TPc.XpPerTier
++	header(questScroll, o(), `🎫 TIDE PASS {TPc.SeasonId} · Tier {tier}/{TPc.Tiers}`, T.Gold)
++	local top = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 50), LayoutOrder = o(), Parent = questScroll })
++	local _, setTp = Kit.Bar({ Position = UDim2.fromOffset(0, 12), Size = UDim2.new(1, if tp.Premium then 0 else -390, 0, 24), Color = T.Gold, Parent = top })
++	setTp((tp.XP % TPc.XpPerTier) / TPc.XpPerTier, nil, `{tp.XP % TPc.XpPerTier}/{TPc.XpPerTier} XP to tier {tier + 1}`)
+ 	if not tp.Premium then
+-		local r = row(questScroll, o(), 56)
+-		r.BackgroundTransparency = 1
+-		Kit.List(6, true).Parent = r
+-		Kit.Button("Premium · 499 R$", T.Gold, function()
++		Kit.Button("🎫 Premium · 499 R$", T.Gold, function()
+ 			Net.RequestPurchase:FireServer("Product", "TidePassPremium")
+-		end, { Size = UDim2.fromOffset(170, 48), TextColor3 = Color3.fromRGB(40, 25, 0), Parent = r })
+-		Kit.Button(`Premium · {Economy.TidePass.PremiumPearlCost} Pearls`, T.Accent, function()
++		end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -196, 0, 2), Size = UDim2.fromOffset(186, 46), TextSize = 14, Parent = top })
++		Kit.Button(`{Icons.Get("Pearls")} {TPc.PremiumPearlCost} Pearls`, T.Accent, function()
+ 			Net.RequestBuyTidePassPearls:FireServer()
+-		end, { Size = UDim2.fromOffset(200, 48), Parent = r })
++		end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 2), Size = UDim2.fromOffset(186, 46), TextSize = 14, Parent = top })
+ 	end
+-	for t = 1, Economy.TidePass.Tiers do
+-		local r = row(questScroll, o(), 48)
+-		Kit.Label({ Text = `Tier {t}`, Font = T.Bold, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(0, 70, 1, 0), Parent = r })
++	local track = Kit.Card({ Size = UDim2.new(1, -8, 0, 262), LayoutOrder = o(), BackgroundColor3 = T.PanelDark, Parent = questScroll })
++	Kit.Label({ Text = "FREE", Font = T.Title, TextSize = 14, TextColor3 = T.Muted, Position = UDim2.fromOffset(10, 44), Size = UDim2.fromOffset(60, 20), Parent = track })
++	Kit.Label({ Text = "PREMIUM", Font = T.Title, TextSize = 14, TextColor3 = T.Gold, Position = UDim2.fromOffset(10, 152), Size = UDim2.fromOffset(70, 20), Parent = track })
++	tideTrackScroll = Kit.Scroll({
++		Position = UDim2.fromOffset(84, 6),
++		Size = UDim2.new(1, -90, 1, -12),
++		ScrollingDirection = Enum.ScrollingDirection.X,
++		AutomaticCanvasSize = Enum.AutomaticSize.X,
++		ScrollBarThickness = 4,
++		Parent = track,
++	})
++	Kit.List(8, true).Parent = tideTrackScroll
++	for t = 1, TPc.Tiers do
++		local col = New("Frame", { BackgroundTransparency = 1, Size = UDim2.fromOffset(92, 246), LayoutOrder = t, Parent = tideTrackScroll })
+ 		local reached = tier >= t
+-		local function claimButton(premium: boolean, x: number)
++		Kit.Pill(`Tier {t}`, if reached then T.Gold else T.PanelLight, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), TextSize = 12, Size = UDim2.fromOffset(0, 22), Parent = col })
++		local function tile(premium: boolean, y: number)
+ 			local claimed = (if premium then tp.ClaimedPremium else tp.ClaimedFree)[tostring(t)]
+-			local text = if premium then "Premium" else "Free"
+-			Kit.Button(
+-				if claimed then `{text} ✓` elseif reached then `Claim {text}` else text,
+-				if claimed then T.Good elseif reached and (not premium or tp.Premium) then T.Gold else T.PanelLight,
+-				function()
+-					if reached and not claimed then
+-						Net.RequestClaimTier:FireServer(t, premium)
+-					end
+-				end,
+-				{ Position = UDim2.fromOffset(x, 4), Size = UDim2.fromOffset(140, 40), TextSize = 13, Parent = r }
+-			)
+-		end
+-		claimButton(false, 90)
+-		claimButton(true, 240)
+-		if not reached and t > tier + 3 then
+-			break -- keep the list short; reveal as you progress
++			local state = if claimed then "claimed"
++				elseif premium and not tp.Premium then "locked"
++				elseif reached then "claimable"
++				else "future"
++			local holder = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(2, y), Size = UDim2.fromOffset(88, 100), Parent = col })
++			rewardTile(holder, Formulas.TierReward(t, premium), state, 1, function()
++				if reached and not claimed and (not premium or tp.Premium) then
++					Net.RequestClaimTier:FireServer(t, premium)
++				end
++			end)
+ 		end
++		tile(false, 30)
++		tile(true, 140)
+ 	end
++	task.defer(function()
++		if tideTrackScroll then
++			tideTrackScroll.CanvasPosition = Vector2.new(math.max(0, (tier - 1) * 100), 0)
++		end
++	end)
+ end
+ 
+ ------------------------------------------------------------------------------------------
+--- Rebirth
++-- Rebirth: before/after preview, requirements, talents
+ ------------------------------------------------------------------------------------------
+ local rebirthScroll
+ local function renderRebirth()
+@@ -719,97 +801,235 @@ local function renderRebirth()
+ 	local lifetime = S.Get("LifetimeCoins") or 0
+ 	local suitOk = (S.Get("Suit") or 1) >= Economy.Rebirth.RequiredSuit
+ 	local coinOk = lifetime >= need
+-	local lines = {
+-		`Resurfaces: {n}  ·  Rebirth Tokens: {S.Get("RebirthTokens") or 0}`,
+-		"",
+-		`Requirements:`,
+-		`{suitOk and "✅" or "❌"} Own the {Upgrades.Suits[Economy.Rebirth.RequiredSuit].Name} suit`,
+-		`{coinOk and "✅" or "❌"} {NumberFormat.short(lifetime)} / {NumberFormat.short(need)} lifetime Coins`,
+-		"",
+-		`You gain: Coins x{Formulas.RebirthMultiplier(n)} → x{Formulas.RebirthMultiplier(n + 1)}, +2% luck (max 30%), +1 Rebirth Token, a new helmet trim.`,
+-		"You keep: relics on stands, storage, Codex, Pearls, passes, level, Display Slots.",
+-		"Resets: Coins, upgrades, suit, dive bag.",
+-	}
+-	Kit.Label({ Text = table.concat(lines, "\n"), TextSize = 15, LayoutOrder = 1, Size = UDim2.new(1, -8, 0, 200), TextYAlignment = Enum.TextYAlignment.Top, Parent = rebirthScroll })
+-	Kit.Button("RESURFACE", if suitOk and coinOk then T.Gold else T.PanelLight, function()
++	local ready = suitOk and coinOk
++	local tokens = S.Get("RebirthTokens") or 0
++
++	-- Before → after
++	local compare = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 150), LayoutOrder = 1, Parent = rebirthScroll })
++	local function statCard(x: UDim, title: string, color: Color3, lines)
++		local c = Kit.Card({ Position = UDim2.new(x, 0, 0, 0), Size = UDim2.new(0.5, -34, 1, 0), BackgroundColor3 = Kit.Darken(color, 0.6), Parent = compare }, { Kit.Padding(10), Kit.List(4, false, Enum.HorizontalAlignment.Center) })
++		local s = c:FindFirstChildOfClass("UIStroke")
++		s.Color, s.Transparency, s.Thickness = color, 0.05, 2
++		Kit.Title({ Text = title, TextSize = 16, TextColor3 = Kit.Lighten(color, 0.4), TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.new(1, 0, 0, 20), LayoutOrder = 0, Parent = c })
++		for i, line in lines do
++			Kit.Title({ Text = line, TextSize = if i == 1 then 30 else 16, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.new(1, 0, 0, if i == 1 then 34 else 20), LayoutOrder = i, TextWrapped = false, Parent = c })
++		end
++	end
++	statCard(UDim.new(0, 0), "NOW", T.AccentDeep, {
++		`🪙 x{Formulas.RebirthMultiplier(n)}`,
++		`🍀 +{math.min(n * 2, 30)}% luck`,
++		`{Icons.Get("Tokens")} {tokens} tokens`,
++	})
++	statCard(UDim.new(0.5, 34), "AFTER RESURFACING", T.Gold, {
++		`🪙 x{Formulas.RebirthMultiplier(n + 1)}`,
++		`🍀 +{math.min((n + 1) * 2, 30)}% luck`,
++		`{Icons.Get("Tokens")} {tokens + 1} tokens`,
++	})
++	Kit.IconBadge("➜", T.Gold, 52, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Parent = compare })
++
++	-- Requirements
++	local req = row(rebirthScroll, 2, 96)
++	Kit.Title({ Text = `Requirements · Resurfaces so far: {n}`, TextSize = 16, Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -24, 0, 20), Parent = req })
++	Kit.Label({
++		Text = `{suitOk and "✅" or "❌"} Own the {Upgrades.Suits[Economy.Rebirth.RequiredSuit].Name} suit`,
++		Font = T.Bold,
++		TextSize = 14,
++		Position = UDim2.fromOffset(12, 30),
++		Size = UDim2.new(1, -24, 0, 18),
++		Parent = req,
++	})
++	Kit.Label({ Text = `{coinOk and "✅" or "❌"} Lifetime Coins`, Font = T.Bold, TextSize = 14, Position = UDim2.fromOffset(12, 54), Size = UDim2.fromOffset(150, 18), Parent = req })
++	local _, setReq = Kit.Bar({ Position = UDim2.fromOffset(160, 54), Size = UDim2.new(1, -176, 0, 22), Color = if coinOk then T.Good else T.Gold, Parent = req })
++	setReq(lifetime / math.max(need, 1), nil, `{NumberFormat.short(lifetime)} / {NumberFormat.short(need)}`)
++
++	local btn = Kit.Button("🌊 RESURFACE", if ready then T.Gold else T.PanelLight, function()
+ 		Net.RequestRebirth:FireServer()
+-	end, { LayoutOrder = 2, Size = UDim2.fromOffset(220, 52), TextColor3 = Color3.fromRGB(40, 25, 0), Parent = rebirthScroll })
+-	header(rebirthScroll, 3, "TALENT TREE")
++	end, { LayoutOrder = 3, Size = UDim2.new(1, -8, 0, 56), TextSize = 22, Font = T.Title, Parent = rebirthScroll })
++	if ready then
++		Kit.Shine(btn, 1)
++	end
++
++	local keep = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 64), LayoutOrder = 4, Parent = rebirthScroll })
++	local function chipCard(x: UDim, title: string, color: Color3, items)
++		local c = Kit.Card({ Position = UDim2.new(x, 0, 0, 0), Size = UDim2.new(0.5, -4, 1, 0), Parent = keep })
++		Kit.Label({ Text = title, Font = T.Title, TextSize = 13, TextColor3 = color, Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -20, 0, 16), Parent = c })
++		Kit.Label({ Text = table.concat(items, " · "), TextSize = 12, TextColor3 = T.Muted, Position = UDim2.fromOffset(10, 22), Size = UDim2.new(1, -20, 0, 36), TextYAlignment = Enum.TextYAlignment.Top, Parent = c })
++	end
++	chipCard(UDim.new(0, 0), "✅ YOU KEEP", T.Good, { "Relics on stands", "Storage", "Codex", "Pearls", "Passes", "Level", "Display Slots" })
++	chipCard(UDim.new(0.5, 4), "♻️ RESETS", T.Bad, { "Coins", "Upgrades", "Suit", "Dive bag" })
++
++	header(rebirthScroll, 5, `{Icons.Get("Tokens")} TALENT TREE · {tokens} token{tokens == 1 and "" or "s"}`, T.Gold)
+ 	local talents = S.Get("Talents") or {}
++	local TALENT_ICONS = { StartNeoprene = "🤿", ExtraBag = "🎒", QuietDiver = "🤫", Lungs = "🫁" }
+ 	for i, t in Economy.Rebirth.Talents do
+-		local r = row(rebirthScroll, 3 + i, 56)
++		local r = row(rebirthScroll, 5 + i, 72)
+ 		local lvl = talents[t.Id] or 0
+-		Kit.Label({ Text = `{t.Name}  {lvl}/{t.Max}`, Font = T.Bold, Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -150, 0, 24), Parent = r })
+-		Kit.Label({ Text = t.Desc, TextColor3 = T.Muted, TextSize = 13, Position = UDim2.fromOffset(10, 28), Size = UDim2.new(1, -150, 0, 22), Parent = r })
+-		Kit.Button(if lvl >= t.Max then "MAX" else `{t.Cost} Token`, T.Accent, function()
++		Kit.IconBadge(TALENT_ICONS[t.Id] or "✦", Color3.fromRGB(170, 100, 255), 50, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Parent = r })
++		Kit.Title({ Text = t.Name, TextSize = 17, Position = UDim2.fromOffset(72, 8), Size = UDim2.new(1, -220, 0, 22), Parent = r })
++		Kit.Label({ Text = t.Desc, TextColor3 = T.Muted, TextSize = 13, Position = UDim2.fromOffset(72, 30), Size = UDim2.new(1, -220, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd, TextWrapped = false, Parent = r })
++		local pips = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(72, 50), Size = UDim2.fromOffset(120, 14), Parent = r }, { Kit.List(4, true) })
++		for p = 1, t.Max do
++			New("Frame", { BackgroundColor3 = if p <= lvl then T.Gold else T.PanelDark, Size = UDim2.fromOffset(22, 10), LayoutOrder = p, Parent = pips }, { Kit.Round() })
++		end
++		local maxed = lvl >= t.Max
++		Kit.Button(if maxed then "MAX" else `{Icons.Get("Tokens")} {t.Cost}`, if maxed then T.Gold elseif tokens >= t.Cost then T.Good else T.PanelLight, function()
+ 			Net.RequestTalent:FireServer(t.Id)
+-		end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(120, 44), Parent = r })
++		end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(120, 46), Parent = r })
+ 	end
+ end
+ 
+ ------------------------------------------------------------------------------------------
+--- Leaderboards
++-- Leaderboards: board tabs + podium + list
+ ------------------------------------------------------------------------------------------
+-local lbScroll
++local lbScroll, lbPaintTabs
++local lbBoard = "TotalValue"
++local LB_TABS = {
++	{ id = "TotalValue", text = "Dock", icon = "🏛️", color = T.Gold },
++	{ id = "Deepest", text = "Deepest", icon = "🌊", color = T.Accent },
++	{ id = "Rebirths", text = "Resurface", icon = "🔱", color = Color3.fromRGB(170, 100, 255) },
++	{ id = "Steals", text = "Steals", icon = "🦹", color = T.Bad },
++	{ id = "Codex", text = "Codex", icon = "📖", color = T.Good },
++}
+ local function renderLeaderboards()
+ 	Kit.Clear(lbScroll)
+-	local order = 0
+-	for _, id in { "Deepest", "TotalValue", "Rebirths", "Steals", "Codex" } do
+-		local board = leaderboardData[id]
+-		if board then
+-			order += 1
+-			header(lbScroll, order, board.Title:upper())
+-			local lines = {}
+-			for _, r in board.Rows do
+-				table.insert(lines, `{r.Rank}. {r.Name} — {r.Value}`)
+-			end
+-			order += 1
+-			Kit.Label({ Text = if #lines > 0 then table.concat(lines, "\n") else "No entries yet", TextSize = 14, LayoutOrder = order, Size = UDim2.new(1, -8, 0, math.max(1, #lines) * 18 + 6), Parent = lbScroll })
+-		end
++	if lbPaintTabs then
++		lbPaintTabs(lbBoard)
+ 	end
+-	if order == 0 then
+-		Kit.Label({ Text = "Loading leaderboards…", Parent = lbScroll })
++	local board = leaderboardData[lbBoard]
++	if not board then
++		Kit.Label({ Text = "Loading leaderboards…", TextColor3 = T.Muted, Font = T.Bold, LayoutOrder = 1, Parent = lbScroll })
++		return
++	end
++	local rows = board.Rows or {}
++	-- Podium (2nd, 1st, 3rd)
++	local podium = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 190), LayoutOrder = 1, Parent = lbScroll })
++	local spots = {
++		{ rank = 2, x = 0, h = 110, color = Color3.fromRGB(200, 210, 225), medal = "🥈" },
++		{ rank = 1, x = 1, h = 140, color = T.Gold, medal = "🥇" },
++		{ rank = 3, x = 2, h = 90, color = Color3.fromRGB(215, 140, 80), medal = "🥉" },
++	}
++	for _, spot in spots do
++		local r = rows[spot.rank]
++		local col = New("Frame", { BackgroundTransparency = 1, Position = UDim2.new(spot.x / 3, 4, 0, 0), Size = UDim2.new(1 / 3, -8, 1, 0), Parent = podium })
++		local block = New("Frame", {
++			BackgroundColor3 = Kit.Darken(spot.color, 0.35),
++			AnchorPoint = Vector2.new(0, 1),
++			Position = UDim2.fromScale(0, 1),
++			Size = UDim2.new(1, 0, 0, spot.h),
++			Parent = col,
++		}, { Kit.Corner(14), Kit.Gradient(Kit.Lighten(spot.color, 0.2), Kit.Darken(spot.color, 0.45), 90), Kit.Stroke(spot.color, 2, 0.05) })
++		Kit.Title({ Text = tostring(spot.rank), TextSize = 44, TextTransparency = 0.5, TextXAlignment = Enum.TextXAlignment.Center, AnchorPoint = Vector2.new(0, 1), Position = UDim2.fromScale(0, 1), Size = UDim2.new(1, 0, 0, 50), Parent = block })
++		Kit.Title({
++			Text = if r then r.Value else "—",
++			TextSize = 18,
++			TextXAlignment = Enum.TextXAlignment.Center,
++			Position = UDim2.fromOffset(4, 8),
++			Size = UDim2.new(1, -8, 0, 22),
++			TextScaled = true,
++			Parent = block,
++		})
++		Kit.IconBadge(spot.medal, spot.color, 46, { AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -spot.h - 22), Parent = col })
++		Kit.Title({
++			Text = if r then r.Name else "Open spot",
++			TextSize = 15,
++			TextColor3 = if r then T.Text else T.Muted,
++			TextXAlignment = Enum.TextXAlignment.Center,
++			AnchorPoint = Vector2.new(0, 1),
++			Position = UDim2.new(0, 0, 1, -spot.h - 2),
++			Size = UDim2.new(1, 0, 0, 20),
++			TextWrapped = false,
++			TextTruncate = Enum.TextTruncate.AtEnd,
++			Parent = col,
++		})
++	end
++	for i = 4, #rows do
++		local r = rows[i]
++		local card = row(lbScroll, i, 44)
++		Kit.Pill(`#{r.Rank}`, T.PanelDark, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), TextSize = 14, Size = UDim2.fromOffset(0, 26), Parent = card })
++		Kit.Title({ Text = r.Name, TextSize = 16, Position = UDim2.fromOffset(70, 0), Size = UDim2.new(1, -200, 1, 0), TextWrapped = false, TextTruncate = Enum.TextTruncate.AtEnd, Parent = card })
++		Kit.Title({ Text = r.Value, TextSize = 16, TextColor3 = T.Gold, TextXAlignment = Enum.TextXAlignment.Right, AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -12, 0, 0), Size = UDim2.fromOffset(130, 44), Parent = card })
++	end
++	if #rows == 0 then
++		Kit.Label({ Text = "No entries yet. Be the first!", TextColor3 = T.Muted, Font = T.Bold, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 2, Parent = lbScroll })
+ 	end
+ end
+ 
++local function buildLeaderboards(body: Frame)
++	local tabScroll = Kit.Scroll({
++		Size = UDim2.new(1, 0, 0, 50),
++		ScrollingDirection = Enum.ScrollingDirection.X,
++		AutomaticCanvasSize = Enum.AutomaticSize.X,
++		ScrollBarThickness = 3,
++		Parent = body,
++	})
++	local _, paint = Kit.Tabs(tabScroll, LB_TABS, lbBoard, function(id)
++		lbBoard = id
++		renderLeaderboards()
++	end, { Size = UDim2.new(0, 0, 0, 44), AutomaticSize = Enum.AutomaticSize.X, TabWidth = 130 })
++	lbPaintTabs = paint
++	lbScroll = scrollBody(body, 56)
++end
++
+ ------------------------------------------------------------------------------------------
+ -- Players (trade / party)
+ ------------------------------------------------------------------------------------------
++local function avatar(userId: number, size: number, props)
++	local img = New("ImageLabel", {
++		BackgroundColor3 = T.PanelDark,
++		Image = `rbxthumb://type=AvatarHeadShot&id={userId}&w=150&h=150`,
++		Size = UDim2.fromOffset(size, size),
++	}, { Kit.Round(), Kit.Stroke(T.Accent, 2, 0.1) })
++	for k, v in props or {} do
++		(img :: any)[k] = v
++	end
++	return img
++end
++
+ local playersScroll
+ local function renderPlayers()
+ 	Kit.Clear(playersScroll)
+ 	local order = 0
++	local top = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 48), LayoutOrder = 0, Parent = playersScroll })
++	Kit.Label({ Text = "👥 Friends in your server give +10% Coins each. Party members share sonar and +10% luck.", TextColor3 = T.Muted, TextSize = 13, Size = UDim2.new(1, -170, 1, 0), Parent = top })
+ 	Kit.Button("Leave party", T.PanelLight, function()
+ 		Net.PartyLeave:FireServer()
+-	end, { LayoutOrder = 0, Size = UDim2.fromOffset(160, 44), Parent = playersScroll })
++	end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 2), Size = UDim2.fromOffset(150, 44), Parent = top })
+ 	for _, other in Players:GetPlayers() do
+ 		if other ~= player then
+ 			order += 1
+-			local r = row(playersScroll, order, 56)
+-			Kit.Label({ Text = other.DisplayName, Font = T.Bold, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -280, 1, 0), Parent = r })
+-			Kit.Button("Party", T.Accent, function()
++			local r = row(playersScroll, order, 66)
++			avatar(other.UserId, 50, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Parent = r })
++			Kit.Title({ Text = other.DisplayName, TextSize = 17, Position = UDim2.fromOffset(68, 10), Size = UDim2.new(1, -330, 0, 22), TextWrapped = false, TextTruncate = Enum.TextTruncate.AtEnd, Parent = r })
++			Kit.Label({ Text = `@{other.Name}`, TextColor3 = T.Muted, TextSize = 12, Position = UDim2.fromOffset(68, 34), Size = UDim2.new(1, -330, 0, 16), TextWrapped = false, Parent = r })
++			Kit.Button("🤿 Party", T.Accent, function()
+ 				Net.PartyInvite:FireServer(other.UserId)
+ 				controllers.UIController.Toast(`Party invite sent to {other.DisplayName}`, "info")
+-			end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -140, 0.5, 0), Size = UDim2.fromOffset(120, 44), Parent = r })
+-			Kit.Button("Trade", T.Gold, function()
++			end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -140, 0.5, 0), Size = UDim2.fromOffset(120, 46), Parent = r })
++			Kit.Button(`{Icons.Get("Trade")} Trade`, T.Gold, function()
+ 				Net.TradeRequest:FireServer(other.UserId)
+-			end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(120, 44), TextColor3 = Color3.fromRGB(40, 25, 0), Parent = r })
++			end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(120, 46), Parent = r })
+ 		end
+ 	end
+ 	if order == 0 then
+-		Kit.Label({ Text = "Nobody else is here yet — invite friends for +10% Coins each!", LayoutOrder = 1, Size = UDim2.new(1, -8, 0, 40), Parent = playersScroll })
++		Kit.Label({ Text = "Nobody else is here yet. Invite friends for +10% Coins each!", TextColor3 = T.Muted, Font = T.Bold, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 1, Size = UDim2.new(1, -8, 0, 40), Parent = playersScroll })
+ 	end
+ end
+ 
+ ------------------------------------------------------------------------------------------
+--- Trade window
++-- Trade window: side-by-side offers as relic cards, storage picker grid
+ ------------------------------------------------------------------------------------------
+ local tradeScroll
++local function tradeGrid(parent: Instance, order: number, cell: Vector2?)
++	local f = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = order, Parent = parent })
++	Kit.Grid(cell or Vector2.new(96, 122), 6).Parent = f
++	return f
++end
++
+ local function renderTrade()
+ 	Kit.Clear(tradeScroll)
+ 	local st = tradeState
+ 	if not st then
+-		Kit.Label({ Text = "No active trade.", Parent = tradeScroll })
++		Kit.Label({ Text = "No active trade.", TextColor3 = T.Muted, Parent = tradeScroll })
+ 		return
+ 	end
+ 	local order = 0
+@@ -817,41 +1037,66 @@ local function renderTrade()
+ 		order += 1
+ 		return order
+ 	end
+-	header(tradeScroll, o(), `Trading with {st.Partner}` .. (if st.Countdown then ` · completing in {math.ceil(st.Countdown)}s` else ""))
+-	local function list(title: string, relics)
+-		header(tradeScroll, o(), title)
+-		if #relics == 0 then
+-			Kit.Label({ Text = "(nothing)", TextColor3 = T.Muted, LayoutOrder = o(), Parent = tradeScroll })
++	local banner = row(tradeScroll, o(), 50)
++	Kit.Title({ Text = `{Icons.Get("Trade")} Trading with {st.Partner}`, TextSize = 18, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(1, -200, 1, 0), TextWrapped = false, Parent = banner })
++	if st.Countdown then
++		Kit.Pill(`Completing in {math.ceil(st.Countdown)}s`, T.Good, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, 0), TextSize = 15, Size = UDim2.fromOffset(0, 30), Parent = banner })
++	end
++
++	local sides = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = o(), Parent = tradeScroll })
++	local function side(x: UDim, title: string, relics, confirmed: boolean)
++		local c = Kit.Card({ Position = UDim2.new(x, 0, 0, 0), Size = UDim2.new(0.5, -4, 0, 170), AutomaticSize = Enum.AutomaticSize.Y, BackgroundColor3 = T.PanelDark, Parent = sides })
++		local s = c:FindFirstChildOfClass("UIStroke")
++		s.Color, s.Transparency, s.Thickness = if confirmed then T.Good else T.PanelLight, 0.05, 2
++		Kit.Title({ Text = title, TextSize = 15, Position = UDim2.fromOffset(10, 6), Size = UDim2.new(1, -110, 0, 20), Parent = c })
++		Kit.Pill(if confirmed then "✓ Ready" else "Not ready", if confirmed then T.Good else T.PanelLight, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -8, 0, 6), Parent = c })
++		local g = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(8, 32), Size = UDim2.new(1, -16, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = c }, { New("UIPadding", { PaddingBottom = UDim.new(0, 8) }) })
++		Kit.Grid(Vector2.new(84, 108), 6).Parent = g
++		for i, relic in relics do
++			RelicCard.new({ Relic = relic, Size = UDim2.fromOffset(84, 108), LayoutOrder = i, Parent = g })
+ 		end
+-		for _, relic in relics do
+-			Kit.Label({ Text = `{Rarities[relic.rarity].Icon} {relicLine(relic)} (+{NumberFormat.short(Formulas.RelicCPS(relic))}/s)`, TextColor3 = Rarities[relic.rarity].Color, LayoutOrder = o(), Parent = tradeScroll })
++		if #relics == 0 then
++			Kit.Label({ Text = "Nothing offered yet", TextColor3 = T.Muted, TextSize = 13, Parent = g })
+ 		end
+ 	end
+-	list(`Your offer {st.MyConfirm and "✅" or ""}`, st.MyOffer)
+-	list(`Their offer {st.TheirConfirm and "✅" or ""}`, st.TheirOffer)
+-	local actions = row(tradeScroll, o(), 54)
+-	actions.BackgroundTransparency = 1
+-	Kit.List(6, true).Parent = actions
+-	Kit.Button("Confirm", T.Good, function()
++	side(UDim.new(0, 0), "Your offer", st.MyOffer, st.MyConfirm == true)
++	side(UDim.new(0.5, 4), `{st.Partner}'s offer`, st.TheirOffer, st.TheirConfirm == true)
++
++	local actions = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 52), LayoutOrder = o(), Parent = tradeScroll }, { Kit.List(8, true, Enum.HorizontalAlignment.Center) })
++	Kit.Button("✓ Confirm", T.Good, function()
+ 		Net.TradeConfirm:FireServer()
+-	end, { Size = UDim2.fromOffset(140, 48), Parent = actions })
+-	Kit.Button("Cancel", T.Bad, function()
++	end, { Size = UDim2.fromOffset(160, 48), Parent = actions })
++	Kit.Button("✕ Cancel", T.Bad, function()
+ 		Net.TradeCancel:FireServer()
+-	end, { Size = UDim2.fromOffset(140, 48), Parent = actions })
+-	header(tradeScroll, o(), "Pick from your storage (max 8) — changing the offer resets confirmations")
++	end, { Size = UDim2.fromOffset(160, 48), Parent = actions })
++
++	header(tradeScroll, o(), "Tap relics to offer (max 8). Changing the offer resets both confirmations.")
++	local picker = tradeGrid(tradeScroll, o())
++	local i = 0
+ 	for _, relic in S.Get("Storage") or {} do
+ 		if not relic.locked then
++			i += 1
+ 			local selected = tradeSelection[relic.uid] == true
+-			Kit.Button(`{selected and "☑" or "☐"} {relicLine(relic)} ({relic.rarity})`, if selected then T.Accent else T.PanelLight, function()
+-				tradeSelection[relic.uid] = not selected or nil
+-				local uids = {}
+-				for uid in tradeSelection do
+-					table.insert(uids, uid)
+-				end
+-				Net.TradeSetOffer:FireServer(uids)
+-			end, { Size = UDim2.new(1, -8, 0, 44), TextSize = 14, LayoutOrder = o(), TextXAlignment = Enum.TextXAlignment.Left, Parent = tradeScroll })
++			RelicCard.new({
++				Relic = relic,
++				Size = UDim2.fromOffset(96, 122),
++				Selected = selected,
++				LayoutOrder = if selected then i else i + 1000,
++				OnClick = function()
++					tradeSelection[relic.uid] = not selected or nil
++					local uids = {}
++					for uid in tradeSelection do
++						table.insert(uids, uid)
++					end
++					Net.TradeSetOffer:FireServer(uids)
++				end,
++				Parent = picker,
++			})
+ 		end
+ 	end
++	if i == 0 then
++		Kit.Label({ Text = "No unlocked relics in storage.", TextColor3 = T.Muted, Parent = picker })
++	end
+ end
+ 
+ ------------------------------------------------------------------------------------------
+@@ -940,9 +1185,7 @@ function MenuController.Start()
+ 	UI.RegisterWindow("Rebirth", "Resurface", function(body)
+ 		rebirthScroll = scrollBody(body)
+ 	end, renderRebirth)
+-	UI.RegisterWindow("Leaderboards", "Leaderboards", function(body)
+-		lbScroll = scrollBody(body)
+-	end, renderLeaderboards)
++	UI.RegisterWindow("Leaderboards", "Leaderboards", buildLeaderboards, renderLeaderboards)
+ 	UI.RegisterWindow("Players", "Players", function(body)
+ 		playersScroll = scrollBody(body)
+ 	end, renderPlayers)
+diff --git a/src/client/Controllers/OfferController.luau b/src/client/Controllers/OfferController.luau
+index aa9b6fa..3f907b8 100644
+--- a/src/client/Controllers/OfferController.luau
++++ b/src/client/Controllers/OfferController.luau
+@@ -12,12 +12,14 @@ local Passes = require(Shared.Config.Passes)
+ local Products = require(Shared.Config.Products)
+ local Economy = require(Shared.Config.Economy)
+ local Kit = require(script.Parent.Parent.UI.Kit)
++local Icons = require(script.Parent.Parent.UI.Icons)
+ 
+ local New, T = Kit.New, Kit.Theme
+ local OfferController = {}
+ local controllers
+ local lastUnprompted = -math.huge
+ local current: Frame? = nil
++local currentHolder: Frame? = nil
+ 
+ local UNPROMPTED = { StarterPack = true, Drone = true }
+ 
+@@ -46,26 +48,78 @@ function OfferController.Init(c)
+ end
+ 
+ local function closeCurrent()
+-	if current then
+-		current:Destroy()
+-		current = nil
++	if currentHolder then
++		currentHolder:Destroy()
+ 	end
++	currentHolder = nil
++	current = nil
+ end
+ 
+-local function modal(height: number?): Frame
++-- Modal with a dim backdrop, a hero icon badge overlapping the top edge and a soft glow.
++-- Returns the content panel (vertical list layout).
++local function modal(height: number?, icon: string?, color: Color3?): Frame
+ 	closeCurrent()
++	local accent = color or T.Accent
++	local holder = New("Frame", {
++		Name = "ModalHolder",
++		BackgroundColor3 = Color3.fromRGB(0, 4, 12),
++		BackgroundTransparency = 0.45,
++		Size = UDim2.new(1, 0, 1, 60),
++		Position = UDim2.fromOffset(0, -60),
++		Active = true,
++		ZIndex = 20,
++		Parent = controllers.UIController.Overlay,
++	})
++	local h = (height or 230) + 34
+ 	local f = Kit.Panel({
+ 		Name = "Modal",
+ 		AnchorPoint = Vector2.new(0.5, 0.5),
+-		Position = UDim2.fromScale(0.5, 0.5),
+-		Size = UDim2.fromOffset(380, height or 230),
+-		Parent = controllers.UIController.Overlay,
+-	}, { Kit.Padding(14), Kit.List(8, false, Enum.HorizontalAlignment.Center) })
++		Position = UDim2.new(0.5, 0, 0.5, 30),
++		Size = UDim2.fromOffset(400, h),
++		ZIndex = 21,
++		Parent = holder,
++	}, {
++		New("UIPadding", {
++			PaddingTop = UDim.new(0, 44),
++			PaddingBottom = UDim.new(0, 14),
++			PaddingLeft = UDim.new(0, 16),
++			PaddingRight = UDim.new(0, 16),
++		}),
++		Kit.List(8, false, Enum.HorizontalAlignment.Center),
++	})
++	local stroke = f:FindFirstChildOfClass("UIStroke")
++	if stroke then
++		stroke.Color = accent
++		stroke.Transparency = 0.05
++		stroke.Thickness = 2.5
++	end
++	Kit.Glow(holder, accent, 170, { Position = UDim2.new(0.5, 0, 0.5, 30 - h / 2), ZIndex = 20 })
++	local badge = Kit.IconBadge(icon or "✦", accent, 76, {
++		AnchorPoint = Vector2.new(0.5, 0.5),
++		Position = UDim2.new(0.5, 0, 0.5, 30 - h / 2),
++		ZIndex = 23,
++		Parent = holder,
++	})
+ 	Kit.Pop(f)
++	Kit.Pop(badge)
+ 	current = f
++	currentHolder = holder
+ 	return f
+ end
+ 
++local function title(parent: Frame, text: string, color: Color3?, order: number)
++	return Kit.Title({
++		Text = text,
++		TextSize = 24,
++		TextColor3 = color or T.Text,
++		TextXAlignment = Enum.TextXAlignment.Center,
++		LayoutOrder = order,
++		Size = UDim2.new(1, 0, 0, 30),
++		ZIndex = 22,
++		Parent = parent,
++	})
++end
++
+ local function buttonsRow(parent: Frame, order: number)
+ 	return New("Frame", {
+ 		BackgroundTransparency = 1,
+@@ -93,8 +147,8 @@ function OfferController.Show(key: string)
+ 	end
+ 	Net.OfferShown:FireServer(key)
+ 	local def = pass or product
+-	local f = modal()
+-	Kit.Label({ Text = def.name, Font = T.Bold, TextSize = 22, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 30), Parent = f })
++	local f = modal(nil, Icons.Get(key), T.Gold)
++	title(f, def.name, Kit.Lighten(T.Gold, 0.3), 1)
+ 	Kit.Label({
+ 		Text = OFFER_TEXT[key] or def.desc or "",
+ 		TextSize = 16,
+@@ -112,7 +166,7 @@ function OfferController.Show(key: string)
+ end
+ 
+ function OfferController.Confirm(text: string, okLabel: string, callback: (boolean) -> ())
+-	local f = modal(190)
++	local f = modal(190, "💬", T.Accent)
+ 	Kit.Label({ Text = text, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 70), Parent = f })
+ 	local row = buttonsRow(f, 2)
+ 	Kit.Button(okLabel, T.Good, function()
+@@ -132,7 +186,7 @@ function OfferController.Confirm(text: string, okLabel: string, callback: (boole
+ end
+ 
+ local function deathScreen(info)
+-	local f = modal(260)
++	local f = modal(260, if info.Cause == "Oxygen" then Icons.Get("Oxygen") else "💀", T.Bad)
+ 	local lowScare = (controllers.State.Get("Settings") or {}).LowScare
+ 	local causeText = ({
+ 		Leviathan = if lowScare then "The Leviathan got you." else "THE LEVIATHAN GOT YOU",
+@@ -141,7 +195,7 @@ local function deathScreen(info)
+ 		Eel = "Shocked by an eel.",
+ 		Jellyfish = "Stung by jellyfish.",
+ 	})[info.Cause] or "You were knocked out."
+-	Kit.Label({ Text = causeText, Font = T.Bold, TextSize = 20, TextColor3 = T.Bad, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 30), Parent = f })
++	title(f, causeText, Kit.Lighten(T.Bad, 0.3), 1)
+ 	local bagText = if info.BagCount > 0
+ 		then `Your bag ({info.BagCount} relics, ~{NumberFormat.short(info.BagValue)} Coins) will sink in`
+ 		else "Your bag was empty."
+@@ -177,8 +231,8 @@ local function deathScreen(info)
+ end
+ 
+ local function robbedScreen(info)
+-	local f = modal(250)
+-	Kit.Label({ Text = "YOU WERE ROBBED!", Font = T.Bold, TextSize = 22, TextColor3 = T.Bad, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 30), Parent = f })
++	local f = modal(250, Icons.Get("Alert"), T.Bad)
++	title(f, "YOU WERE ROBBED!", Kit.Lighten(T.Bad, 0.3), 1)
+ 	Kit.Label({ Text = `{info.Thief} stole your {info.Rarity} {info.Relic}.`, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 40), Parent = f })
+ 	local row = buttonsRow(f, 3)
+ 	Kit.Button(`Revenge! ({info.RevengeSeconds}s)`, T.Bad, function()
+@@ -195,8 +249,8 @@ local function robbedScreen(info)
+ end
+ 
+ local function offlineScreen(info)
+-	local f = modal(240)
+-	Kit.Label({ Text = "Welcome back, diver!", Font = T.Bold, TextSize = 22, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 30), Parent = f })
++	local f = modal(240, Icons.Get("Offline"), T.Good)
++	title(f, "Welcome back, diver!", nil, 1)
+ 	Kit.Label({
+ 		Text = `Your dock earned {NumberFormat.short(info.Amount)} Coins while you were away ({NumberFormat.time(math.min(info.Elapsed, info.CapHours * 3600))}, cap {info.CapHours}h).`,
+ 		TextSize = 16,
+diff --git a/src/client/Controllers/SonarController.luau b/src/client/Controllers/SonarController.luau
+index 207ceec..c17c9dd 100644
+--- a/src/client/Controllers/SonarController.luau
++++ b/src/client/Controllers/SonarController.luau
+@@ -2,11 +2,14 @@
+ -- Markers show rarity once Sonar is level 5 and mutations at level 10 / Mutation Scanner.
+ 
+ local Workspace = game:GetService("Workspace")
++local Players = game:GetService("Players")
++local TweenService = game:GetService("TweenService")
+ local ReplicatedStorage = game:GetService("ReplicatedStorage")
+ 
+ local Shared = ReplicatedStorage:WaitForChild("Shared")
+ local Net = require(Shared.Net)
+ local Rarities = require(Shared.Config.Rarities)
++local Kit = require(script.Parent.Parent.UI.Kit)
+ 
+ local MARKER_SECONDS = 7
+ local SonarController = {}
+@@ -28,6 +31,57 @@ function SonarController.Ping()
+ 	Net.UseSonar:FireServer()
+ end
+ 
++-- Expanding sonar pulse around the diver (local only)
++local function pulse(range: number)
++	local char = Players.LocalPlayer.Character
++	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
++	if not hrp then
++		return
++	end
++	local ball = Instance.new("Part")
++	ball.Shape = Enum.PartType.Ball
++	ball.Anchored = true
++	ball.CanCollide = false
++	ball.CanQuery = false
++	ball.CanTouch = false
++	ball.CastShadow = false
++	ball.Material = Enum.Material.ForceField
++	ball.Color = Color3.fromRGB(80, 240, 255)
++	ball.Size = Vector3.one * 2
++	ball.CFrame = hrp.CFrame
++	ball.Parent = markerFolder
++	local info = TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
++	TweenService:Create(ball, info, { Size = Vector3.one * range * 2, Transparency = 1 }):Play()
++	task.delay(1, function()
++		ball:Destroy()
++	end)
++end
++
++-- Make the pinged node's sparkles burst in its rarity colour for the marker's lifetime
++local function tintNode(position: Vector3, color: Color3)
++	local root = Workspace:FindFirstChild("AbyssWorld")
++	local nodes = root and root:FindFirstChild("Nodes")
++	if not nodes then
++		return
++	end
++	for _, node in nodes:GetChildren() do
++		if node:IsA("BasePart") and (node.Position - position).Magnitude < 1 then
++			local pe = node:FindFirstChild("Sparkles", true) :: ParticleEmitter?
++			if pe then
++				local oldColor, oldRate = pe.Color, pe.Rate
++				pe.Color = ColorSequence.new(color)
++				pe.Rate = 24
++				task.delay(MARKER_SECONDS, function()
++					if pe.Parent then
++						pe.Color, pe.Rate = oldColor, oldRate
++					end
++				end)
++			end
++			return
++		end
++	end
++end
++
+ local function marker(info, from: string?)
+ 	local p = Instance.new("Part")
+ 	p.Anchored = true
+@@ -35,31 +89,47 @@ local function marker(info, from: string?)
+ 	p.CanQuery = false
+ 	p.Transparency = 1
+ 	p.Size = Vector3.one
+-	p.Position = info.Position
++	p.Position = info.Position + Vector3.new(0, 2.5, 0)
+ 	local rarity = info.Rarity and Rarities[info.Rarity]
+-	local color = if rarity then rarity.Color else Color3.fromRGB(120, 255, 255)
++	local color = if rarity then Kit.RarityColor(info.Rarity, Rarities) else Color3.fromRGB(120, 255, 255)
+ 	local bb = Instance.new("BillboardGui")
+-	bb.Size = UDim2.fromOffset(110, 46)
++	bb.Size = UDim2.fromOffset(140, 56)
+ 	bb.AlwaysOnTop = true
+ 	bb.MaxDistance = 400
+ 	bb.Parent = p
+-	local label = Instance.new("TextLabel")
+-	label.BackgroundTransparency = 1
+-	label.Size = UDim2.fromScale(1, 1)
+-	label.Font = Enum.Font.GothamBold
+-	label.TextScaled = true
+-	label.TextStrokeTransparency = 0.3
+-	label.TextColor3 = color
+-	local text = if rarity then `{rarity.Icon} {info.Rarity}` else "◎"
++	local text = if rarity then `{rarity.Icon} {info.Rarity}` else "◎ Relic"
+ 	if info.Mutations and #info.Mutations > 0 then
+-		text ..= "\n" .. table.concat(info.Mutations, " ")
++		text ..= "\n✨ " .. table.concat(info.Mutations, " ")
+ 	end
+ 	if from then
+ 		text ..= `\n({from})`
+ 	end
+-	label.Text = text
+-	label.Parent = bb
++	local chip = Kit.New("TextLabel", {
++		BackgroundColor3 = Kit.Darken(color, 0.7),
++		BackgroundTransparency = 0.15,
++		AnchorPoint = Vector2.new(0.5, 1),
++		Position = UDim2.fromScale(0.5, 1),
++		Size = UDim2.fromScale(1, 0.75),
++		Font = Kit.Theme.Title,
++		TextScaled = true,
++		TextColor3 = Kit.Lighten(color, 0.3),
++		TextStrokeTransparency = 0.3,
++		Text = text,
++		Parent = bb,
++	}, { Kit.Round(), Kit.Stroke(color, 2, 0), Kit.New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }) })
++	local arrow = Kit.New("TextLabel", {
++		BackgroundTransparency = 1,
++		Text = "▼",
++		TextScaled = true,
++		TextColor3 = color,
++		AnchorPoint = Vector2.new(0.5, 0),
++		Position = UDim2.new(0.5, 0, 1, -2),
++		Size = UDim2.fromOffset(16, 12),
++		Parent = chip,
++	})
++	arrow.ZIndex = chip.ZIndex
+ 	p.Parent = markerFolder
++	tintNode(info.Position, color)
+ 	task.delay(MARKER_SECONDS, function()
+ 		p:Destroy()
+ 	end)
+@@ -70,6 +140,9 @@ function SonarController.Start()
+ 	markerFolder.Name = "SonarMarkers"
+ 	markerFolder.Parent = Workspace
+ 	Net.SonarResult.OnClientEvent:Connect(function(results, range, from)
++		if not from then
++			pulse(range)
++		end
+ 		for _, info in results do
+ 			marker(info, from)
+ 		end
+diff --git a/src/client/init.client.luau b/src/client/init.client.luau
+index f9619b9..3fff243 100644
+--- a/src/client/init.client.luau
++++ b/src/client/init.client.luau
+@@ -14,6 +14,7 @@ local ORDER = {
+ 	"AudioController",
+ 	"PromptController",
+ 	"HUDController",
++	"FXController",
+ 	"SonarController",
+ 	"RevealController",
+ 	"ShopController",
+diff --git a/src/server/Services/DockService.luau b/src/server/Services/DockService.luau
+index 7b7888d..f298c9d 100644
+--- a/src/server/Services/DockService.luau
++++ b/src/server/Services/DockService.luau
+@@ -105,6 +105,8 @@ local function renderStand(stand: BasePart, relic, visible: boolean, mult: numbe
+ 		local def = Relics.ById[relic.id]
+ 		local model = Build.RelicModel(def, Rarities[relic.rarity].Color, relic.mutations, Mutations.ById, relic.size)
+ 		model.Name = "RelicModel"
++		model:SetAttribute("Rarity", relic.rarity)
++		model:SetAttribute("RelicId", relic.id)
+ 		model:PivotTo(CFrame.new(stand.Position + Vector3.new(0, 2.8, 0)) * stand.CFrame.Rotation)
+ 		model.Parent = stand
+ 		local mut = if #relic.mutations > 0 then table.concat(relic.mutations, " ") .. " " else ""
+@@ -278,7 +280,8 @@ function DockService.Collect(player: Player)
+ 	data.Uncollected = 0
+ 	services.CurrencyService.AddCoins(player, amount, "DockIncome")
+ 	services.QuestService.Progress(player, "Collect", 1)
+-	Net.Notify:FireClient(player, `+{NumberFormat.short(amount)} Coins`, "coins")
++	local dock = dockOf[player]
++	Net.CoinBurst:FireClient(player, amount, dock and dock.Pad.Position, "Collected!")
+ 	data.Flags.Collects = (data.Flags.Collects or 0) + 1
+ 	if data.Flags.Collects == 5 and not services.MonetizationService.Owns(player, "AutoCollect") then
+ 		Net.Offer:FireClient(player, "AutoCollect")
+@@ -530,7 +533,7 @@ function DockService.Start()
+ 			amount *= 2
+ 		end
+ 		services.CurrencyService.AddCoins(player, amount, "Offline")
+-		Net.Notify:FireClient(player, `Welcome back! +{NumberFormat.short(amount)} Coins`, "coins")
++		Net.CoinBurst:FireClient(player, amount, nil, "Welcome back!")
+ 	end)
+ 	Net.ActivateGate.OnServerEvent:Connect(function(player)
+ 		if limiter:Check(player) then
+diff --git a/src/server/Services/InventoryService.luau b/src/server/Services/InventoryService.luau
+index 291fa80..e0f6c48 100644
+--- a/src/server/Services/InventoryService.luau
++++ b/src/server/Services/InventoryService.luau
+@@ -258,7 +258,7 @@ function InventoryService.Start()
+ 		end
+ 		local price = InventoryService.Sell(player, uid)
+ 		if price > 0 then
+-			Net.Notify:FireClient(player, `Sold for {NumberFormat.short(price)} Coins`, "coins")
++			Net.CoinBurst:FireClient(player, price, nil, "Sold!")
+ 		end
+ 	end)
+ 
+@@ -285,7 +285,7 @@ function InventoryService.Start()
+ 			services.CurrencyService.AddCoins(player, total, "SellCommons")
+ 			services.QuestService.Progress(player, "Sell", count)
+ 			services.DataService.Replicate(player, "Bag", "Storage")
+-			Net.Notify:FireClient(player, `Sold {count} Commons for {NumberFormat.short(total)} Coins`, "coins")
++			Net.CoinBurst:FireClient(player, total, nil, `Sold {count} Commons!`)
+ 		end
+ 	end)
+ 
+diff --git a/src/server/Services/LootService.luau b/src/server/Services/LootService.luau
+index bb6d932..2d6ed19 100644
+--- a/src/server/Services/LootService.luau
++++ b/src/server/Services/LootService.luau
+@@ -231,19 +231,78 @@ local function salvage(player: Player, part: BasePart, skipHold: boolean?): bool
+ 	return true
+ end
+ 
++-- Visible node (UI/Visual Overhaul Plan, Phase 2): a sand mound with a glinting relic edge
++-- poking out, plus sparkles. Every node looks the same, so the look gives away nothing
++-- about the server-side roll; sonar reveals rarity.
++local function decorateNode(part: BasePart, zoneIndex: number)
++	local glint = nodeZoneColor(zoneIndex)
++	local cf = part.CFrame
++	Build.Part({
++		Name = "Mound",
++		Size = Vector3.new(3.4, 1.1, 3.0),
++		CFrame = cf * CFrame.new(0, -0.7, 0),
++		Color = Color3.fromRGB(150, 135, 105):Lerp(glint, 0.15),
++		Material = Enum.Material.Sand,
++		CanCollide = false,
++		CanQuery = false,
++		CanTouch = false,
++		Children = { Build.Instance("SpecialMesh", { MeshType = Enum.MeshType.Sphere }) },
++		Parent = part,
++	})
++	Build.Part({
++		Name = "Edge",
++		Size = Vector3.new(1.5, 1.1, 0.35),
++		CFrame = cf * CFrame.new(-0.2, 0.05, 0.1) * CFrame.Angles(math.rad(-15), 0, math.rad(22)),
++		Color = Color3.fromRGB(230, 190, 90),
++		Material = Enum.Material.Foil,
++		CanCollide = false,
++		CanQuery = false,
++		CanTouch = false,
++		Parent = part,
++	})
++	Build.Part({
++		Name = "Gem",
++		Shape = Enum.PartType.Ball,
++		Size = Vector3.one * 0.55,
++		CFrame = cf * CFrame.new(0.55, 0.15, 0.35),
++		Color = glint,
++		Material = Enum.Material.Neon,
++		CanCollide = false,
++		CanQuery = false,
++		CanTouch = false,
++		Parent = part,
++	})
++	local attach = Build.Instance("Attachment", { Name = "SparkleAttachment", Position = Vector3.new(0, 0.4, 0), Parent = part })
++	Build.Instance("ParticleEmitter", {
++		Name = "Sparkles",
++		Texture = "rbxasset://textures/particles/sparkles_main.dds",
++		Color = ColorSequence.new(glint),
++		LightEmission = 1,
++		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0) }),
++		Lifetime = NumberRange.new(0.8, 1.4),
++		Rate = 6,
++		Speed = NumberRange.new(0.5, 1.5),
++		SpreadAngle = Vector2.new(180, 180),
++		Parent = attach,
++	})
++end
++
+ spawnNode = function(zoneIndex: number)
+ 	local pos = services.WorldService.RandomPointInZone(zoneIndex, rng)
++	local yaw = rng:NextNumber(0, math.pi * 2)
+ 	local part = Build.Part({
+ 		Name = "Node",
+ 		Shape = Enum.PartType.Ball,
+ 		Size = Vector3.one * 2.2,
+-		CFrame = CFrame.new(pos),
++		CFrame = CFrame.new(pos) * CFrame.Angles(0, yaw, 0),
+ 		Color = nodeZoneColor(zoneIndex),
+ 		Material = Enum.Material.Neon,
++		Transparency = 1, -- invisible hitbox; the visible "buried relic" is decoration below
+ 		CanCollide = false,
+ 		Parent = nodeFolder,
+ 	})
+ 	part:SetAttribute("Zone", zoneIndex)
++	decorateNode(part, zoneIndex)
+ 	Build.Instance("PointLight", { Range = 14, Brightness = 2, Color = part.Color, Parent = part })
+ 	local prompt = Build.Prompt(part, "Salvage", "Glinting relic", Formulas.SalvageSeconds({}), "Salvage")
+ 	prompt.MaxActivationDistance = MAX_SALVAGE_DISTANCE
+diff --git a/src/server/Services/QuestService.luau b/src/server/Services/QuestService.luau
+index 796e991..725c47a 100644
+--- a/src/server/Services/QuestService.luau
++++ b/src/server/Services/QuestService.luau
+@@ -153,24 +153,9 @@ function QuestService.UnlockPremium(player: Player): boolean
+ 	return true
+ end
+ 
+--- Tier rewards (§15.5)
++-- Tier rewards (§15.5) live in shared Formulas so the Tide Pass UI can preview them
+ function QuestService.TierReward(tier: number, premium: boolean)
+-	if premium then
+-		if tier == TP.Tiers then
+-			return { Relic = "Mythic" }
+-		elseif tier % 10 == 0 then
+-			return { Relic = "Epic" }
+-		elseif tier % 5 == 0 then
+-			return { Boost = "MutationPotion", Seconds = 600 }
+-		end
+-		return { Pearls = 10 }
+-	end
+-	if tier % 10 == 0 then
+-		return { Relic = "Rare" }
+-	elseif tier % 5 == 0 then
+-		return { Pearls = 20 }
+-	end
+-	return { Coins = 500 * tier }
++	return Formulas.TierReward(tier, premium)
+ end
+ 
+ local function claimTier(player: Player, tier: number, premium: boolean)
+diff --git a/src/shared/Formulas.luau b/src/shared/Formulas.luau
+index 8261d45..0b6b23f 100644
+--- a/src/shared/Formulas.luau
++++ b/src/shared/Formulas.luau
+@@ -131,4 +131,24 @@ function Formulas.LevelXp(level: number): number
+ 	return math.floor(100 * level ^ 1.5)
+ end
+ 
++-- Tide Pass tier rewards (§15.5). Shared so the client can preview exactly what the server grants.
++function Formulas.TierReward(tier: number, premium: boolean)
++	if premium then
++		if tier == Economy.TidePass.Tiers then
++			return { Relic = "Mythic" }
++		elseif tier % 10 == 0 then
++			return { Relic = "Epic" }
++		elseif tier % 5 == 0 then
++			return { Boost = "MutationPotion", Seconds = 600 }
++		end
++		return { Pearls = 10 }
++	end
++	if tier % 10 == 0 then
++		return { Relic = "Rare" }
++	elseif tier % 5 == 0 then
++		return { Pearls = 20 }
++	end
++	return { Coins = 500 * tier }
++end
++
+ return Formulas
+diff --git a/src/shared/Net.luau b/src/shared/Net.luau
+index 1ee20ae..b381da5 100644
+--- a/src/shared/Net.luau
++++ b/src/shared/Net.luau
+@@ -62,6 +62,7 @@ local EVENTS = {
+ 	"Offer",
+ 	"Leaderboards",
+ 	"CarryChanged",
++	"CoinBurst", -- (amount, worldPosition?, caption?): coin pop-up + fly-to-HUD effect
+ }
+ 
+ local UNRELIABLE = {
+-- 
+2.43.0
+
