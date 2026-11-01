@@ -80,17 +80,7 @@ local RAIL_ITEMS = {
 	{ "Settings", "SETTINGS" },
 }
 
-local RAIL_COLORS = {
-	Shop = Color3.fromRGB(245, 192, 74),
-	Bag = Color3.fromRGB(63, 214, 230),
-	Upgrades = Color3.fromRGB(255, 150, 70),
-	Codex = Color3.fromRGB(180, 140, 255),
-	Quests = Color3.fromRGB(123, 227, 160),
-	Rebirth = Color3.fromRGB(90, 200, 255),
-	Leaderboards = Color3.fromRGB(245, 192, 74),
-	Players = Color3.fromRGB(255, 130, 180),
-	Settings = Color3.fromRGB(169, 189, 214),
-}
+local RAIL_COLORS = Icons.Colors -- shared with the window title bands
 local RAIL_CELL = Vector2.new(60, 62) -- button 60×58 + 4 px lip
 
 -- Chunky game tile: dark face with a coloured icon (gold face for SHOP), pressable lip

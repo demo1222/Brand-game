@@ -1,6 +1,6 @@
 -- UIController: root ScreenGuis, window manager (one window at a time), toasts and banners.
--- Windows get a dim backdrop (tap outside to close), a header with an icon badge and a display
--- font, and a pop-in animation (UI/Visual Overhaul Plan, Phase 1).
+-- Windows get a dim backdrop (tap outside to close), a coloured title band with an outlined
+-- title and a red close button, a thick outline, and a pop-in animation.
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -78,21 +78,17 @@ function UIController.Init()
 	backdrop.Activated:Connect(function()
 		UIController.Close()
 	end)
-	toastList = New(
-		"Frame",
-		{
-			Name = "Toasts",
-			BackgroundTransparency = 1,
-			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.new(0.5, 0, 0, 100),
-			Size = UDim2.new(0.9, 0, 0, 300),
-			Parent = UIController.Overlay,
-		},
-		{
-			Kit.List(6, false, Enum.HorizontalAlignment.Center),
-			New("UISizeConstraint", { MaxSize = Vector2.new(440, 300) }),
-		}
-	)
+	toastList = New("Frame", {
+		Name = "Toasts",
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 100),
+		Size = UDim2.new(0.9, 0, 0, 300),
+		Parent = UIController.Overlay,
+	}, {
+		Kit.List(6, false, Enum.HorizontalAlignment.Center),
+		New("UISizeConstraint", { MaxSize = Vector2.new(440, 300) }),
+	})
 	bannerFrame = New("Frame", {
 		Name = "Banner",
 		BackgroundTransparency = 1,
@@ -118,40 +114,111 @@ function UIController.RegisterWindow(name: string, title: string, build: (Frame)
 	New("UISizeConstraint", { MaxSize = Vector2.new(820, 580), Parent = frame })
 	local stroke = frame:FindFirstChildOfClass("UIStroke")
 	if stroke then
-		stroke.Color = accent
-		stroke.Transparency = 0.55
+		stroke.Color = T.Outline
+		stroke.Thickness = 4
+		stroke.Transparency = 0
 	end
+	-- Inner rim in the window colour, just inside the dark outline
+	New("Frame", {
+		Name = "Rim",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(2, 2),
+		Size = UDim2.new(1, -4, 1, -4),
+		Parent = frame,
+	}, { Kit.Corner(18), Kit.Stroke(accent, 3, 0.15) })
 
-	-- Header: drawn icon, display title, square close button (UI design "Bag & Dock window")
+	-- Title band: a solid strip in the window colour across the top (rounded top corners;
+	-- a filler frame squares off its bottom edge), with an outlined title and a red close
+	local band = New("Frame", {
+		Name = "TitleBand",
+		BackgroundColor3 = accent,
+		Size = UDim2.new(1, 0, 0, 62),
+		ZIndex = 2,
+		Parent = frame,
+	}, {
+		Kit.Corner(20),
+		New(
+			"UIGradient",
+			{ Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(200, 200, 200)) }
+		),
+	})
+	New("Frame", {
+		Name = "Square",
+		BackgroundColor3 = accent,
+		BorderSizePixel = 0,
+		Position = UDim2.new(0, 0, 1, -22),
+		Size = UDim2.new(1, 0, 0, 22),
+		ZIndex = 2,
+		Parent = band,
+	}, {
+		New("UIGradient", {
+			Rotation = 90,
+			Color = ColorSequence.new(Color3.fromRGB(215, 215, 215), Color3.fromRGB(200, 200, 200)),
+		}),
+	})
+	New("Frame", {
+		Name = "Edge",
+		BackgroundColor3 = Kit.Darken(accent, 0.55),
+		BorderSizePixel = 0,
+		Position = UDim2.new(0, 0, 1, 0),
+		Size = UDim2.new(1, 0, 0, 5),
+		ZIndex = 2,
+		Parent = band,
+	})
 	local header = New("Frame", {
 		Name = "Header",
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(20, 16),
-		Size = UDim2.new(1, -40, 0, 44),
+		Position = UDim2.fromOffset(16, 9),
+		Size = UDim2.new(1, -28, 0, 44),
+		ZIndex = 3,
 		Parent = frame,
 	})
-	Icon.new(Icons.Get(name), 28, accent, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0), Parent = header })
+	local iconChip = New("Frame", {
+		BackgroundColor3 = Kit.Darken(accent, 0.6),
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 0, 0.5, 0),
+		Size = UDim2.fromOffset(42, 42),
+		ZIndex = 3,
+		Parent = header,
+	}, { Kit.Corner(12), Kit.Stroke(T.Outline, 2, 0) })
+	Icon.new(Icons.Get(name), 28, Kit.Lighten(accent, 0.25), {
+		Weight = 2.6,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		ZIndex = 4,
+		Parent = iconChip,
+	})
 	Kit.Title({
 		Text = title,
-		TextSize = 26,
-		Position = UDim2.fromOffset(40, 0),
-		Size = UDim2.new(1, -100, 1, 0),
+		TextSize = 30,
+		TextColor3 = Color3.new(1, 1, 1),
+		Position = UDim2.fromOffset(54, 0),
+		Size = UDim2.new(1, -110, 1, 0),
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
+		ZIndex = 4,
 		Parent = header,
 	})
-	local close = New("TextButton", {
-		Name = "Close",
-		Text = "",
-		AutoButtonColor = false,
-		BackgroundColor3 = T.PanelLight,
+	local closeHolder, close = Kit.GameButton(T.Bad, Vector2.new(46, 42), {
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, 0, 0.5, 0),
-		Size = UDim2.fromOffset(44, 44),
+		Position = UDim2.new(1, 0, 0.5, -2),
+		ZIndex = 4,
 		Parent = header,
-	}, { Kit.Corner(12), Kit.Stroke(T.Text, 1, 0.8) })
-	Icon.new("close", 18, T.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Parent = close })
-	Kit.Juice(close)
+	})
+	for _, d in closeHolder:GetDescendants() do
+		if d:IsA("GuiObject") then
+			d.ZIndex += 3
+		elseif d:IsA("UIStroke") then
+			d.Color, d.Thickness, d.Transparency = T.Outline, 2, 0
+		end
+	end
+	Icon.new("close", 20, Color3.new(1, 1, 1), {
+		Weight = 3.2,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		ZIndex = 8,
+		Parent = close,
+	})
 	close.Activated:Connect(function()
 		UIController.Close()
 	end)
@@ -159,8 +226,8 @@ function UIController.RegisterWindow(name: string, title: string, build: (Frame)
 	local body = New("Frame", {
 		Name = "Body",
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(20, 72),
-		Size = UDim2.new(1, -40, 1, -90),
+		Position = UDim2.fromOffset(18, 80),
+		Size = UDim2.new(1, -36, 1, -96),
 		Parent = frame,
 	})
 	build(body)
@@ -310,7 +377,12 @@ function UIController.Banner(text: string, rarity: string?)
 		Kit.Round(),
 		Kit.Stroke(color, 2, 0),
 		New("UITextSizeConstraint", { MaxTextSize = 22 }),
-		New("UIPadding", { PaddingLeft = UDim.new(0, 18), PaddingRight = UDim.new(0, 18), PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6) }),
+		New("UIPadding", {
+			PaddingLeft = UDim.new(0, 18),
+			PaddingRight = UDim.new(0, 18),
+			PaddingTop = UDim.new(0, 6),
+			PaddingBottom = UDim.new(0, 6),
+		}),
 	})
 	Kit.Shine(banner, 1.2)
 	Kit.Pop(banner)

@@ -25,19 +25,50 @@ Read this first, then `docs/UI_OVERHAUL_PLAN.md` (what was built, by phase) and
 - **No emoji anywhere.** Newer emoji render as empty boxes on Roblox. Draw icons with
   `UI/Icon` (vector primitives) or, later, uploaded images through `Icons.Images`.
 - The owner likes the procedural relic models and the new suits. Keep that quality bar.
-- "Claude Design" means the Artifact design canvas. Existing canvas:
-  https://claude.ai/artifact/MRRHqKZZeK878v1eSp7MaM (HUD on the dock, HUD while diving, Bag
-  window, Diver window, icon set). Update it, or start a new one, before big visual changes.
+- "Claude Design" means the Artifact design canvas. Canvases:
+  - https://claude.ai/artifact/MRRHqKZZeK878v1eSp7MaM (HUD on the dock, HUD while diving, Bag
+    window, Diver window, icon set: the older "instrument panel" look)
+  - https://claude.ai/artifact/6qAehNiFLfragFYkXfpUVb (phase 3.2 game-style windows: Upgrades,
+    Shop, Bag & Dock, Codex, Quests). Add the remaining windows here as artboards.
 
-## First task next session: redesign every modal from screenshots
+## First task next session: finish the modal redesign from screenshots
 
-The owner will send a screenshot of every window and modal: Shop, Bag & Dock, Upgrades, Codex,
-Quests & Tide Pass, Rebirth, Leaderboards, Friends, Trade, Settings, Diver, the reveal card,
-offers and the death, robbed and offline popups. For each one:
+Done in phase 3.2: Shop, Bag & Dock, Upgrades, Codex, Quests & Tide Pass (see below).
+Still to do, as the owner sends screenshots (they can attach 5 per message): Rebirth,
+Leaderboards, Friends (Players), Trade, Settings, Diver, the reveal card, offers and the
+death, robbed and offline popups (`OfferController`). For each one:
 
 1. Say what's wrong: hierarchy, density, "website-ness", unclear actions, broken icons.
 2. Propose the game-like version on the design canvas first (one artboard per screen).
 3. Implement it in Luau, keeping the window API (`UIController.RegisterWindow`).
+
+## Kit v4 (phase 3.2): the game-UI building blocks
+
+Use these instead of flat cards and thin outlines:
+
+- `T.Outline` (near-black) is the outline colour for every slab, button, bar and title.
+  `T.Slab` is the default raised tile colour.
+- `Kit.GameCard(color, props, onClick?)` returns `container, face`. It's a raised slab with a
+  dark lip, sized by UDim2 so it works in grids and lists. With `onClick`, the whole card is
+  the button and presses down onto its lip. Use it for anything the player taps: upgrades,
+  shop items, quest rows.
+- `Kit.PricePlate(text, color, icon?, props)` is the chunky price strip inside a GameCard. It
+  is a label, not a button: the card is the button.
+- `Kit.Button` now has a bevelled bottom lip (`Kit.Bevel`), a 2 px outline and outlined light
+  text. Its bottom `UIPadding` lifts the text, so children are laid out in a slightly
+  shorter box.
+- `Kit.Title` outlines light text with a contextual `UIStroke`. Pass `Outline = false` to
+  skip it. Never add a second `UIStroke` to the same object: only one is drawn, so the border
+  stroke wins. Light text on buttons and plates uses `TextStroke*` instead.
+- `Kit.Tabs`: a dark tray of raised tabs. `Kit.Card`: 2 px dark outline. `Kit.Header`: outlined
+  Fredoka caps in the section colour. `Kit.Bar`: outlined, glossy fill.
+- Window chrome (`UIController.RegisterWindow`): a title band in the window's colour
+  (`Icons.Colors`, shared with the HUD rail), an outlined title, a red pressable close button,
+  a thick dark outline and an inner rim in the window colour.
+- Grids that should fill the width use `fitGrid` in MenuController (Bag, Codex).
+- Windows that refresh on `Coins` (+N/s, every second) must not rebuild unless something
+  visible changed. Use a signature, as `renderUpgrades` and `renderBag` do. Otherwise a card
+  is replaced under the player's finger and the tap is lost.
 
 ## Current state (end of the previous session)
 
@@ -69,10 +100,31 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
     Upgrades track "Diving Board" (+15 m per level, 20 m → 170 m). The board skin goes wood →
     brass → gold with level.
   - Preview tooling in `tools/preview` (see below), and this document.
+- **Phase 3.2** (latest patch, on top of `8198032` "phase 3.1"):
+  - Kit v4 and the new window chrome (above). Every window picks up the chunkier look.
+  - **Upgrades fixed and rebuilt.** It crashed after the zone pips: it indexed a `TextLabel`
+    that drawn icons don't have. So only the suit card showed, and its tiny "customise"
+    button was the only thing to press. Now there is a suit hero card (tap to buy the next
+    suit, plus a labelled Customize button), then one whole-card button per stat in three
+    sections (Dive gear, Dock, Dock defense). Each card shows the level, a level bar, the
+    effect now → next (e.g. "Dive time 78s → 84s") and a green price plate when affordable.
+    The Laser Gate "Activate" card sits in Dock defense. Rebuilds only on a visible change.
+  - Shop: a two-line VIP banner (the old one overlapped its text), seven colour-coded tabs
+    that fit without scrolling, and whole-card buy tiles with price plates.
+  - Bag & Dock: no gap beside the Sort button, a proper empty state (the old one was squashed
+    into a 112 px grid cell), a detail placeholder with an icon, and a grid that fills the
+    width.
+  - Codex: a zone progress strip (count, wide bar, "100% = +5% luck" pill) and a grid that
+    fills the width.
+  - Quests: whole-row claim cards. The right side is CLAIM! (pulsing), DONE, or a percent
+    readout instead of a grey "In progress" button. Login tiles show CLAIM! on today's tile,
+    and claimed tiles use the drawn check icon instead of a check glyph.
+  - StyLua reformatted the four controllers it touched (HUD, Menu, Shop, UI), which were not
+    StyLua-clean before.
 
 ## Still to do (priority order)
 
-1. **Modal redesign** from the owner's screenshots (above).
+1. **Modal redesign** for the remaining windows, from the owner's screenshots (above).
 2. **Game-like pass on everything else:** Kit v3 is still fairly "flat web" (thin hairline
    panels, small text). Restyle the remaining pieces with the same language as the rail:
    - panels with thicker borders, a darker inner rim and a title plate

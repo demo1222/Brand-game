@@ -119,16 +119,17 @@ function Icons.Track(trackId: string): string
 	return Icons.Images["Track_" .. trackId] or Icons.Names["Track_" .. trackId] or "upgrade"
 end
 
--- Accent colours per menu key (window header hairlines, HUD rail)
+-- Colour per menu key: the HUD rail tile and the window's title band share it, so each
+-- window is recognisable at a glance (colour-coded headers)
 Icons.Colors = {
 	Shop = Color3.fromRGB(245, 192, 74),
 	Bag = Color3.fromRGB(63, 214, 230),
-	Upgrades = Color3.fromRGB(63, 214, 230),
-	Codex = Color3.fromRGB(63, 214, 230),
-	Quests = Color3.fromRGB(63, 214, 230),
-	Rebirth = Color3.fromRGB(63, 214, 230),
+	Upgrades = Color3.fromRGB(255, 150, 70),
+	Codex = Color3.fromRGB(180, 140, 255),
+	Quests = Color3.fromRGB(123, 227, 160),
+	Rebirth = Color3.fromRGB(90, 200, 255),
 	Leaderboards = Color3.fromRGB(245, 192, 74),
-	Players = Color3.fromRGB(63, 214, 230),
+	Players = Color3.fromRGB(255, 130, 180),
 	Settings = Color3.fromRGB(169, 189, 214),
 	Trade = Color3.fromRGB(245, 192, 74),
 	Diver = Color3.fromRGB(63, 214, 230),
