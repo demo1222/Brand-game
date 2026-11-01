@@ -1,0 +1,50 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{background:#08101e;margin:0;font-family:sans-serif;color:#eaf4ff}
+#g{display:grid;grid-template-columns:repeat(8,130px);gap:6px;padding:8px}
+.c{background:linear-gradient(#22385a,#0c1628);border-radius:12px;text-align:center;font-size:11px;padding-bottom:4px}
+img{width:130px;height:130px;display:block}
+</style></head><body><div id="g"></div>
+<script src="node_modules/three/build/three.min.js"></script>
+<script>
+function wedge(w,h,d){const g=new THREE.BufferGeometry();
+const A=[-d/2,-h/2],B=[d/2,-h/2],C=[d/2,h/2];const v=[];const x0=-w/2,x1=w/2;
+function tri(a,b,c){v.push(...a,...b,...c)}
+const P=(x,p)=>[x,p[1],p[0]];
+tri(P(x0,A),P(x0,C),P(x0,B));tri(P(x1,A),P(x1,B),P(x1,C));
+[[A,B],[B,C],[C,A]].forEach(([p,q])=>{tri(P(x0,p),P(x0,q),P(x1,q));tri(P(x0,p),P(x1,q),P(x1,p))});
+g.setAttribute('position',new THREE.Float32BufferAttribute(v,3));g.computeVertexNormals();return g}
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true,alpha:true});
+renderer.setSize(130,130);
+fetch(new URLSearchParams(location.search).get('data') || 'out/relics.json').then(r=>r.json()).then(models=>{
+ for(const m of models){
+  const scene=new THREE.Scene();
+  scene.add(new THREE.AmbientLight(new THREE.Color(150/255,155/255,170/255),1.4));
+  const dl=new THREE.DirectionalLight(0xfff8f0,1.6);dl.position.set(0.6,1,0.8);scene.add(dl);
+  const box=new THREE.Box3();
+  for(const p of m.parts){
+   let g;const [sx,sy,sz]=p.s;
+   if(p.k==='Block')g=new THREE.BoxGeometry(sx,sy,sz);
+   else if(p.k==='Ball')g=new THREE.SphereGeometry(Math.min(sx,sy,sz)/2,20,14);
+   else if(p.k==='Ellip'){g=new THREE.SphereGeometry(0.5,20,14);g.scale(sx,sy,sz)}
+   else if(p.k==='Cylinder'){const d=Math.min(sy,sz);g=new THREE.CylinderGeometry(d/2,d/2,sx,20);g.rotateZ(Math.PI/2)}
+   else if(p.k==='WedgePart')g=wedge(sx,sy,sz);
+   else g=new THREE.BoxGeometry(sx,sy,sz);
+   const col=new THREE.Color(p.c[0],p.c[1],p.c[2]);
+   const mat=p.m==='Neon'?new THREE.MeshBasicMaterial({color:col}):new THREE.MeshLambertMaterial({color:col});
+   if(p.t>0){mat.transparent=true;mat.opacity=1-p.t}
+   const mesh=new THREE.Mesh(g,mat);mesh.position.set(...p.p);mesh.rotation.set(p.r[0],p.r[1],p.r[2],'XYZ');
+   scene.add(mesh);mesh.updateMatrixWorld();box.expandByObject(mesh);
+  }
+  const size=new THREE.Vector3();box.getSize(size);const radius=Math.max(size.length()/2,0.5);
+  const fov=32,dist=radius/Math.tan(fov/2*Math.PI/180)*1.1;
+  const cam=new THREE.PerspectiveCamera(fov,1,0.1,100);
+  const yaw=28*Math.PI/180,pitch=14*Math.PI/180;
+  cam.position.set(Math.sin(yaw)*Math.cos(pitch)*dist,Math.sin(pitch)*dist,Math.cos(yaw)*Math.cos(pitch)*dist);cam.lookAt(0,0,0);
+  renderer.render(scene,cam);
+  const d=document.createElement('div');d.className='c';
+  const img=new Image();img.src=renderer.domElement.toDataURL();d.appendChild(img);
+  d.appendChild(document.createTextNode(m.id));document.getElementById('g').appendChild(d);
+ }
+ document.title='done';
+});
+</script></body></html>

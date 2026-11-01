@@ -13,6 +13,7 @@ local Upgrades = {
 		{ Id = "Gate", Name = "Laser Gate", Max = 5, Base = 2000, Growth = 2, Desc = "Unlock / +10s gate duration" },
 		{ Id = "Crab", Name = "Guard Crab", Max = 5, Base = 2000, Growth = 2, Desc = "Slows intruders (6% per level)" },
 		{ Id = "Alarm", Name = "Alarm Range", Max = 5, Base = 2000, Growth = 2, Desc = "+10 studs alert range" },
+		{ Id = "Board", Name = "Diving Board", Max = 10, Base = 300, Growth = 1.7, Desc = "+15m launch depth off your dock's board" },
 	},
 	ById = {},
 
@@ -45,6 +46,8 @@ local Upgrades = {
 		OfflineCapHours = 4,
 		OfflineCapPerLevelHours = 0.8,
 		GateSeconds = 60,
+		BoardDepth = 20, -- metres a jump off the diving board plunges you to
+		BoardDepthPerLevel = 15,
 		GateCooldown = 300,
 	},
 }

@@ -26,8 +26,22 @@ local backdrop: TextButton
 UIController.Root = nil :: ScreenGui?
 UIController.Overlay = nil :: ScreenGui?
 
+-- Old place-file GUI ("MainGui" stats panel with a ✨ toggle) sat on top of the HUD rail and
+-- swallowed clicks on UPGRADE. The game's UI is built in code; remove the leftover.
+local LEGACY_GUIS = { MainGui = true }
+
 function UIController.Init()
 	local pg = player:WaitForChild("PlayerGui")
+	for _, g in pg:GetChildren() do
+		if LEGACY_GUIS[g.Name] then
+			g:Destroy()
+		end
+	end
+	pg.ChildAdded:Connect(function(g)
+		if LEGACY_GUIS[g.Name] then
+			task.defer(g.Destroy, g)
+		end
+	end)
 	UIController.Root = New("ScreenGui", {
 		Name = "AbyssHUD",
 		ResetOnSpawn = false,
@@ -173,7 +187,11 @@ function UIController.Open(name: string)
 	end
 	openWindow = name
 	if w.refresh then
-		w.refresh()
+		-- a render error must never stop a window from opening
+		local ok, err = pcall(w.refresh)
+		if not ok then
+			warn(`[UI] {name} refresh failed: {err}`)
+		end
 	end
 	w.frame.Visible = true
 	showBackdrop(true)
@@ -202,7 +220,10 @@ end
 
 function UIController.Refresh(name: string)
 	if openWindow == name and windows[name].refresh then
-		windows[name].refresh()
+		local ok, err = pcall(windows[name].refresh)
+		if not ok then
+			warn(`[UI] {name} refresh failed: {err}`)
+		end
 	end
 end
 

@@ -27,6 +27,9 @@ local velocity = Vector3.zero
 local knock = Vector3.zero
 local linVel: LinearVelocity? = nil
 local align: AlignOrientation? = nil
+-- Diving-board plunge: set when you jump off a board, consumed as you dive to `depth`
+local plunge: { depth: number, dir: Vector3, untilT: number }? = nil
+local PLUNGE_SPEED = 55
 
 SwimController.Depth = 0
 
@@ -67,6 +70,58 @@ local function setup(char: Model)
 	linVel, align = lv, ao
 	swimming = false
 	velocity = Vector3.zero
+	plunge = nil
+
+	-- Jumping while standing on a diving board launches you out to sea
+	local hum = char:WaitForChild("Humanoid", 10) :: Humanoid?
+	if hum then
+		local params = RaycastParams.new()
+		params.FilterType = Enum.RaycastFilterType.Exclude
+		params.FilterDescendantsInstances = { char }
+		hum.StateChanged:Connect(function(_, new)
+			if new ~= Enum.HumanoidStateType.Jumping then
+				return
+			end
+			local hit = Workspace:Raycast(hrp.Position, Vector3.new(0, -6, 0), params)
+			local board = hit and hit.Instance
+			if board and board:GetAttribute("DiveBoard") then
+				local look = board.CFrame.LookVector
+				local dir = Vector3.new(look.X, 0, look.Z).Unit
+				plunge = { depth = char:GetAttribute("DiveBoardDepth") or 20, dir = dir, untilT = os.clock() + 8 }
+				task.defer(function()
+					hrp.AssemblyLinearVelocity = dir * 30 + Vector3.new(0, 44, 0)
+				end)
+			end
+		end)
+	end
+end
+
+-- Local splash where you enter the water
+local function splash(pos: Vector3)
+	local p = Instance.new("Part")
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Transparency = 1
+	p.Size = Vector3.new(4, 0.2, 4)
+	p.Position = Vector3.new(pos.X, SURFACE, pos.Z)
+	p.Parent = Workspace
+	local pe = Instance.new("ParticleEmitter")
+	pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	pe.Color = ColorSequence.new(Color3.fromRGB(220, 245, 255))
+	pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.8), NumberSequenceKeypoint.new(1, 0.1) })
+	pe.Lifetime = NumberRange.new(0.6, 1.2)
+	pe.Speed = NumberRange.new(14, 24)
+	pe.SpreadAngle = Vector2.new(35, 35)
+	pe.Acceleration = Vector3.new(0, -40, 0)
+	pe.EmissionDirection = Enum.NormalId.Top
+	pe.Rate = 0
+	pe.Parent = p
+	pe:Emit(45)
+	task.delay(2, function()
+		p:Destroy()
+	end)
 end
 
 local function keyDown(...: Enum.KeyCode): boolean
@@ -95,6 +150,10 @@ local function step(dt: number)
 		hum.PlatformStand = swimming
 		linVel.MaxForce = if swimming then 1e6 else 0
 		align.MaxTorque = if swimming then 1e6 else 0
+		if swimming and plunge then
+			splash(hrp.Position)
+			velocity = plunge.dir * 10 + Vector3.new(0, -PLUNGE_SPEED, 0)
+		end
 		if not swimming then
 			-- pop out of the water so you can climb onto a dock
 			hrp.AssemblyLinearVelocity = Vector3.new(velocity.X, math.max(velocity.Y, 0) + 62, velocity.Z)
@@ -140,8 +199,18 @@ local function step(dt: number)
 	end
 
 	local target = dir * speed
+	-- Diving-board plunge: head-first down to the board's depth, then normal swimming
+	local plunging = false
+	if plunge then
+		if depth < plunge.depth and os.clock() < plunge.untilT then
+			target = plunge.dir * 8 + Vector3.new(0, -PLUNGE_SPEED, 0)
+			plunging = true
+		else
+			plunge = nil
+		end
+	end
 	-- gentle sink when idle, stronger stop near the seabed
-	if dir.Magnitude < 0.05 then
+	if dir.Magnitude < 0.05 and not plunging then
 		target = Vector3.new(0, -1.5, 0)
 	end
 	velocity = velocity:Lerp(target, math.clamp(dt * 6, 0, 1)) + knock

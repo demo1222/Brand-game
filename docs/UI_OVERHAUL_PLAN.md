@@ -115,6 +115,19 @@ diving, Bag & Dock window, Diver window, icon set).
   avoidance (raycast slide), anglerfish lures, pressure-crack geysers, whirlpools, Event Tokens
   with an Event shop tab, and the opening camera fly-over for new players.
 
+## Phase 3.1 — Fixes from the first Studio screenshots (done)
+
+- Removed the place-file "MainGui" whose ✨ toggle covered the UPGRADE rail button, and the
+  orphan `ToggleController.client.lua`. Window refresh errors can't block opening any more.
+- The HUD rail is chunky `Kit.GameButton` tiles with colour-coded thick icons. It picks 1–3
+  columns from the free height, so it never overflows. Action buttons are solid with a
+  pressable lip. The flare and home icons are redrawn.
+- Wetsuit body: a dark base per tier plus trim pieces instead of a flat recolour.
+- Diving board on every dock: jump to launch and plunge to your board depth. New "Diving
+  Board" upgrade track (+15 m per level). The board skin goes wood → brass → gold.
+- Next: the game-like redesign of every modal from the owner's screenshots. See
+  `docs/NEXT_SESSION.md`.
+
 ## Phase 4 — Real art pass
 
 - Upload an icon set (fill `Icons.Images`) and modelled relic meshes (only `RelicArt.Build`

@@ -529,15 +529,39 @@ local function buildDock(index: number)
 		Material = Enum.Material.WoodPlanks,
 		Parent = model,
 	})
-	-- Dive ramp on the ocean side
-	Build.Instance("WedgePart", {
+	-- Diving board on the ocean side: jump off it to launch and plunge (SwimController).
+	-- "DiveRamp" is the board you stand on; its LookVector points out to sea. The owner's
+	-- Diving Board upgrade level re-skins it (DockService.RefreshDock).
+	local boardCf = cf * CFrame.new(0, 0.6, -size.Z / 2 - 6) * CFrame.Angles(math.rad(8), 0, 0)
+	local board = Build.Part({
 		Name = "DiveRamp",
-		Anchored = true,
-		Size = Vector3.new(10, 3, 10),
-		CFrame = cf * CFrame.new(0, 0.5, -size.Z / 2 - 5) * CFrame.Angles(0, math.rad(180), 0),
-		Color = Color3.fromRGB(60, 160, 220),
+		Size = Vector3.new(5, 0.6, 14),
+		CFrame = boardCf,
+		Color = Color3.fromRGB(120, 92, 64),
+		Material = Enum.Material.WoodPlanks,
 		Parent = model,
 	})
+	board:SetAttribute("DiveBoard", true)
+	Build.Part({
+		Name = "BoardTrim",
+		Size = Vector3.new(5.2, 0.25, 1.2),
+		CFrame = boardCf * CFrame.new(0, 0.3, -6.4),
+		Color = Color3.fromRGB(63, 214, 230),
+		Material = Enum.Material.Neon,
+		CanCollide = false,
+		Parent = model,
+	})
+	for _, x in { -1.8, 1.8 } do
+		Build.Part({
+			Name = "BoardPost",
+			Size = Vector3.new(0.6, 6, 0.6),
+			CFrame = cf * CFrame.new(x, -2.4, -size.Z / 2 - 2),
+			Color = Color3.fromRGB(90, 70, 50),
+			Material = Enum.Material.Wood,
+			Parent = model,
+		})
+	end
+	Build.Billboard(board, "JUMP TO DIVE", UDim2.fromOffset(170, 34), Vector3.new(0, 3, -4), Color3.fromRGB(63, 214, 230)).MaxDistance = 40
 
 	-- Sign
 	local sign = Build.Part({
@@ -656,6 +680,7 @@ local function buildDock(index: number)
 		Sign = signGui.Label,
 		Gate = gate,
 		GatePrompt = gatePrompt,
+		Board = board,
 		SpawnCFrame = cf * CFrame.new(0, 4, size.Z / 2 - 4) * CFrame.Angles(0, math.rad(180), 0),
 		Owner = nil,
 	}

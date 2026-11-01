@@ -55,7 +55,17 @@ SuitArt.Tiers = {
 	},
 }
 
-SuitArt.Categories = { "Helmet", "Tank", "Fins", "Gear" }
+SuitArt.Categories = { "Helmet", "Tank", "Fins", "Gear", "Suit" }
+
+-- Wetsuit base colour per tier (the suit colour from Config/Upgrades becomes the accent trim)
+SuitArt.WetsuitBase = {
+	rgb(26, 26, 32), -- Basic: black neoprene, yellow trim
+	rgb(20, 30, 52), -- Neoprene: navy, blue trim
+	rgb(96, 76, 56), -- Pressure Mk I: brown canvas, brass trim
+	rgb(72, 76, 84), -- Pressure Mk II: grey canvas, steel trim
+	rgb(16, 17, 22), -- Abyssal Rig: abyss black, neon trim
+	rgb(42, 34, 20), -- Titan: dark bronze, gold trim
+}
 
 local GLASS = rgb(170, 225, 255)
 
@@ -515,6 +525,104 @@ end
 ------------------------------------------------------------------------------------------
 -- Outfit: wetsuit colours on/off without losing the player's own clothes
 ------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------
+-- Wetsuit detailing: trim pieces on a dark base, so the body reads as a suit, not a recolour
+------------------------------------------------------------------------------------------
+local function wetsuit(folder: Instance, char: Model, tier, base: Color3, trim: Color3)
+	local glow = tier.glow ~= nil
+	local trimColor = if glow then tier.glow else trim
+	local trimMat = if glow then "Neon" else "SmoothPlastic"
+	local dark = base:Lerp(rgb(0, 0, 0), 0.35)
+	local torso = first(char, "UpperTorso", "Torso")
+	if torso then
+		local w, h, d = torso.Size.X, torso.Size.Y, torso.Size.Z
+		-- side stripes down the front, chest band, back zipper
+		for _, x in { -1, 1 } do
+			piece(
+				folder,
+				torso,
+				"Block",
+				Vector3.new(w * 0.09, h * 0.98, 0.06),
+				cf(x * w * 0.36, 0, -d / 2 - 0.02),
+				trimColor,
+				trimMat
+			)
+		end
+		piece(folder, torso, "Block", Vector3.new(w * 1.01, h * 0.1, d * 1.02), cf(0, h * 0.3, 0), trimColor, trimMat)
+		piece(folder, torso, "Block", Vector3.new(0.08, h * 0.9, 0.05), cf(0, 0, d / 2 + 0.02), dark, "Metal")
+	end
+	local lower = first(char, "LowerTorso")
+	local beltOn = lower or first(char, "Torso")
+	if beltOn then
+		local w, d = beltOn.Size.X, beltOn.Size.Z
+		local y = if lower then 0 else -beltOn.Size.Y * 0.42
+		piece(folder, beltOn, "Block", Vector3.new(w * 1.04, 0.22, d * 1.06), cf(0, y, 0), rgb(30, 30, 34))
+		piece(
+			folder,
+			beltOn,
+			"Block",
+			Vector3.new(w * 0.22, 0.26, 0.06),
+			cf(0, y, -d * 0.53 - 0.01),
+			rgb(190, 190, 200),
+			"Metal"
+		)
+	end
+	for _, side in { "Left", "Right" } do
+		local x = if side == "Left" then -1 else 1
+		local upperArm = first(char, side .. "UpperArm", side .. " Arm")
+		if upperArm then
+			local s = upperArm.Size
+			piece(
+				folder,
+				upperArm,
+				"Block",
+				Vector3.new(s.X * 1.04, s.Y * 0.12, s.Z * 1.04),
+				cf(0, s.Y * (if char:FindFirstChild("UpperTorso") then 0.2 else 0.3), 0),
+				trimColor,
+				trimMat
+			)
+		end
+		local lowerArm = first(char, side .. "LowerArm")
+		if lowerArm then
+			local s = lowerArm.Size
+			piece(
+				folder,
+				lowerArm,
+				"Block",
+				Vector3.new(s.X * 1.05, s.Y * 0.14, s.Z * 1.05),
+				cf(0, -s.Y * 0.38, 0),
+				trimColor,
+				trimMat
+			)
+		end
+		local upperLeg = first(char, side .. "UpperLeg", side .. " Leg")
+		if upperLeg then
+			local s = upperLeg.Size
+			piece(
+				folder,
+				upperLeg,
+				"Block",
+				Vector3.new(0.06, s.Y * 0.95, s.Z * 0.22),
+				cf(x * (s.X / 2 + 0.02), 0, 0),
+				trimColor,
+				trimMat
+			)
+		end
+		local lowerLeg = first(char, side .. "LowerLeg")
+		if lowerLeg then
+			local s = lowerLeg.Size
+			piece(
+				folder,
+				lowerLeg,
+				"Block",
+				Vector3.new(s.X * 0.7, s.Y * 0.24, 0.12),
+				cf(0, s.Y * 0.32, -s.Z / 2 - 0.04),
+				dark
+			)
+		end
+	end
+end
+
 local function applyColors(char: Model, color: Color3?)
 	local store = char:FindFirstChild("StoredOutfit")
 	if color then
@@ -533,7 +641,8 @@ local function applyColors(char: Model, color: Color3?)
 				if part:GetAttribute("OrigColor") == nil then
 					part:SetAttribute("OrigColor", part.Color)
 				end
-				part.Color = color
+				local isExtremity = string.find(part.Name, "Hand") ~= nil or string.find(part.Name, "Foot") ~= nil
+				part.Color = if isExtremity then color:Lerp(Color3.new(0, 0, 0), 0.4) else color
 			end
 		end
 	else
@@ -612,7 +721,11 @@ function SuitArt.Apply(char: Model, suitIndex: number, suitColor: Color3, settin
 		gear(folders.Gear, char, tier, suitColor)
 	end
 	root.Parent = char
-	applyColors(char, if shown(settings, "SuitColors") then suitColor else nil)
+	local base = SuitArt.WetsuitBase[suitIndex] or SuitArt.WetsuitBase[1]
+	if shown(settings, "SuitColors") then
+		wetsuit(folders.Suit, char, tier, base, suitColor)
+	end
+	applyColors(char, if shown(settings, "SuitColors") then base else nil)
 	setAccessoriesHidden(char, shown(settings, "SuitHelmet") and tier.helmet ~= "mask")
 	return root
 end

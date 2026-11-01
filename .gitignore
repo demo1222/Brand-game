@@ -12,3 +12,8 @@ desktop.ini
 
 # Editor
 .vscode/settings.json
+
+# Preview tooling output (tools/preview)
+tools/preview/out/
+tools/preview/node_modules/
+tools/preview/package*.json

@@ -142,6 +142,12 @@ function DockService.RefreshDock(player: Player)
 		renderStand(stand, data.Vault[tostring(i)], i <= vaultCount, mult, true)
 	end
 	dock.GatePrompt.Enabled = (data.Upgrades.Gate or 0) > 0
+	-- Diving board skin follows the owner's Diving Board level: wood → brass → gold
+	local boardLvl = data.Upgrades.Board or 0
+	if dock.Board then
+		dock.Board.Color = if boardLvl >= 8 then Color3.fromRGB(245, 192, 74) elseif boardLvl >= 4 then Color3.fromRGB(200, 150, 80) else Color3.fromRGB(120, 92, 64)
+		dock.Board.Material = if boardLvl >= 4 then Enum.Material.Metal else Enum.Material.WoodPlanks
+	end
 	local name = if data.DockName ~= "" then data.DockName else `{player.DisplayName}'s Dock`
 	local vip = if services.MonetizationService.Owns(player, "VIP") then "[VIP] " else ""
 	dock.Sign.Text = `{vip}{name}\n+{NumberFormat.short(DockService.GetIncomePerSecond(player))}/s`
@@ -436,6 +442,10 @@ local function onRelease(player: Player, profile)
 			renderStand(stand, nil, false, 1, true)
 		end
 		dock.Sign.Text = "Empty Dock"
+		if dock.Board then
+			dock.Board.Color = Color3.fromRGB(120, 92, 64)
+			dock.Board.Material = Enum.Material.WoodPlanks
+		end
 		dock.PadLabel.Text = ""
 		dock.Gate.Transparency = 1
 		dock.GatePrompt.Enabled = false

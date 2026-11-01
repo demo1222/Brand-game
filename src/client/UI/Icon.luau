@@ -54,8 +54,22 @@ Icon.Specs = {
 	-- HUD
 	oxygen = { { "c", 9, 14, 4 }, { "c", 15.5, 7.5, 3 }, { "c", 17.5, 15.5, 2 } },
 	sonar = { { "C", 12, 12, 2 }, { "c", 12, 12, 6 }, { "c", 12, 12, 10 } },
-	flare = { { "r", 10, 9, 4, 11, 1 }, { "C", 12, 5.5, 2 } },
-	home = { { "l", 12, 19, 12, 6 }, { "l", 7, 11, 12, 6 }, { "l", 17, 11, 12, 6 }, { "l", 5, 21, 19, 21 } },
+	flare = {
+		{ "l", 7, 20, 14, 10 },
+		{ "l", 14, 10, 16, 4 },
+		{ "l", 14, 10, 19, 7 },
+		{ "l", 14, 10, 11, 5 },
+		{ "C", 15, 7, 1.6 },
+	},
+	home = {
+		{ "l", 12, 15, 12, 3 },
+		{ "l", 7, 8, 12, 3 },
+		{ "l", 17, 8, 12, 3 },
+		{ "l", 3, 19, 7, 17 },
+		{ "l", 7, 17, 12, 19 },
+		{ "l", 12, 19, 17, 17 },
+		{ "l", 17, 17, 21, 19 },
+	},
 	boost = { { "l", 4, 8, 14, 8 }, { "l", 7, 12, 20, 12 }, { "l", 4, 16, 14, 16 } },
 	up = { { "l", 6, 15, 12, 9 }, { "l", 12, 9, 18, 15 } },
 	down = { { "l", 6, 9, 12, 15 }, { "l", 12, 15, 18, 9 } },
@@ -189,12 +203,17 @@ function Icon.new(name: string, size: number, color: Color3, props): Frame
 	holder.Name = "Icon_" .. name
 	holder.BackgroundTransparency = 1
 	holder.Size = UDim2.fromOffset(size, size)
-	for k, v in props or {} do
-		(holder :: any)[k] = v
+	local weight = 2
+	for key, v in props or {} do
+		if key == "Weight" then
+			weight = v -- stroke width in grid units (default 2; 2.6 reads "chunkier" in the HUD)
+		else
+			(holder :: any)[key] = v
+		end
 	end
 	local z = holder.ZIndex + 1
 	local k = size / 24
-	local t = math.max(1, 2 * k)
+	local t = math.max(1, weight * k)
 	for _, prim in Icon.Specs[name] or {} do
 		local kind = prim[1]
 		if kind == "l" then

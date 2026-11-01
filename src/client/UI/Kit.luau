@@ -346,6 +346,47 @@ function Kit.Button(text: string, color: Color3?, onClick: (() -> ())?, props)
 	return b
 end
 
+-- Game-style button: a solid face over a darker "lip" that presses down on click (HUD rail,
+-- action buttons). Returns container (layout/position this), face (the TextButton).
+function Kit.GameButton(color: Color3, size: Vector2, props, round: boolean?)
+	local lip = 4
+	local container = New("Frame", {
+		Name = "GameButton",
+		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(size.X, size.Y + lip),
+	})
+	for k, v in props or {} do
+		(container :: any)[k] = v
+	end
+	local corner = if round then UDim.new(0.5, 0) else UDim.new(0, 14)
+	New("Frame", {
+		Name = "Lip",
+		BackgroundColor3 = Kit.Darken(color, 0.5),
+		Position = UDim2.fromOffset(0, lip),
+		Size = UDim2.fromOffset(size.X, size.Y),
+		Parent = container,
+	}, { New("UICorner", { CornerRadius = corner }) })
+	local face = New("TextButton", {
+		Name = "Face",
+		Text = "",
+		AutoButtonColor = false,
+		BackgroundColor3 = color,
+		Size = UDim2.fromOffset(size.X, size.Y),
+		ZIndex = 2,
+		Parent = container,
+	}, { New("UICorner", { CornerRadius = corner }), Kit.Stroke(Kit.Lighten(color, 0.35), 1, 0.6) })
+	local quick = TweenInfo.new(0.06, Enum.EasingStyle.Quad)
+	face.MouseButton1Down:Connect(function()
+		TweenService:Create(face, quick, { Position = UDim2.fromOffset(0, lip - 1) }):Play()
+	end)
+	local function release()
+		TweenService:Create(face, quick, { Position = UDim2.fromOffset(0, 0) }):Play()
+	end
+	face.MouseButton1Up:Connect(release)
+	face.MouseLeave:Connect(release)
+	return container, face
+end
+
 -- Small rounded tag that sizes to its text. props.Icon = drawn icon name.
 function Kit.Pill(text: string, color: Color3, props)
 	local p = {

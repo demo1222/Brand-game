@@ -31,6 +31,7 @@ function UpgradeService.Derived(player: Player)
 	return {
 		MaxOxygen = Formulas.MaxOxygen(data, passes),
 		SwimSpeed = Formulas.SwimSpeed(data, passes),
+		DiveBoardDepth = Formulas.DiveBoardDepth(data),
 		BagSize = Formulas.BagSize(data, passes),
 		StandCount = Formulas.StandCount(data, passes),
 		VaultCount = Formulas.VaultCount(data, passes),
@@ -58,6 +59,7 @@ function UpgradeService.PushDerived(player: Player)
 	if char then
 		char:SetAttribute("SwimSpeed", d.SwimSpeed)
 		char:SetAttribute("SalvageSeconds", d.SalvageSeconds)
+		char:SetAttribute("DiveBoardDepth", d.DiveBoardDepth)
 	end
 end
 

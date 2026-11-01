@@ -80,22 +80,34 @@ local RAIL_ITEMS = {
 	{ "Settings", "SETTINGS" },
 }
 
+local RAIL_COLORS = {
+	Shop = Color3.fromRGB(245, 192, 74),
+	Bag = Color3.fromRGB(63, 214, 230),
+	Upgrades = Color3.fromRGB(255, 150, 70),
+	Codex = Color3.fromRGB(180, 140, 255),
+	Quests = Color3.fromRGB(123, 227, 160),
+	Rebirth = Color3.fromRGB(90, 200, 255),
+	Leaderboards = Color3.fromRGB(245, 192, 74),
+	Players = Color3.fromRGB(255, 130, 180),
+	Settings = Color3.fromRGB(169, 189, 214),
+}
+local RAIL_CELL = Vector2.new(60, 62) -- button 60×58 + 4 px lip
+
+-- Chunky game tile: dark face with a coloured icon (gold face for SHOP), pressable lip
 local function railButton(parent: Instance, key: string, label: string, order: number)
 	local isShop = key == "Shop"
-	local b = New("TextButton", {
+	local accent = RAIL_COLORS[key] or T.Accent
+	local container, face = Kit.GameButton(if isShop then T.Gold else T.PanelLight, Vector2.new(60, 58), {
 		Name = key,
-		Text = "",
-		AutoButtonColor = false,
-		BackgroundColor3 = if isShop then T.Gold else T.PanelLight,
-		BackgroundTransparency = if isShop then 0 else 1,
 		LayoutOrder = order,
 		Parent = parent,
-	}, { Kit.Corner(14) })
-	local fg = if isShop then T.DarkText else T.Accent
-	Icon.new(Icons.Get(key), 24, if key == "Settings" then T.Muted else fg, {
+	})
+	Icon.new(Icons.Get(key), 26, if isShop then T.DarkText else accent, {
+		Weight = 2.6,
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 8),
-		Parent = b,
+		ZIndex = 3,
+		Parent = face,
 	})
 	Kit.Label({
 		Text = label,
@@ -104,28 +116,19 @@ local function railButton(parent: Instance, key: string, label: string, order: n
 		TextColor3 = if isShop then T.DarkText else T.Text,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -6),
+		Position = UDim2.new(0.5, 0, 1, -5),
 		Size = UDim2.new(1, 0, 0, 12),
 		TextWrapped = false,
-		Parent = b,
+		ZIndex = 3,
+		Parent = face,
 	})
-	b.MouseEnter:Connect(function()
-		if not isShop then
-			b.BackgroundTransparency = 0.3
-		end
-	end)
-	b.MouseLeave:Connect(function()
-		if not isShop then
-			b.BackgroundTransparency = 1
-		end
-	end)
-	Kit.Juice(b)
-	b.Activated:Connect(function()
+	face.Activated:Connect(function()
 		controllers.UIController.Toggle(key)
 	end)
-	return b
+	return face
 end
 
+-- Round game button: solid colour, white chunky icon, pressable lip
 local function roundAction(
 	parent: Instance,
 	iconName: string,
@@ -136,19 +139,15 @@ local function roundAction(
 	onDown,
 	onUp
 )
-	local b = New("TextButton", {
-		Text = "",
-		AutoButtonColor = false,
-		BackgroundColor3 = T.Panel,
-		BackgroundTransparency = GLASS,
-		Size = UDim2.fromOffset(size, size),
-		Position = pos,
-		Parent = parent,
-	}, { Kit.Round(), Kit.Stroke(color, 2, 0) })
-	local iconSize = math.floor(size * 0.36)
-	Icon.new(iconName, iconSize, color, {
+	local container, b =
+		Kit.GameButton(Kit.Darken(color, 0.12), Vector2.new(size, size), { Position = pos, Parent = parent }, true)
+	local iconSize = math.floor(size * 0.4)
+	local fg = Kit.TextOn(color)
+	Icon.new(iconName, iconSize, fg, {
+		Weight = 2.6,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.new(0.5, 0, 0.5, if label ~= "" then -6 else 0),
+		ZIndex = 3,
 		Parent = b,
 	})
 	local text = nil
@@ -157,22 +156,22 @@ local function roundAction(
 			Text = label,
 			Font = T.Bold,
 			TextSize = 10,
-			TextColor3 = color,
+			TextColor3 = fg,
 			TextXAlignment = Enum.TextXAlignment.Center,
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.new(0.5, 0, 0.5, iconSize / 2 + 4),
+			Position = UDim2.new(0.5, 0, 0.5, iconSize / 2 + 5),
 			Size = UDim2.new(1, -6, 0, 12),
 			TextWrapped = false,
+			ZIndex = 3,
 			Parent = b,
 		})
 	end
-	Kit.Juice(b)
 	b.MouseButton1Down:Connect(onDown)
 	if onUp then
 		b.MouseButton1Up:Connect(onUp)
 		b.MouseLeave:Connect(onUp)
 	end
-	return b, text
+	return container, text
 end
 
 ------------------------------------------------------------------------------------------
@@ -188,11 +187,24 @@ local function updateScale()
 	for _, sc in scales do
 		sc.Scale = s
 	end
-	-- Two-column rail on short screens so it never runs into the bottom-left cluster
+	-- The rail sits between the currency capsules and the bottom-left cluster; pick the fewest
+	-- columns that fit that gap at the current scale, so it never overflows.
 	if refs.railGrid then
-		local twoCol = v.Y < 560
-		refs.railGrid.FillDirectionMaxCells = if twoCol then 2 else 1
-		refs.rail.Size = if twoCol then UDim2.fromOffset(136, 0) else UDim2.fromOffset(72, 0)
+		local railTop = 16 + 104 * s + 12
+		local bottomTop = v.Y - 20 - 150 * s
+		local available = (bottomTop - railTop - 8) / s
+		local n = #RAIL_ITEMS
+		local cols = 3
+		for c = 1, 3 do
+			local rows = math.ceil(n / c)
+			if rows * RAIL_CELL.Y + (rows - 1) * 6 <= available then
+				cols = c
+				break
+			end
+		end
+		refs.railGrid.FillDirectionMaxCells = cols
+		refs.rail.Size = UDim2.fromOffset(cols * RAIL_CELL.X + (cols - 1) * 6, 0)
+		refs.railCluster.Position = UDim2.fromOffset(20, railTop)
 	end
 end
 
@@ -235,11 +247,18 @@ local function build()
 	})
 
 	-- Navigation rail (left)
-	local railCluster = cluster("Rail", Vector2.new(0, 0), UDim2.fromOffset(20, 136), UDim2.fromOffset(140, 600))
-	refs.rail = glass({ Size = UDim2.fromOffset(72, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = railCluster })
-	Kit.Corner(18).Parent = refs.rail
-	Kit.Padding(8).Parent = refs.rail
-	refs.railGrid = Kit.Grid(Vector2.new(56, 56), 4)
+	local railCluster = cluster("Rail", Vector2.new(0, 0), UDim2.fromOffset(20, 136), UDim2.fromOffset(200, 600))
+	refs.railCluster = railCluster
+	refs.rail = New(
+		"Frame",
+		{
+			BackgroundTransparency = 1,
+			Size = UDim2.fromOffset(60, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			Parent = railCluster,
+		}
+	)
+	refs.railGrid = Kit.Grid(RAIL_CELL, 6)
 	refs.railGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	refs.railGrid.Parent = refs.rail
 	for i, item in RAIL_ITEMS do
@@ -304,15 +323,12 @@ local function build()
 		TextStrokeTransparency = 0.7,
 		Parent = readout,
 	})
-	local band = New(
-		"Frame",
-		{
-			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(0, 48),
-			Size = UDim2.new(1, 0, 0, 10),
-			Parent = refs.depth,
-		}
-	)
+	local band = New("Frame", {
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 48),
+		Size = UDim2.new(1, 0, 0, 10),
+		Parent = refs.depth,
+	})
 	local bandList = Kit.List(3, true)
 	bandList.Parent = band
 	refs.bandSegments = {}
@@ -332,15 +348,12 @@ local function build()
 		ZIndex = 3,
 		Parent = band,
 	}, { Kit.Round() })
-	local labels = New(
-		"Frame",
-		{
-			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(0, 62),
-			Size = UDim2.new(1, 0, 0, 14),
-			Parent = refs.depth,
-		}
-	)
+	local labels = New("Frame", {
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(0, 62),
+		Size = UDim2.new(1, 0, 0, 14),
+		Parent = refs.depth,
+	})
 	Kit.List(3, true).Parent = labels
 	refs.bandLabels = {}
 	for i, zone in Zones.List do
@@ -421,20 +434,15 @@ local function build()
 		TextWrapped = false,
 		Parent = refs.o2Cap,
 	})
-	refs.quickRefill = Kit.Button(
-		"Refill air · 25 R$",
-		T.Bad,
-		function()
-			Net.RequestPurchase:FireServer("Product", "OxygenRefill")
-		end,
-		{
-			Size = UDim2.fromOffset(200, 44),
-			Position = UDim2.fromOffset(0, 6),
-			Visible = false,
-			Icon = "oxygen",
-			Parent = bottom,
-		}
-	)
+	refs.quickRefill = Kit.Button("Refill air · 25 R$", T.Bad, function()
+		Net.RequestPurchase:FireServer("Product", "OxygenRefill")
+	end, {
+		Size = UDim2.fromOffset(200, 44),
+		Position = UDim2.fromOffset(0, 6),
+		Visible = false,
+		Icon = "oxygen",
+		Parent = bottom,
+	})
 
 	-- Action buttons (bottom-right)
 	local actions = cluster("Actions", Vector2.new(1, 1), UDim2.new(1, -24, 1, -24), UDim2.fromOffset(260, 210))
@@ -462,20 +470,36 @@ local function build()
 	roundAction(actions, "home", "HOME · R", Color3.fromRGB(143, 180, 255), 60, UDim2.new(1, -150, 1, -160), function()
 		Net.RequestInstantSurface:FireServer()
 	end)
-	refs.upButton = roundAction(actions, "up", "", T.Text, 56, UDim2.new(1, -246, 1, -132), function()
-		S.SetVertical(1)
-	end, function()
-		S.SetVertical(0)
-	end)
-	refs.downButton = roundAction(actions, "down", "", T.Text, 56, UDim2.new(1, -246, 1, -66), function()
-		S.SetVertical(-1)
-	end, function()
-		S.SetVertical(0)
-	end)
-	for _, b in { refs.upButton, refs.downButton } do
-		b:FindFirstChildOfClass("UIStroke").Transparency = 0.5
-		b.Visible = false
-	end
+	refs.upButton = roundAction(
+		actions,
+		"up",
+		"",
+		Color3.fromRGB(70, 92, 124),
+		56,
+		UDim2.new(1, -246, 1, -132),
+		function()
+			S.SetVertical(1)
+		end,
+		function()
+			S.SetVertical(0)
+		end
+	)
+	refs.downButton = roundAction(
+		actions,
+		"down",
+		"",
+		Color3.fromRGB(70, 92, 124),
+		56,
+		UDim2.new(1, -246, 1, -66),
+		function()
+			S.SetVertical(-1)
+		end,
+		function()
+			S.SetVertical(0)
+		end
+	)
+	refs.upButton.Visible = false
+	refs.downButton.Visible = false
 
 	-- Alerts (centre)
 	local function alertPill(name: string, color: Color3, anchor: Vector2, pos: UDim2)

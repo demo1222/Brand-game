@@ -27,6 +27,11 @@ function Formulas.MaxOxygen(data, passes): number
 	return o + lvl(data, "Oxygen") * B.OxygenPerLevel + talent(data, "Lungs") * 10
 end
 
+-- Diving board: how deep a jump off your dock's board plunges you (UI/Visual plan, Phase 4)
+function Formulas.DiveBoardDepth(data): number
+	return B.BoardDepth + lvl(data, "Board") * B.BoardDepthPerLevel
+end
+
 function Formulas.SwimSpeed(data, passes): number
 	local s = B.SwimSpeed * (1 + lvl(data, "Fins") * B.FinsPerLevel)
 	if passes and passes.SpeedFins then

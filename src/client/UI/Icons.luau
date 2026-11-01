@@ -94,6 +94,7 @@ Icons.Names = {
 	Track_Gate = "gate",
 	Track_Crab = "shield",
 	Track_Alarm = "bell",
+	Track_Board = "down",
 	Gate = "gate",
 	-- zones
 	Reef = "fish",

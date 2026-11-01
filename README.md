@@ -5,6 +5,7 @@ A co-op deep-sea salvage game for Roblox: dive through five depth zones, salvage
 - Design: [`ABYSS_SALVAGE_MASTER_PLAN.md`](ABYSS_SALVAGE_MASTER_PLAN.md)
 - What's built vs. what's left: [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)
 - UI & visual overhaul: [`docs/UI_OVERHAUL_PLAN.md`](docs/UI_OVERHAUL_PLAN.md)
+- **Continuing the work? Start with [`docs/NEXT_SESSION.md`](docs/NEXT_SESSION.md)**
 
 ![Relic art preview](docs/images/relic_art_preview.png)
 
@@ -49,6 +50,7 @@ All tuning numbers are in `src/shared/Config/`. Values marked `[live]` in `Econo
 selene src
 lune run tests/run
 lune run tools/relic_art_check
+lune run tools/preview/suit_dump     # + world_dump, icon_sheet; renders: tools/preview/render.js
 lune run tools/economy_sim
 rojo build -o AbyssSalvage.rbxl
 ```
