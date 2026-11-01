@@ -5,6 +5,9 @@
 -- uploaded animation assets and works for R15 and R6 rigs.
 --   Moving: freestyle arm strokes + flutter kick, faster with speed.
 --   Idle:   treading water: sculling arms, slow egg-beater legs.
+--   Diving: streamlined (arms locked overhead, legs together, small dolphin kick), shown in the
+--           air when the body is tilted off a diving board, and underwater while plunging
+--           steeply. Read from the body's tilt and speed, so every client sees it.
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -22,6 +25,8 @@ type Rig = {
 	joints: { [string]: Motor6D },
 	phase: number,
 	blend: number,
+	stream: number,
+	posed: boolean,
 	swimming: boolean,
 	bubbles: ParticleEmitter?,
 }
@@ -88,17 +93,28 @@ local function buildRig(char: Model): Rig?
 		bubbles.Enabled = false
 		bubbles.Parent = att
 	end
-	return { r15 = r15, joints = joints, phase = math.random() * 6, blend = 0, swimming = false, bubbles = bubbles }
+	return {
+		r15 = r15,
+		joints = joints,
+		phase = math.random() * 6,
+		blend = 0,
+		stream = 0,
+		posed = false,
+		swimming = false,
+		bubbles = bubbles,
+	}
 end
 
 -- Each pose function returns { joint = {idleCFrame, movingCFrame} }. The two are blended
 -- with CFrame:Lerp, which stays continuous through the full arm windmill (a plain
 -- angle * blend would jump as the stroke angle wraps).
-local function apply(rig: Rig, pose, move: number)
+local function apply(rig: Rig, pose, move: number, stream, streamAmount: number)
 	for name, pair in pose do
 		local m = rig.joints[name]
 		if m then
-			m.Transform = pair[1]:Lerp(pair[2], move)
+			local cf = pair[1]:Lerp(pair[2], move)
+			local st = stream[name]
+			m.Transform = if st and streamAmount > 0.001 then cf:Lerp(st, streamAmount) else cf
 		end
 	end
 end
@@ -124,6 +140,33 @@ local function poseR15(rig: Rig, t: number)
 		-- body roll with the stroke; head looks forward when horizontal
 		Waist = { CFrame.new(), A(0, math.sin(p) * rad(14), 0) },
 		Neck = { CFrame.new(), A(rad(35), 0, 0) },
+	}
+end
+
+-- Streamlined dive: arms overhead, legs together with a small dolphin kick
+local function streamR15(t: number)
+	local kick = math.sin(t * 9) * rad(10)
+	return {
+		LeftShoulder = A(math.pi, 0, 0),
+		RightShoulder = A(math.pi, 0, 0),
+		LeftElbow = CFrame.new(),
+		RightElbow = CFrame.new(),
+		LeftHip = A(kick, 0, 0),
+		RightHip = A(kick, 0, 0),
+		LeftKnee = A(-math.max(0, kick), 0, 0),
+		RightKnee = A(-math.max(0, kick), 0, 0),
+		Waist = CFrame.new(),
+		Neck = CFrame.new(),
+	}
+end
+
+local function streamR6(t: number)
+	local kick = math.sin(t * 9) * rad(10)
+	return {
+		["Right Shoulder"] = A(0, 0, math.pi),
+		["Left Shoulder"] = A(0, 0, -math.pi),
+		["Right Hip"] = A(0, 0, kick),
+		["Left Hip"] = A(0, 0, -kick),
 	}
 end
 
@@ -165,23 +208,46 @@ local function step(dt: number)
 			if rig.bubbles then
 				rig.bubbles.Enabled = swimming
 			end
-			if not swimming then
+		end
+		-- Streamline: tilted in the air just above the water (a board dive), or a steep fast
+		-- plunge underwater
+		local vel = hrp.AssemblyLinearVelocity
+		local tilted = hrp.CFrame.UpVector.Y < 0.85
+		local streamTarget = if swimming
+			then math.clamp((-vel.Y - 18) / 14, 0, 1)
+			elseif tilted and depth > -40 then 1
+			else 0
+		rig.stream += (streamTarget - rig.stream) * math.clamp(dt * 10, 0, 1)
+		if not swimming and rig.stream < 0.02 then
+			if rig.posed then
+				rig.posed = false
+				rig.stream = 0
 				for _, m in rig.joints do
 					m.Transform = CFrame.new()
 				end
 			end
-		end
-		if not swimming then
 			continue
 		end
-		local speed = hrp.AssemblyLinearVelocity.Magnitude
+		rig.posed = true
+		local stream = if rig.r15 then streamR15(t) else streamR6(t)
+		if not swimming then
+			-- in the air: only the dive pose
+			for name, cf in stream do
+				local m = rig.joints[name]
+				if m then
+					m.Transform = CFrame.new():Lerp(cf, rig.stream)
+				end
+			end
+			continue
+		end
+		local speed = vel.Magnitude
 		local target = math.clamp((speed - 2) / 22, 0, 1)
 		rig.blend += (target - rig.blend) * math.clamp(dt * 4, 0, 1)
 		rig.phase = (rig.phase + dt * (2.2 + rig.blend * 4.5)) % (math.pi * 2)
 		if rig.bubbles then
 			rig.bubbles.Rate = 2 + rig.blend * 6
 		end
-		apply(rig, if rig.r15 then poseR15(rig, t) else poseR6(rig, t), rig.blend)
+		apply(rig, if rig.r15 then poseR15(rig, t) else poseR6(rig, t), rig.blend, stream, rig.stream)
 	end
 end
 

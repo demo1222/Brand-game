@@ -734,7 +734,18 @@ local function renderUpgrades()
 	-- Coins tick every second: rebuild only when something on screen would change, so a card
 	-- is never replaced under the player's finger mid-press
 	local sigParts = { tostring(suitIndex), tostring(cols), tostring(nextSuit and coins >= nextSuit.Cost) }
-	for _, key in { "MaxOxygen", "SwimSpeed", "BagSize", "SonarRange", "SalvageSeconds", "DiveBoardDepth", "StandCount", "OfflineRate" } do
+	for _, key in
+		{
+			"MaxOxygen",
+			"SwimSpeed",
+			"BagSize",
+			"SonarRange",
+			"SalvageSeconds",
+			"DiveBoardDepth",
+			"StandCount",
+			"OfflineRate",
+		}
+	do
 		table.insert(sigParts, tostring(S.Derived(key)))
 	end
 	for _, track in Upgrades.Tracks do
@@ -1544,8 +1555,34 @@ end
 -- Rebirth: before/after preview, requirements, talents
 ------------------------------------------------------------------------------------------
 local rebirthScroll
+local rebirthSig = ""
+
+-- Wrapping row of pills (what you keep / what resets)
+local function pillCloud(parent: Instance, items, color: Color3)
+	local cloud = New("Frame", {
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(12, 34),
+		Size = UDim2.new(1, -24, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		ZIndex = 3,
+		Parent = parent,
+	})
+	local l = Kit.List(6, true)
+	l.Wraps = true
+	l.Parent = cloud
+	for i, text in items do
+		Kit.Pill(text, Kit.Darken(color, 0.62), {
+			TextColor3 = Kit.Lighten(color, 0.3),
+			TextSize = 13,
+			Size = UDim2.fromOffset(0, 26),
+			LayoutOrder = i,
+			ZIndex = 3,
+			Parent = cloud,
+		})
+	end
+end
+
 local function renderRebirth()
-	Kit.Clear(rebirthScroll)
 	local n = S.Get("Rebirths") or 0
 	local need = S.Derived("RebirthRequirement") or Formulas.RebirthRequirement(n)
 	local lifetime = S.Get("LifetimeCoins") or 0
@@ -1553,43 +1590,80 @@ local function renderRebirth()
 	local coinOk = lifetime >= need
 	local ready = suitOk and coinOk
 	local tokens = S.Get("RebirthTokens") or 0
+	local talents = S.Get("Talents") or {}
 
-	-- Before → after
+	-- LifetimeCoins ticks every second: rebuild only when what's shown changes
+	local sigParts = {
+		tostring(n),
+		tostring(need),
+		NumberFormat.short(lifetime),
+		tostring(ready),
+		tostring(suitOk),
+		tostring(tokens),
+	}
+	for _, t in Economy.Rebirth.Talents do
+		table.insert(sigParts, `{t.Id}{talents[t.Id] or 0}`)
+	end
+	local sig = table.concat(sigParts, "|")
+	if sig == rebirthSig then
+		return
+	end
+	rebirthSig = sig
+	Kit.Clear(rebirthScroll)
+
+	-- Before -> after: two big stat slabs with an arrow between
 	local compare = New(
 		"Frame",
 		{ BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 150), LayoutOrder = 1, Parent = rebirthScroll }
 	)
 	local function statCard(x: UDim, title: string, color: Color3, lines)
-		local c = Kit.Card({
-			Position = UDim2.new(x, 0, 0, 0),
-			Size = UDim2.new(0.5, -34, 1, 0),
-			BackgroundColor3 = Kit.Darken(color, 0.6),
-			Parent = compare,
-		}, { Kit.Padding(10), Kit.List(4, false, Enum.HorizontalAlignment.Center) })
-		local s = c:FindFirstChildOfClass("UIStroke")
-		s.Color, s.Transparency, s.Thickness = color, 0.05, 2
-		Kit.Title({
+		local _, c = Kit.GameCard(
+			Kit.Darken(color, 0.62),
+			{ Position = UDim2.new(x, 0, 0, 0), Size = UDim2.new(0.5, -34, 1, 0), Parent = compare }
+		)
+		local st = c:FindFirstChildOfClass("UIStroke")
+		st.Color, st.Thickness = color, 3
+		Kit.Label({
 			Text = title,
-			TextSize = 16,
-			TextColor3 = Kit.Lighten(color, 0.4),
+			Font = T.Bold,
+			TextSize = 13,
+			TextColor3 = Kit.Lighten(color, 0.45),
 			TextXAlignment = Enum.TextXAlignment.Center,
-			Size = UDim2.new(1, 0, 0, 20),
-			LayoutOrder = 0,
+			Position = UDim2.fromOffset(0, 10),
+			Size = UDim2.new(1, 0, 0, 16),
+			ZIndex = 3,
 			Parent = c,
 		})
-		for i, line in lines do
-			Kit.Title({
-				Text = line,
-				TextSize = if i == 1 then 30 else 16,
-				TextXAlignment = Enum.TextXAlignment.Center,
-				Size = UDim2.new(1, 0, 0, if i == 1 then 34 else 20),
-				LayoutOrder = i,
-				TextWrapped = false,
-				Parent = c,
-			})
-		end
+		Kit.Title({
+			Text = lines[1],
+			TextSize = 34,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Position = UDim2.fromOffset(0, 30),
+			Size = UDim2.new(1, 0, 0, 40),
+			TextWrapped = false,
+			ZIndex = 3,
+			Parent = c,
+		})
+		local chips = New("Frame", {
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(0, 82),
+			Size = UDim2.new(1, 0, 0, 52),
+			ZIndex = 3,
+			Parent = c,
+		})
+		Kit.List(6, false, Enum.HorizontalAlignment.Center).Parent = chips
+		Kit.Pill(
+			lines[2],
+			Kit.Darken(T.Good, 0.6),
+			{ Icon = "sparkle", TextColor3 = T.Good, TextSize = 13, LayoutOrder = 1, ZIndex = 3, Parent = chips }
+		)
+		Kit.Pill(
+			lines[3],
+			Kit.Darken(T.Gold, 0.6),
+			{ Icon = "token", TextColor3 = T.Gold, TextSize = 13, LayoutOrder = 2, ZIndex = 3, Parent = chips }
+		)
 	end
-	statCard(UDim.new(0, 0), "NOW", T.AccentDeep, {
+	statCard(UDim.new(0, 0), "NOW", T.Accent, {
 		`x{Formulas.RebirthMultiplier(n)} Coins`,
 		`+{math.min(n * 2, 30)}% luck`,
 		`{tokens} tokens`,
@@ -1600,83 +1674,105 @@ local function renderRebirth()
 		`{tokens + 1} tokens`,
 	})
 	Kit.IconBadge(
-		"→",
+		"arrow",
 		T.Gold,
 		52,
-		{ AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Parent = compare }
+		{ AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 4, Parent = compare }
 	)
 
-	-- Requirements
-	local req = row(rebirthScroll, 2, 96)
+	-- Requirements: a tick or cross tile per requirement (drawn icons, no glyphs)
+	local _, req = Kit.GameCard(T.Slab, { Size = UDim2.new(1, -8, 0, 128), LayoutOrder = 2, Parent = rebirthScroll })
 	Kit.Title({
-		Text = `Requirements · Resurfaces so far: {n}`,
-		TextSize = 16,
-		Position = UDim2.fromOffset(12, 6),
-		Size = UDim2.new(1, -24, 0, 20),
+		Text = "Requirements",
+		TextSize = 19,
+		Position = UDim2.fromOffset(14, 8),
+		Size = UDim2.new(0.5, 0, 0, 24),
+		TextWrapped = false,
+		ZIndex = 3,
 		Parent = req,
 	})
-	Kit.Label({
-		Text = `{suitOk and "✓" or "✗"} Own the {Upgrades.Suits[Economy.Rebirth.RequiredSuit].Name} suit`,
-		Font = T.Bold,
-		TextSize = 14,
-		Position = UDim2.fromOffset(12, 30),
-		Size = UDim2.new(1, -24, 0, 18),
-		Parent = req,
-	})
-	Kit.Label({
-		Text = `{coinOk and "✓" or "✗"} Lifetime Coins`,
-		Font = T.Bold,
-		TextSize = 14,
-		Position = UDim2.fromOffset(12, 54),
-		Size = UDim2.fromOffset(150, 18),
-		Parent = req,
-	})
+	Kit.Pill(
+		`Resurfaced {n}x`,
+		T.PanelDark,
+		{
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -12, 0, 10),
+			TextSize = 13,
+			ZIndex = 3,
+			Parent = req,
+		}
+	)
+	local function check(y: number, ok: boolean, text: string)
+		Kit.IconBadge(
+			if ok then "check" else "close",
+			if ok then T.Good else T.Bad,
+			30,
+			{ Position = UDim2.fromOffset(14, y), ZIndex = 3, Parent = req }
+		)
+		Kit.Label({
+			Text = text,
+			Font = T.Bold,
+			TextSize = 15,
+			TextColor3 = if ok then T.Text else Kit.Lighten(T.Muted, 0.2),
+			Position = UDim2.fromOffset(54, y),
+			Size = UDim2.new(0, 260, 0, 30),
+			TextWrapped = false,
+			ZIndex = 3,
+			Parent = req,
+		})
+	end
+	check(40, suitOk, `Own the {Upgrades.Suits[Economy.Rebirth.RequiredSuit].Name} suit`)
+	check(78, coinOk, "Earn lifetime Coins")
 	local _, setReq = Kit.Bar({
-		Position = UDim2.fromOffset(160, 54),
-		Size = UDim2.new(1, -176, 0, 22),
+		Position = UDim2.new(0, 230, 0, 81),
+		Size = UDim2.new(1, -246, 0, 24),
 		Color = if coinOk then T.Good else T.Gold,
 		Parent = req,
 	})
 	setReq(lifetime / math.max(need, 1), nil, `{NumberFormat.short(lifetime)} / {NumberFormat.short(need)}`)
 
-	local btn = Kit.Button("RESURFACE", if ready then T.Gold else T.PanelLight, function()
-		Net.RequestRebirth:FireServer()
-	end, {
-		LayoutOrder = 3,
-		Size = UDim2.new(1, -8, 0, 56),
-		TextSize = 22,
-		Font = T.Title,
-		Icon = "rebirth",
-		Parent = rebirthScroll,
+	-- The big button: gold and shining when ready, locked slate otherwise
+	local _, btn = Kit.GameCard(
+		if ready then T.Gold else Color3.fromRGB(46, 60, 82),
+		{ Size = UDim2.new(1, -8, 0, 70), LayoutOrder = 3, Parent = rebirthScroll },
+		function()
+			Net.RequestRebirth:FireServer()
+		end
+	)
+	local label = Kit.Title({
+		Text = if ready then "RESURFACE!" else "RESURFACE",
+		TextSize = 30,
+		TextColor3 = if ready then Color3.new(1, 1, 1) else Kit.Lighten(T.Muted, 0.1),
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 3,
+		Parent = btn,
 	})
+	Kit.AttachIcon(label, if ready then "rebirth" else "lock", label.TextColor3, 30)
 	if ready then
 		Kit.Shine(btn, 1)
 	end
 
+	-- Keep / resets
 	local keep = New(
 		"Frame",
-		{ BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 64), LayoutOrder = 4, Parent = rebirthScroll }
+		{ BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 116), LayoutOrder = 4, Parent = rebirthScroll }
 	)
 	local function chipCard(x: UDim, title: string, color: Color3, items)
-		local c = Kit.Card({ Position = UDim2.new(x, 0, 0, 0), Size = UDim2.new(0.5, -4, 1, 0), Parent = keep })
-		Kit.Label({
+		local _, c = Kit.GameCard(
+			Kit.Darken(color, 0.78),
+			{ Position = UDim2.new(x, 0, 0, 0), Size = UDim2.new(0.5, -5, 1, 0), Parent = keep }
+		)
+		Kit.Title({
 			Text = title,
-			Font = T.Title,
-			TextSize = 13,
+			TextSize = 16,
 			TextColor3 = color,
-			Position = UDim2.fromOffset(10, 4),
-			Size = UDim2.new(1, -20, 0, 16),
+			Position = UDim2.fromOffset(12, 6),
+			Size = UDim2.new(1, -24, 0, 22),
+			ZIndex = 3,
 			Parent = c,
 		})
-		Kit.Label({
-			Text = table.concat(items, " · "),
-			TextSize = 12,
-			TextColor3 = T.Muted,
-			Position = UDim2.fromOffset(10, 22),
-			Size = UDim2.new(1, -20, 0, 36),
-			TextYAlignment = Enum.TextYAlignment.Top,
-			Parent = c,
-		})
+		pillCloud(c, items, color)
 	end
 	chipCard(
 		UDim.new(0, 0),
@@ -1684,63 +1780,94 @@ local function renderRebirth()
 		T.Good,
 		{ "Relics on stands", "Storage", "Codex", "Pearls", "Passes", "Level", "Display Slots" }
 	)
-	chipCard(UDim.new(0.5, 4), "RESETS", T.Bad, { "Coins", "Upgrades", "Suit", "Dive bag" })
+	chipCard(UDim.new(0.5, 5), "RESETS", T.Bad, { "Coins", "Upgrades", "Suit", "Dive bag" })
 
+	-- Talent tree: whole-card buttons like Upgrades
 	header(rebirthScroll, 5, `Talent tree · {tokens} token{tokens == 1 and "" or "s"}`, T.Gold)
-	local talents = S.Get("Talents") or {}
+	local grid = New("Frame", {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -8, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 6,
+		Parent = rebirthScroll,
+	})
+	New("UIGridLayout", {
+		CellSize = UDim2.new(0.5, -5, 0, 132),
+		CellPadding = UDim2.fromOffset(10, 12),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = grid,
+	})
 	local TALENT_ICONS = { StartNeoprene = "diver", ExtraBag = "bag", QuietDiver = "sonar", Lungs = "oxygen" }
+	local purple = Color3.fromRGB(180, 140, 255)
 	for i, t in Economy.Rebirth.Talents do
-		local r = row(rebirthScroll, 5 + i, 72)
 		local lvl = talents[t.Id] or 0
+		local maxed = lvl >= t.Max
+		local affordable = not maxed and tokens >= t.Cost
+		local _, f = Kit.GameCard(
+			if maxed then Kit.Darken(T.Gold, 0.55) else T.Slab,
+			{ LayoutOrder = i, Parent = grid },
+			function()
+				Net.RequestTalent:FireServer(t.Id)
+			end
+		)
+		if affordable then
+			local st = f:FindFirstChildOfClass("UIStroke")
+			st.Color, st.Thickness = T.Good, 3
+		end
 		Kit.IconBadge(
 			TALENT_ICONS[t.Id] or "star",
-			Color3.fromRGB(170, 100, 255),
+			purple,
 			50,
-			{ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Parent = r }
+			{ Position = UDim2.fromOffset(10, 10), ZIndex = 3, Parent = f }
 		)
 		Kit.Title({
 			Text = t.Name,
-			TextSize = 17,
-			Position = UDim2.fromOffset(72, 8),
-			Size = UDim2.new(1, -220, 0, 22),
-			Parent = r,
+			TextSize = 18,
+			Position = UDim2.fromOffset(68, 8),
+			Size = UDim2.new(1, -76, 0, 22),
+			TextWrapped = false,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			ZIndex = 3,
+			Parent = f,
 		})
 		Kit.Label({
 			Text = t.Desc,
+			Font = T.Bold,
+			TextSize = 12,
 			TextColor3 = T.Muted,
-			TextSize = 13,
-			Position = UDim2.fromOffset(72, 30),
-			Size = UDim2.new(1, -220, 0, 16),
-			TextTruncate = Enum.TextTruncate.AtEnd,
-			TextWrapped = false,
-			Parent = r,
+			Position = UDim2.fromOffset(68, 30),
+			Size = UDim2.new(1, -76, 0, 30),
+			TextYAlignment = Enum.TextYAlignment.Top,
+			ZIndex = 3,
+			Parent = f,
 		})
 		local pips = New("Frame", {
 			BackgroundTransparency = 1,
-			Position = UDim2.fromOffset(72, 50),
-			Size = UDim2.fromOffset(120, 14),
-			Parent = r,
+			Position = UDim2.fromOffset(12, 66),
+			Size = UDim2.new(1, -24, 0, 12),
+			ZIndex = 3,
+			Parent = f,
 		}, { Kit.List(4, true) })
 		for p = 1, t.Max do
 			New("Frame", {
-				BackgroundColor3 = if p <= lvl then T.Gold else T.PanelDark,
-				Size = UDim2.fromOffset(22, 10),
+				BackgroundColor3 = if p <= lvl then purple else T.PanelDark,
+				Size = UDim2.new(1 / t.Max, -4, 1, 0),
 				LayoutOrder = p,
+				ZIndex = 3,
 				Parent = pips,
-			}, { Kit.Round() })
+			}, { Kit.Round(), Kit.Stroke(T.Outline, 1.5, 0) })
 		end
-		local maxed = lvl >= t.Max
-		Kit.Button(
-			if maxed then "MAX" else `{t.Cost} token`,
-			if maxed then T.Gold elseif tokens >= t.Cost then T.Good else T.PanelLight,
-			function()
-				Net.RequestTalent:FireServer(t.Id)
-			end,
+		Kit.PricePlate(
+			if maxed then "MAX" else `{t.Cost} token{t.Cost == 1 and "" or "s"}`,
+			if maxed then T.Gold elseif affordable then T.Good else Color3.fromRGB(58, 74, 98),
+			if maxed then "check" else "token",
 			{
-				AnchorPoint = Vector2.new(1, 0.5),
-				Position = UDim2.new(1, -10, 0.5, 0),
-				Size = UDim2.fromOffset(120, 46),
-				Parent = r,
+				AnchorPoint = Vector2.new(0.5, 1),
+				Position = UDim2.new(0.5, 0, 1, -8),
+				Size = UDim2.new(1, -20, 0, 38),
+				TextSize = 18,
+				TextColor3 = if affordable or maxed then T.DarkText else Kit.Lighten(T.Muted, 0.2),
+				Parent = f,
 			}
 		)
 	end
@@ -1776,9 +1903,10 @@ local function renderLeaderboards()
 	end
 	local rows = board.Rows or {}
 	-- Podium (2nd, 1st, 3rd)
+	-- tall enough for the 1st-place medal above the highest block (it was clipped at 190)
 	local podium = New(
 		"Frame",
-		{ BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 190), LayoutOrder = 1, Parent = lbScroll }
+		{ BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 236), LayoutOrder = 1, Parent = lbScroll }
 	)
 	local spots = {
 		{ rank = 2, x = 0, h = 110, color = Color3.fromRGB(200, 210, 225), medal = "2" },
@@ -1793,16 +1921,12 @@ local function renderLeaderboards()
 			Size = UDim2.new(1 / 3, -8, 1, 0),
 			Parent = podium,
 		})
-		local block = New("Frame", {
-			BackgroundColor3 = Kit.Darken(spot.color, 0.35),
+		local _, block = Kit.GameCard(Kit.Darken(spot.color, 0.2), {
 			AnchorPoint = Vector2.new(0, 1),
 			Position = UDim2.fromScale(0, 1),
-			Size = UDim2.new(1, 0, 0, spot.h),
+			Size = UDim2.new(1, 0, 0, spot.h + 6),
+			Lip = 8,
 			Parent = col,
-		}, {
-			Kit.Corner(14),
-			Kit.Gradient(Kit.Lighten(spot.color, 0.2), Kit.Darken(spot.color, 0.45), 90),
-			Kit.Stroke(spot.color, 2, 0.05),
 		})
 		Kit.Title({
 			Text = tostring(spot.rank),
@@ -1823,12 +1947,13 @@ local function renderLeaderboards()
 			TextScaled = true,
 			Parent = block,
 		})
-		Kit.IconBadge(
-			spot.medal,
+		local medal = Kit.IconBadge(
+			if spot.rank == 1 then "crown" else spot.medal,
 			spot.color,
-			46,
-			{ AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -spot.h - 22), Parent = col }
+			if spot.rank == 1 then 54 else 46,
+			{ AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -spot.h - 24), Parent = col }
 		)
+		medal:FindFirstChildOfClass("UICorner").CornerRadius = UDim.new(0.5, 0)
 		Kit.Title({
 			Text = if r then r.Name else "Open spot",
 			TextSize = 15,
@@ -1842,9 +1967,19 @@ local function renderLeaderboards()
 			Parent = col,
 		})
 	end
-	for i = 4, #rows do
-		local r = rows[i]
-		local card = row(lbScroll, i, 44)
+	-- Ranks 4-10 always show (open spots dimmed), so the board never looks empty
+	for i = 4, math.max(#rows, 10) do
+		local r = rows[i] or { Rank = i, Name = "Open spot", Value = "—", Open = true }
+		local _, card = Kit.GameCard(if r.Open then Color3.fromRGB(22, 36, 56) else T.Slab, {
+			Size = UDim2.new(1, -8, 0, 50),
+			Lip = 4,
+			LayoutOrder = i,
+			Parent = lbScroll,
+		})
+		if r.Name == player.Name or r.Name == player.DisplayName then
+			local st = card:FindFirstChildOfClass("UIStroke")
+			st.Color, st.Thickness = T.Accent, 3
+		end
 		Kit.Pill(`#{r.Rank}`, T.PanelDark, {
 			AnchorPoint = Vector2.new(0, 0.5),
 			Position = UDim2.new(0, 10, 0.5, 0),
@@ -1854,7 +1989,8 @@ local function renderLeaderboards()
 		})
 		Kit.Title({
 			Text = r.Name,
-			TextSize = 16,
+			TextSize = 17,
+			TextColor3 = if r.Open then T.Muted else T.Text,
 			Position = UDim2.fromOffset(70, 0),
 			Size = UDim2.new(1, -200, 1, 0),
 			TextWrapped = false,
@@ -1868,18 +2004,8 @@ local function renderLeaderboards()
 			TextXAlignment = Enum.TextXAlignment.Right,
 			AnchorPoint = Vector2.new(1, 0),
 			Position = UDim2.new(1, -12, 0, 0),
-			Size = UDim2.fromOffset(130, 44),
+			Size = UDim2.fromOffset(130, 46),
 			Parent = card,
-		})
-	end
-	if #rows == 0 then
-		Kit.Label({
-			Text = "No entries yet. Be the first!",
-			TextColor3 = T.Muted,
-			Font = T.Bold,
-			TextXAlignment = Enum.TextXAlignment.Center,
-			LayoutOrder = 2,
-			Parent = lbScroll,
 		})
 	end
 end
@@ -1895,9 +2021,11 @@ local function buildLeaderboards(body: Frame)
 	local _, paint = Kit.Tabs(tabScroll, LB_TABS, lbBoard, function(id)
 		lbBoard = id
 		renderLeaderboards()
-	end, { Size = UDim2.new(0, 0, 0, 44), AutomaticSize = Enum.AutomaticSize.X, TabWidth = 130 })
+	end, { Size = UDim2.new(0, 0, 0, 48), AutomaticSize = Enum.AutomaticSize.X, TabWidth = 150 })
 	lbPaintTabs = paint
-	lbScroll = scrollBody(body, 56)
+	lbScroll = scrollBody(body, 60)
+	local pad = lbScroll:FindFirstChildOfClass("UIPadding") :: UIPadding
+	pad.PaddingTop, pad.PaddingRight = UDim.new(0, 6), UDim.new(0, 6)
 end
 
 ------------------------------------------------------------------------------------------
@@ -1916,83 +2044,176 @@ local function avatar(userId: number, size: number, props)
 end
 
 local playersScroll
+local partyNames: { string } = {}
+
+-- Roblox's own "invite friends" sheet (fails quietly where invites aren't allowed)
+local function inviteFriends()
+	local SocialService = game:GetService("SocialService")
+	local ok, can = pcall(SocialService.CanSendGameInviteAsync, SocialService, player)
+	if ok and can then
+		pcall(SocialService.PromptGameInvite, SocialService, player)
+	else
+		controllers.UIController.Toast("Invites aren't available right now.", "error")
+	end
+end
+
 local function renderPlayers()
 	Kit.Clear(playersScroll)
 	local order = 0
-	local top = New(
-		"Frame",
-		{ BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 48), LayoutOrder = 0, Parent = playersScroll }
+	-- Perks strip: what friends and parties give, and the party controls
+	local _, top = Kit.GameCard(
+		Kit.Darken(Icons.Colors.Players, 0.72),
+		{ Size = UDim2.new(1, -8, 0, 74), LayoutOrder = 0, Parent = playersScroll }
 	)
-	Kit.Label({
-		Text = "Friends in your server give +10% Coins each. Party members share sonar and +10% luck.",
-		TextColor3 = T.Muted,
+	local perks = New("Frame", {
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(12, 0),
+		Size = UDim2.new(1, -200, 1, 0),
+		ZIndex = 3,
+		Parent = top,
+	})
+	local pl = Kit.List(6, false)
+	pl.VerticalAlignment = Enum.VerticalAlignment.Center
+	pl.Parent = perks
+	Kit.Pill("+10% Coins per friend here", Kit.Darken(T.Gold, 0.6), {
+		Icon = "coin",
+		TextColor3 = T.Gold,
 		TextSize = 13,
-		Size = UDim2.new(1, -170, 1, 0),
-		Parent = top,
+		Size = UDim2.fromOffset(0, 26),
+		LayoutOrder = 1,
+		ZIndex = 3,
+		Parent = perks,
 	})
-	Kit.Button("Leave party", T.PanelLight, function()
-		Net.PartyLeave:FireServer()
-	end, {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 0, 0, 2),
-		Size = UDim2.fromOffset(150, 44),
-		Parent = top,
+	Kit.Pill("Party: shared sonar + 10% luck", Kit.Darken(T.Accent, 0.6), {
+		Icon = "sonar",
+		TextColor3 = T.Accent,
+		TextSize = 13,
+		Size = UDim2.fromOffset(0, 26),
+		LayoutOrder = 2,
+		ZIndex = 3,
+		Parent = perks,
 	})
+	if #partyNames > 0 then
+		Kit.Button("Leave party", T.Bad, function()
+			Net.PartyLeave:FireServer()
+		end, {
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -12, 0.5, 0),
+			Size = UDim2.fromOffset(160, 46),
+			TextSize = 15,
+			ZIndex = 3,
+			Parent = top,
+		})
+	else
+		Kit.Button("Invite friends", T.Good, inviteFriends, {
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -12, 0.5, 0),
+			Size = UDim2.fromOffset(170, 46),
+			TextSize = 15,
+			Icon = "plus",
+			ZIndex = 3,
+			Parent = top,
+		})
+	end
 	for _, other in Players:GetPlayers() do
 		if other ~= player then
 			order += 1
-			local r = row(playersScroll, order, 66)
+			local inParty = table.find(partyNames, other.DisplayName) ~= nil
+				or table.find(partyNames, other.Name) ~= nil
+			local _, r =
+				Kit.GameCard(T.Slab, { Size = UDim2.new(1, -8, 0, 76), LayoutOrder = order, Parent = playersScroll })
+			if inParty then
+				local st = r:FindFirstChildOfClass("UIStroke")
+				st.Color, st.Thickness = T.Accent, 3
+			end
 			avatar(
 				other.UserId,
-				50,
-				{ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Parent = r }
+				54,
+				{ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), ZIndex = 3, Parent = r }
 			)
 			Kit.Title({
 				Text = other.DisplayName,
-				TextSize = 17,
-				Position = UDim2.fromOffset(68, 10),
-				Size = UDim2.new(1, -330, 0, 22),
+				TextSize = 19,
+				Position = UDim2.fromOffset(76, 12),
+				Size = UDim2.new(1, -350, 0, 24),
 				TextWrapped = false,
 				TextTruncate = Enum.TextTruncate.AtEnd,
+				ZIndex = 3,
 				Parent = r,
 			})
 			Kit.Label({
-				Text = `@{other.Name}`,
-				TextColor3 = T.Muted,
-				TextSize = 12,
-				Position = UDim2.fromOffset(68, 34),
-				Size = UDim2.new(1, -330, 0, 16),
+				Text = if inParty then "In your party" else `@{other.Name}`,
+				Font = T.Bold,
+				TextColor3 = if inParty then T.Accent else T.Muted,
+				TextSize = 13,
+				Position = UDim2.fromOffset(76, 38),
+				Size = UDim2.new(1, -350, 0, 16),
 				TextWrapped = false,
+				ZIndex = 3,
 				Parent = r,
 			})
-			Kit.Button("Party", T.PanelLight, function()
-				Net.PartyInvite:FireServer(other.UserId)
-				controllers.UIController.Toast(`Party invite sent to {other.DisplayName}`, "info")
-			end, {
-				AnchorPoint = Vector2.new(1, 0.5),
-				Position = UDim2.new(1, -140, 0.5, 0),
-				Size = UDim2.fromOffset(120, 46),
-				Parent = r,
-			})
+			if not inParty then
+				Kit.Button("Party", T.Accent, function()
+					Net.PartyInvite:FireServer(other.UserId)
+					controllers.UIController.Toast(`Party invite sent to {other.DisplayName}`, "info")
+				end, {
+					AnchorPoint = Vector2.new(1, 0.5),
+					Position = UDim2.new(1, -144, 0.5, 0),
+					Size = UDim2.fromOffset(122, 48),
+					Icon = "friends",
+					ZIndex = 3,
+					Parent = r,
+				})
+			end
 			Kit.Button("Trade", T.Gold, function()
 				Net.TradeRequest:FireServer(other.UserId)
 			end, {
 				AnchorPoint = Vector2.new(1, 0.5),
-				Position = UDim2.new(1, -10, 0.5, 0),
-				Size = UDim2.fromOffset(120, 46),
+				Position = UDim2.new(1, -12, 0.5, 0),
+				Size = UDim2.fromOffset(122, 48),
+				Icon = "trade",
+				ZIndex = 3,
 				Parent = r,
 			})
 		end
 	end
 	if order == 0 then
-		Kit.Label({
-			Text = "Nobody else is here yet. Invite friends for +10% Coins each!",
-			TextColor3 = T.Muted,
-			Font = T.Bold,
+		local _, empty =
+			Kit.GameCard(T.PanelDark, { Size = UDim2.new(1, -8, 0, 250), LayoutOrder = 1, Parent = playersScroll })
+		Kit.IconBadge(
+			"friends",
+			Icons.Colors.Players,
+			84,
+			{ AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 22), ZIndex = 3, Parent = empty }
+		)
+		Kit.Title({
+			Text = "Nobody else is here yet",
+			TextSize = 24,
 			TextXAlignment = Enum.TextXAlignment.Center,
-			LayoutOrder = 1,
-			Size = UDim2.new(1, -8, 0, 40),
-			Parent = playersScroll,
+			Position = UDim2.fromOffset(0, 118),
+			Size = UDim2.new(1, 0, 0, 30),
+			ZIndex = 3,
+			Parent = empty,
+		})
+		Kit.Label({
+			Text = "Bring your friends: each one in the server gives you +10% Coins, and you can party up to share sonar pings.",
+			Font = T.Bold,
+			TextSize = 14,
+			TextColor3 = T.Muted,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Position = UDim2.new(0.5, -230, 0, 152),
+			Size = UDim2.fromOffset(460, 36),
+			ZIndex = 3,
+			Parent = empty,
+		})
+		Kit.Button("Invite friends", T.Good, inviteFriends, {
+			AnchorPoint = Vector2.new(0.5, 0),
+			Position = UDim2.new(0.5, 0, 0, 192),
+			Size = UDim2.fromOffset(210, 46),
+			TextSize = 16,
+			Icon = "plus",
+			ZIndex = 3,
+			Parent = empty,
 		})
 	end
 end
@@ -2138,56 +2359,104 @@ end
 local settingsScroll
 
 -- On/off switch (Settings, Diver window)
+-- Chunky ON/OFF switch: a raised pill with a knob and the state written on it
 local function toggle(parent: Instance, on: boolean, onChange: (boolean) -> (), props)
 	local track = New("TextButton", {
-		Text = "",
+		Text = if on then "ON" else "OFF",
+		Font = T.Title,
+		TextSize = 16,
+		TextColor3 = if on then T.DarkText else T.Muted,
+		TextXAlignment = if on then Enum.TextXAlignment.Left else Enum.TextXAlignment.Right,
 		AutoButtonColor = false,
-		BackgroundColor3 = if on then T.Accent else T.PanelDark,
-		Size = UDim2.fromOffset(52, 30),
+		BackgroundColor3 = if on then T.Good else Color3.fromRGB(40, 54, 76),
+		Size = UDim2.fromOffset(88, 40),
+		ZIndex = 3,
 		Parent = parent,
-	}, { Kit.Round(), Kit.Stroke(T.Text, 1, if on then 1 else 0.8) })
+	}, {
+		Kit.Round(),
+		Kit.Stroke(T.Outline, 2, 0),
+		New("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 12) }),
+	})
+	Kit.Bevel(track, 40, 4)
 	for k, v in props or {} do
 		(track :: any)[k] = v
 	end
 	New("Frame", {
-		BackgroundColor3 = if on then T.DarkText else T.Muted,
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, if on then 25 else 3, 0.5, 0),
-		Size = UDim2.fromOffset(24, 24),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(if on then 1 else 0, if on then -8 else -6, 0.5, -1),
+		Size = UDim2.fromOffset(30, 30),
+		ZIndex = 4,
 		Parent = track,
-	}, { Kit.Round() })
+	}, { Kit.Round(), Kit.Stroke(T.Outline, 2, 0) })
+	Kit.Juice(track)
 	track.Activated:Connect(function()
 		onChange(not on)
 	end)
 	return track
 end
 
--- Labelled row with a control area on the right
-local function settingRow(parent: Instance, order: number, title: string, subtitle: string?)
-	local r = row(parent, order, if subtitle then 60 else 52)
-	Kit.Label({
+-- Raised row: coloured icon tile, title and subtitle, controls on the right
+local function settingRow(
+	parent: Instance,
+	order: number,
+	title: string,
+	subtitle: string?,
+	icon: string?,
+	color: Color3?,
+	reserve: number? -- width kept free on the right for controls
+)
+	local right = reserve or 250
+	local _, r = Kit.GameCard(T.Slab, { Size = UDim2.new(1, -8, 0, 66), Lip = 4, LayoutOrder = order, Parent = parent })
+	local x = 14
+	if icon then
+		Kit.IconBadge(
+			icon,
+			color or T.Accent,
+			44,
+			{ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), ZIndex = 3, Parent = r }
+		)
+		x = 66
+	end
+	Kit.Title({
 		Text = title,
-		Font = T.Bold,
-		TextSize = 15,
-		Position = UDim2.fromOffset(14, if subtitle then 10 else 0),
-		Size = UDim2.new(1, -200, 0, if subtitle then 20 else 52),
+		TextSize = 18,
+		Position = UDim2.fromOffset(x, if subtitle then 9 else 0),
+		Size = UDim2.new(1, -(x + right), 0, if subtitle then 24 else 62),
 		TextWrapped = false,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		ZIndex = 3,
 		Parent = r,
 	})
 	if subtitle then
 		Kit.Label({
 			Text = subtitle,
+			Font = T.Bold,
 			TextSize = 12,
 			TextColor3 = T.Muted,
-			Position = UDim2.fromOffset(14, 31),
-			Size = UDim2.new(1, -200, 0, 16),
+			Position = UDim2.fromOffset(x, 35),
+			Size = UDim2.new(1, -(x + right), 0, 16),
 			TextWrapped = false,
 			TextTruncate = Enum.TextTruncate.AtEnd,
+			ZIndex = 3,
 			Parent = r,
 		})
 	end
 	return r
 end
+
+local CONTROLS = {
+	{ "WASD", "Swim" },
+	{ "Space", "Up" },
+	{ "Ctrl / C", "Down" },
+	{ "Shift", "Boost" },
+	{ "Q", "Sonar" },
+	{ "G", "Flare" },
+	{ "R", "Home" },
+	{ "B", "Bag" },
+	{ "U", "Upgrades" },
+	{ "M", "Shop" },
+}
 
 local function renderSettings()
 	Kit.Clear(settingsScroll)
@@ -2195,66 +2464,105 @@ local function renderSettings()
 	local function save()
 		Net.UpdateSettings:FireServer(settings)
 	end
-	header(settingsScroll, 1, "Sound")
-	local function volume(order: number, label: string, key: string)
-		local r = settingRow(settingsScroll, order, label)
-		local _, setBar = Kit.Bar({
+	header(settingsScroll, 1, "Sound", T.Accent)
+	-- Volume: -/+ buttons around a 10-segment meter and a percent readout
+	local function volume(order: number, label: string, key: string, icon: string)
+		local r = settingRow(settingsScroll, order, label, nil, icon, T.Accent)
+		local level = math.round((settings[key] or 0) * 10)
+		local meter = New("Frame", {
+			BackgroundTransparency = 1,
 			AnchorPoint = Vector2.new(1, 0.5),
 			Position = UDim2.new(1, -112, 0.5, 0),
-			Size = UDim2.fromOffset(120, 12),
+			Size = UDim2.fromOffset(150, 26),
+			ZIndex = 3,
+			Parent = r,
+		}, { Kit.List(3, true) })
+		for i = 1, 10 do
+			New("Frame", {
+				BackgroundColor3 = if i <= level then T.Accent else T.PanelDark,
+				Size = UDim2.fromOffset(12, 10 + i * 1.6),
+				LayoutOrder = i,
+				ZIndex = 3,
+				Parent = meter,
+			}, { Kit.Corner(3), Kit.Stroke(T.Outline, 1.5, 0) })
+		end
+		Kit.Title({
+			Text = `{level * 10}%`,
+			TextSize = 16,
+			TextXAlignment = Enum.TextXAlignment.Right,
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -270, 0.5, 0),
+			Size = UDim2.fromOffset(50, 24),
+			ZIndex = 3,
 			Parent = r,
 		})
-		setBar(settings[key], nil, "")
-		Kit.Button("−", T.PanelDark, function()
-			settings[key] = math.max(0, math.floor(settings[key] * 10 - 0.5) / 10)
+		Kit.Button("−", T.Slab, function()
+			settings[key] = math.max(0, (level - 1) / 10)
 			save()
 		end, {
 			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -58, 0.5, 0),
-			Size = UDim2.fromOffset(44, 40),
-			TextSize = 20,
+			Position = UDim2.new(1, -60, 0.5, 0),
+			Size = UDim2.fromOffset(44, 44),
+			TextSize = 24,
+			Font = T.Title,
+			ZIndex = 3,
 			Parent = r,
 		})
-		Kit.Button("+", T.PanelDark, function()
-			settings[key] = math.min(1, math.floor(settings[key] * 10 + 1.5) / 10)
+		Kit.Button("+", T.Accent, function()
+			settings[key] = math.min(1, (level + 1) / 10)
 			save()
 		end, {
 			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -8, 0.5, 0),
-			Size = UDim2.fromOffset(44, 40),
-			TextSize = 20,
+			Position = UDim2.new(1, -10, 0.5, 0),
+			Size = UDim2.fromOffset(44, 44),
+			TextSize = 24,
+			Font = T.Title,
+			ZIndex = 3,
 			Parent = r,
 		})
 	end
-	volume(2, "Music", "Music")
-	volume(3, "Sound effects", "SFX")
+	volume(2, "Music", "Music", "music")
+	volume(3, "Sound effects", "SFX", "bell")
 
-	header(settingsScroll, 4, "Gameplay")
-	local ls = settingRow(settingsScroll, 5, "Lower jump scares", "Softer Leviathan warnings and effects")
+	header(settingsScroll, 4, "Gameplay", T.Good)
+	local ls =
+		settingRow(settingsScroll, 5, "Lower jump scares", "Softer Leviathan warnings and effects", "eye", T.Good)
 	toggle(ls, settings.LowScare == true, function(v)
 		settings.LowScare = v
 		save()
-	end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0) })
-	local diverRow = settingRow(settingsScroll, 6, "Diver appearance", "Show or hide helmet, tank, fins and gear")
-	Kit.Button("Open", T.PanelDark, function()
+	end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, 0) })
+	local diverRow =
+		settingRow(settingsScroll, 6, "Diver appearance", "Show or hide helmet, tank, fins and gear", "diver", T.Good)
+	Kit.Button("Customize", T.Accent, function()
 		controllers.UIController.Open("Diver")
 	end, {
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -10, 0.5, 0),
-		Size = UDim2.fromOffset(110, 40),
+		Position = UDim2.new(1, -12, 0.5, 0),
+		Size = UDim2.fromOffset(140, 44),
 		Icon = "diver",
+		ZIndex = 3,
 		Parent = diverRow,
 	})
 
-	header(settingsScroll, 7, "Codes & dock")
+	header(settingsScroll, 7, "Codes & dock", T.Gold)
 	local function inputRow(
 		order: number,
 		placeholder: string,
 		buttonText: string,
 		buttonColor: Color3,
+		icon: string,
 		onSubmit: (string) -> ()
 	)
-		local r = row(settingsScroll, order, 56)
+		local _, r = Kit.GameCard(
+			T.Slab,
+			{ Size = UDim2.new(1, -8, 0, 66), Lip = 4, LayoutOrder = order, Parent = settingsScroll }
+		)
+		Kit.IconBadge(
+			icon,
+			buttonColor,
+			44,
+			{ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), ZIndex = 3, Parent = r }
+		)
 		local box = New("TextBox", {
 			PlaceholderText = placeholder,
 			PlaceholderColor3 = T.Muted,
@@ -2262,36 +2570,75 @@ local function renderSettings()
 			ClearTextOnFocus = false,
 			BackgroundColor3 = T.PanelDark,
 			TextColor3 = T.Text,
-			Font = T.Font,
-			TextSize = 15,
+			Font = T.Bold,
+			TextSize = 16,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			Position = UDim2.fromOffset(8, 8),
-			Size = UDim2.new(1, -140, 0, 40),
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 66, 0.5, 0),
+			Size = UDim2.new(1, -220, 0, 44),
+			ZIndex = 3,
 			Parent = r,
-		}, { Kit.Corner(10), New("UIPadding", { PaddingLeft = UDim.new(0, 12) }) })
+		}, { Kit.Corner(10), Kit.Stroke(T.Outline, 2, 0), New("UIPadding", { PaddingLeft = UDim.new(0, 12) }) })
 		Kit.Button(buttonText, buttonColor, function()
 			onSubmit(box.Text)
 		end, {
 			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -8, 0.5, 0),
-			Size = UDim2.fromOffset(116, 40),
+			Position = UDim2.new(1, -12, 0.5, 0),
+			Size = UDim2.fromOffset(128, 44),
+			TextSize = 16,
+			ZIndex = 3,
 			Parent = r,
 		})
 	end
-	inputRow(8, "Enter code", "Redeem", T.Accent, function(text)
+	inputRow(8, "Enter code", "Redeem", T.Accent, "gift", function(text)
 		Net.RequestRedeemCode:FireServer(text)
 	end)
-	inputRow(9, `Dock name ({S.Get("RenameTokens") or 0} rename tokens)`, "Rename", T.Gold, function(text)
+	inputRow(9, `Dock name ({S.Get("RenameTokens") or 0} rename tokens)`, "Rename", T.Gold, "sign", function(text)
 		Net.RenameDock:FireServer(text)
 	end)
 
-	header(settingsScroll, 10, "Controls")
-	Kit.Label({
-		Text = "WASD swim · Space up · Ctrl/C down · Shift boost · Q sonar · G flare · R home · B bag · U upgrades · M shop. Graphics quality follows your Roblox settings (Esc → Settings).",
-		TextColor3 = T.Muted,
-		TextSize = 13,
+	-- Controls as key caps instead of one long sentence
+	header(settingsScroll, 10, "Controls", Color3.fromRGB(180, 140, 255))
+	local keys = New("Frame", {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, -8, 0, 0),
+		AutomaticSize = Enum.AutomaticSize.Y,
 		LayoutOrder = 11,
-		Size = UDim2.new(1, -8, 0, 54),
+		Parent = settingsScroll,
+	})
+	New("UIGridLayout", {
+		CellSize = UDim2.new(0.2, -6, 0, 58),
+		CellPadding = UDim2.fromOffset(7, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = keys,
+	})
+	for i, c in CONTROLS do
+		local cell = New("Frame", { BackgroundTransparency = 1, LayoutOrder = i, Parent = keys })
+		Kit.Pill(c[1], Color3.fromRGB(225, 232, 245), {
+			AnchorPoint = Vector2.new(0.5, 0),
+			Position = UDim2.new(0.5, 0, 0, 2),
+			TextSize = 14,
+			Size = UDim2.fromOffset(0, 28),
+			Parent = cell,
+		})
+		Kit.Label({
+			Text = c[2],
+			Font = T.Bold,
+			TextSize = 13,
+			TextColor3 = T.Muted,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Position = UDim2.fromOffset(0, 34),
+			Size = UDim2.new(1, 0, 0, 18),
+			Parent = cell,
+		})
+	end
+	Kit.Label({
+		Text = "Graphics quality follows your Roblox settings (Esc, then Settings).",
+		Font = T.Bold,
+		TextColor3 = T.Muted,
+		TextSize = 12,
+		LayoutOrder = 12,
+		Size = UDim2.new(1, -8, 0, 30),
 		Parent = settingsScroll,
 	})
 end
@@ -2462,7 +2809,7 @@ local function renderDiver()
 	header(list, 3, "Show on my diver")
 	for i, entry in PART_TOGGLES do
 		local key, label, sub = entry[1], entry[2], entry[3]
-		local r = settingRow(list, 3 + i, label, sub)
+		local r = settingRow(list, 3 + i, label, sub, nil, nil, 112)
 		toggle(r, settings[key] ~= false, function(v)
 			settings[key] = v
 			Net.UpdateSettings:FireServer(settings)
@@ -2615,6 +2962,8 @@ function MenuController.Start()
 			for _, m in info.Members do
 				table.insert(names, m.Name)
 			end
+			partyNames = names
+			UI.Refresh("Players")
 			UI.Toast(if #names > 0 then "Party: " .. table.concat(names, ", ") else "You left the party.", "info")
 		end
 	end)

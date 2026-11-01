@@ -27,9 +27,28 @@ local velocity = Vector3.zero
 local knock = Vector3.zero
 local linVel: LinearVelocity? = nil
 local align: AlignOrientation? = nil
--- Diving-board plunge: set when you jump off a board, consumed as you dive to `depth`
-local plunge: { depth: number, dir: Vector3, untilT: number }? = nil
-local PLUNGE_SPEED = 55
+-- Diving-board dive: a scripted swan dive. Jumping off a board takes over the character:
+--   "air":   a ballistic arc out to sea; the body rotates so the head follows the arc
+--            (upright -> horizontal at the top -> head-first down), arms stretched overhead
+--   "water": head-first entry with a big splash, then a fast streamlined glide that curves
+--            from straight down to forward-down and slows as it reaches the board depth,
+--            handing over to normal swimming without a jolt
+-- It runs through the same LinearVelocity/AlignOrientation as swimming, so other players see
+-- the arc and rotation, and SwimAnimController poses the limbs from the body's tilt.
+type Dive = {
+	phase: string,
+	t0: number,
+	dir: Vector3,
+	right: Vector3,
+	v0: Vector3,
+	depth: number,
+	entrySpeed: number,
+	entryT: number,
+}
+local dive: Dive? = nil
+local DIVE_GRAVITY = 85
+local DIVE_LAUNCH = Vector3.new(0, 34, 0) -- plus 20 studs/s out to sea
+local DIVE_OUT = 20
 
 SwimController.Depth = 0
 
@@ -70,7 +89,7 @@ local function setup(char: Model)
 	linVel, align = lv, ao
 	swimming = false
 	velocity = Vector3.zero
-	plunge = nil
+	dive = nil
 
 	-- Jumping while standing on a diving board launches you out to sea
 	local hum = char:WaitForChild("Humanoid", 10) :: Humanoid?
@@ -84,20 +103,30 @@ local function setup(char: Model)
 			end
 			local hit = Workspace:Raycast(hrp.Position, Vector3.new(0, -6, 0), params)
 			local board = hit and hit.Instance
-			if board and board:GetAttribute("DiveBoard") then
+			if board and board:GetAttribute("DiveBoard") and not dive and linVel and align then
 				local look = board.CFrame.LookVector
 				local dir = Vector3.new(look.X, 0, look.Z).Unit
-				plunge = { depth = char:GetAttribute("DiveBoardDepth") or 20, dir = dir, untilT = os.clock() + 8 }
-				task.defer(function()
-					hrp.AssemblyLinearVelocity = dir * 30 + Vector3.new(0, 44, 0)
-				end)
+				dive = {
+					phase = "air",
+					t0 = os.clock(),
+					dir = dir,
+					right = dir:Cross(Vector3.yAxis).Unit,
+					v0 = dir * DIVE_OUT + DIVE_LAUNCH,
+					depth = math.max(char:GetAttribute("DiveBoardDepth") or 20, 8),
+					entrySpeed = 0,
+					entryT = 0,
+				}
+				hum.PlatformStand = true
+				linVel.MaxForce = 1e6
+				align.MaxTorque = 1e6
+				align.Responsiveness = 30 -- snappy rotation through the arc
 			end
 		end)
 	end
 end
 
 -- Local splash where you enter the water
-local function splash(pos: Vector3)
+local function splash(pos: Vector3, count: number?)
 	local p = Instance.new("Part")
 	p.Anchored = true
 	p.CanCollide = false
@@ -118,7 +147,7 @@ local function splash(pos: Vector3)
 	pe.EmissionDirection = Enum.NormalId.Top
 	pe.Rate = 0
 	pe.Parent = p
-	pe:Emit(45)
+	pe:Emit(count or 45)
 	task.delay(2, function()
 		p:Destroy()
 	end)
@@ -143,6 +172,59 @@ local function step(dt: number)
 	local depth = SURFACE - hrp.Position.Y
 	SwimController.Depth = depth
 
+	if dive then
+		local d = dive
+		local now = os.clock()
+		local head: Vector3
+		if d.phase == "air" then
+			local t = now - d.t0
+			local v = d.v0 + Vector3.new(0, -DIVE_GRAVITY * t, 0)
+			-- the head swings from upright to leading along the arc, and tips toward straight
+			-- down while falling, so the entry is near-vertical like a real dive
+			local fall = math.clamp(-v.Y / 40, 0, 1)
+			local along = (v.Unit + Vector3.new(0, -0.6 * fall, 0)).Unit
+			local k = math.clamp((t - 0.05) / 0.35, 0, 1)
+			head = Vector3.yAxis:Lerp(along, k)
+			velocity = v
+			if depth > 0.3 then
+				d.phase = "water"
+				d.entryT = now
+				d.entrySpeed = math.max(v.Magnitude, 50)
+				splash(hrp.Position, 90)
+			elseif t > 3 then
+				dive = nil -- never reached the water (blocked): give control back
+				hum.PlatformStand = false
+				linVel.MaxForce = 0
+				align.MaxTorque = 0
+				align.Responsiveness = 12
+				return
+			end
+		else
+			-- streamlined glide: steep at first, levelling out and slowing toward the target depth
+			local progress = math.clamp(depth / d.depth, 0, 1)
+			local ease = progress * progress * (3 - 2 * progress)
+			local angle = math.rad(84 - 62 * ease) -- below the horizon
+			head = d.dir * math.cos(angle) + Vector3.new(0, -math.sin(angle), 0)
+			local swimSpeed = char:GetAttribute("SwimSpeed") or Upgrades.Base.SwimSpeed
+			local speed = d.entrySpeed + (swimSpeed * 1.3 - d.entrySpeed) * ease
+			velocity = velocity:Lerp(head * speed, math.clamp(dt * 10, 0, 1))
+			if progress >= 1 or now - d.entryT > 5 then
+				dive = nil
+				align.Responsiveness = 12
+				-- normal swimming takes over next frame with this velocity (no jolt)
+				swimming = true
+				hum.PlatformStand = true
+			end
+		end
+		linVel.VectorVelocity = velocity
+		local up = if head.Magnitude > 0.01 then head.Unit else Vector3.yAxis
+		local right = d.right
+		-- keep the frame orthonormal: right stays horizontal, head rotates about it
+		local fwd = right:Cross(up)
+		align.CFrame = CFrame.fromMatrix(Vector3.zero, up:Cross(fwd), up)
+		return
+	end
+
 	-- Hysteresis so you don't flicker at the surface
 	local wantSwim = if swimming then depth > -0.5 else depth > 1.5
 	if wantSwim ~= swimming then
@@ -150,9 +232,8 @@ local function step(dt: number)
 		hum.PlatformStand = swimming
 		linVel.MaxForce = if swimming then 1e6 else 0
 		align.MaxTorque = if swimming then 1e6 else 0
-		if swimming and plunge then
+		if swimming and velocity.Y < -20 then
 			splash(hrp.Position)
-			velocity = plunge.dir * 10 + Vector3.new(0, -PLUNGE_SPEED, 0)
 		end
 		if not swimming then
 			-- pop out of the water so you can climb onto a dock
@@ -199,18 +280,8 @@ local function step(dt: number)
 	end
 
 	local target = dir * speed
-	-- Diving-board plunge: head-first down to the board's depth, then normal swimming
-	local plunging = false
-	if plunge then
-		if depth < plunge.depth and os.clock() < plunge.untilT then
-			target = plunge.dir * 8 + Vector3.new(0, -PLUNGE_SPEED, 0)
-			plunging = true
-		else
-			plunge = nil
-		end
-	end
 	-- gentle sink when idle, stronger stop near the seabed
-	if dir.Magnitude < 0.05 and not plunging then
+	if dir.Magnitude < 0.05 then
 		target = Vector3.new(0, -1.5, 0)
 	end
 	velocity = velocity:Lerp(target, math.clamp(dt * 6, 0, 1)) + knock

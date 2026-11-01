@@ -33,10 +33,10 @@ Read this first, then `docs/UI_OVERHAUL_PLAN.md` (what was built, by phase) and
 
 ## First task next session: finish the modal redesign from screenshots
 
-Done in phase 3.2: Shop, Bag & Dock, Upgrades, Codex, Quests & Tide Pass (see below).
-Still to do, as the owner sends screenshots (they can attach 5 per message): Rebirth,
-Leaderboards, Friends (Players), Trade, Settings, Diver, the reveal card, offers and the
-death, robbed and offline popups (`OfferController`). For each one:
+Done in phase 3.2: Shop, Bag & Dock, Upgrades, Codex, Quests & Tide Pass. Done in 3.3:
+Resurface (Rebirth), Leaderboards, Players, Settings (see below). Still to do, as the owner
+sends screenshots (they can attach 5 per message): Trade, Diver, the reveal card, offers and
+the death, robbed and offline popups (`OfferController`). For each one:
 
 1. Say what's wrong: hierarchy, density, "website-ness", unclear actions, broken icons.
 2. Propose the game-like version on the design canvas first (one artboard per screen).
@@ -121,6 +121,35 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
     and claimed tiles use the drawn check icon instead of a check glyph.
   - StyLua reformatted the four controllers it touched (HUD, Menu, Shop, UI), which were not
     StyLua-clean before.
+- **Phase 3.3** (on top of `4e4b27a` "changes", which is 3.2 applied):
+  - **Diving board = a real dive.** Jumping off a board no longer lets the default Roblox
+    jump flail into the water. `SwimController` takes over with a scripted swan dive:
+    - In the air: a ballistic arc out to sea (`DIVE_OUT`, `DIVE_LAUNCH`, `DIVE_GRAVITY`). The
+      body rotates so the head follows the arc: upright, then horizontal at the top, then
+      head-first down for a near-vertical entry.
+    - Entry: a big splash.
+    - Underwater: a fast streamlined glide that curves from straight down to forward-down,
+      slowing to swim speed at the board depth, then hands over to normal swimming.
+    - It runs through the swim LinearVelocity/AlignOrientation, so other players see it.
+      `SwimAnimController` adds a streamlined pose (arms locked overhead, legs together,
+      dolphin kick), worked out from the body's tilt (air) or a steep fast plunge (water),
+      so it also shows on every client.
+    - Needs a Studio check: arc length off a raised dock, R6 arm direction, camera feel.
+  - Resurface: stat slabs with luck and token pills and a drawn arrow. Requirements use
+    tick/cross icon tiles (the old ✓/✗ glyphs rendered as boxes). The RESURFACE button is a
+    big gold slab when ready and a locked slate one otherwise. Keep/resets are pill clouds.
+    Talents are whole-card buttons with token price plates and level pips. Rebuilds only on a
+    visible change (LifetimeCoins ticks every second).
+  - Leaderboards: the podium is taller (the #1 medal was clipped at the top), with GameCard
+    blocks and a crown for first. Ranks 4–10 always show, open spots dimmed, and your own row
+    is outlined.
+  - Players: a perks strip with pills. "Leave party" only shows when you're in a party
+    (party names are kept from `PartyUpdated`); otherwise "Invite friends" opens Roblox's
+    invite sheet. There's an empty-state card, and party members are outlined.
+  - Settings: rows with coloured icon tiles, a 10-segment volume meter with a percent
+    readout, a chunky ON/OFF switch, and controls shown as key caps. `settingRow` takes a
+    `reserve` width (the Diver window passes 112).
+  - New drawn icons: `arrow`, `music`, `keyboard`.
 
 ## Still to do (priority order)
 
