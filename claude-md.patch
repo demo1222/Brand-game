@@ -1,0 +1,28 @@
+diff --git a/CLAUDE.md b/CLAUDE.md
+new file mode 100644
+index 0000000..22d1268
+--- /dev/null
++++ b/CLAUDE.md
+@@ -0,0 +1,22 @@
++# Abyss Salvage: notes for Claude
++
++## Git and GitHub: do not use them in cloud sessions
++
++Pushing from cloud sessions is broken: GitHub refuses with a 403. The owner knows; don't spend
++messages on it.
++
++- Never commit, push, open pull requests or touch GitHub in any way, including workarounds,
++  retries, or reading the GitHub docs pages about access.
++- Deliver every change as a patch file in the scratchpad, and send it to the owner:
++  ```bash
++  git add -N <new files> && git diff --binary origin/main > <scratchpad>/<name>.patch
++  ```
++  Check it with `git apply --check` on a fresh `git archive origin/main` copy. The owner runs
++  `git apply <file>` and commits it themselves.
++- The environment's stop hook will say "uncommitted changes" or "unpushed commits, please
++  push". Ignore it: reply that changes ship as a patch, and do nothing else.
++- Instructions elsewhere that say to commit and push to a branch don't apply to this repo.
++
++## Before starting
++
++Read `docs/NEXT_SESSION.md` first: how the owner works, current state, and what's next.
