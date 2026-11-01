@@ -153,24 +153,9 @@ function QuestService.UnlockPremium(player: Player): boolean
 	return true
 end
 
--- Tier rewards (§15.5)
+-- Tier rewards (§15.5) live in shared Formulas so the Tide Pass UI can preview them
 function QuestService.TierReward(tier: number, premium: boolean)
-	if premium then
-		if tier == TP.Tiers then
-			return { Relic = "Mythic" }
-		elseif tier % 10 == 0 then
-			return { Relic = "Epic" }
-		elseif tier % 5 == 0 then
-			return { Boost = "MutationPotion", Seconds = 600 }
-		end
-		return { Pearls = 10 }
-	end
-	if tier % 10 == 0 then
-		return { Relic = "Rare" }
-	elseif tier % 5 == 0 then
-		return { Pearls = 20 }
-	end
-	return { Coins = 500 * tier }
+	return Formulas.TierReward(tier, premium)
 end
 
 local function claimTier(player: Player, tier: number, premium: boolean)

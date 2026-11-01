@@ -258,7 +258,7 @@ function InventoryService.Start()
 		end
 		local price = InventoryService.Sell(player, uid)
 		if price > 0 then
-			Net.Notify:FireClient(player, `Sold for {NumberFormat.short(price)} Coins`, "coins")
+			Net.CoinBurst:FireClient(player, price, nil, "Sold!")
 		end
 	end)
 
@@ -285,7 +285,7 @@ function InventoryService.Start()
 			services.CurrencyService.AddCoins(player, total, "SellCommons")
 			services.QuestService.Progress(player, "Sell", count)
 			services.DataService.Replicate(player, "Bag", "Storage")
-			Net.Notify:FireClient(player, `Sold {count} Commons for {NumberFormat.short(total)} Coins`, "coins")
+			Net.CoinBurst:FireClient(player, total, nil, `Sold {count} Commons!`)
 		end
 	end)
 

@@ -14,6 +14,7 @@ local ORDER = {
 	"AudioController",
 	"PromptController",
 	"HUDController",
+	"FXController",
 	"SonarController",
 	"RevealController",
 	"ShopController",

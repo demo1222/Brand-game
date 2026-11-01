@@ -18,6 +18,7 @@ local SOUND_IDS = {
 	Roar = "", -- Leviathan wind-up
 	Reveal = "", -- rarity reveal (pitched per tier)
 	Alarm = "", -- dock intruder bell
+	Coins = "", -- coin burst (collect / sell)
 }
 
 local AudioController = {}
@@ -61,7 +62,7 @@ function AudioController.Start()
 	for _, n in { "ReefMusic", "DeepDrone", "HuntLayer", "Heartbeat" } do
 		make(n, true)
 	end
-	for _, n in { "Roar", "Reveal", "Alarm" } do
+	for _, n in { "Roar", "Reveal", "Alarm", "Coins" } do
 		make(n, false)
 	end
 	Net.PredatorHint.OnClientEvent:Connect(function(hint)

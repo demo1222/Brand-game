@@ -105,6 +105,8 @@ local function renderStand(stand: BasePart, relic, visible: boolean, mult: numbe
 		local def = Relics.ById[relic.id]
 		local model = Build.RelicModel(def, Rarities[relic.rarity].Color, relic.mutations, Mutations.ById, relic.size)
 		model.Name = "RelicModel"
+		model:SetAttribute("Rarity", relic.rarity)
+		model:SetAttribute("RelicId", relic.id)
 		model:PivotTo(CFrame.new(stand.Position + Vector3.new(0, 2.8, 0)) * stand.CFrame.Rotation)
 		model.Parent = stand
 		local mut = if #relic.mutations > 0 then table.concat(relic.mutations, " ") .. " " else ""
@@ -278,7 +280,8 @@ function DockService.Collect(player: Player)
 	data.Uncollected = 0
 	services.CurrencyService.AddCoins(player, amount, "DockIncome")
 	services.QuestService.Progress(player, "Collect", 1)
-	Net.Notify:FireClient(player, `+{NumberFormat.short(amount)} Coins`, "coins")
+	local dock = dockOf[player]
+	Net.CoinBurst:FireClient(player, amount, dock and dock.Pad.Position, "Collected!")
 	data.Flags.Collects = (data.Flags.Collects or 0) + 1
 	if data.Flags.Collects == 5 and not services.MonetizationService.Owns(player, "AutoCollect") then
 		Net.Offer:FireClient(player, "AutoCollect")
@@ -530,7 +533,7 @@ function DockService.Start()
 			amount *= 2
 		end
 		services.CurrencyService.AddCoins(player, amount, "Offline")
-		Net.Notify:FireClient(player, `Welcome back! +{NumberFormat.short(amount)} Coins`, "coins")
+		Net.CoinBurst:FireClient(player, amount, nil, "Welcome back!")
 	end)
 	Net.ActivateGate.OnServerEvent:Connect(function(player)
 		if limiter:Check(player) then

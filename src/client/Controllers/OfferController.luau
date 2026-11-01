@@ -12,12 +12,14 @@ local Passes = require(Shared.Config.Passes)
 local Products = require(Shared.Config.Products)
 local Economy = require(Shared.Config.Economy)
 local Kit = require(script.Parent.Parent.UI.Kit)
+local Icons = require(script.Parent.Parent.UI.Icons)
 
 local New, T = Kit.New, Kit.Theme
 local OfferController = {}
 local controllers
 local lastUnprompted = -math.huge
 local current: Frame? = nil
+local currentHolder: Frame? = nil
 
 local UNPROMPTED = { StarterPack = true, Drone = true }
 
@@ -46,24 +48,76 @@ function OfferController.Init(c)
 end
 
 local function closeCurrent()
-	if current then
-		current:Destroy()
-		current = nil
+	if currentHolder then
+		currentHolder:Destroy()
 	end
+	currentHolder = nil
+	current = nil
 end
 
-local function modal(height: number?): Frame
+-- Modal with a dim backdrop, a hero icon badge overlapping the top edge and a soft glow.
+-- Returns the content panel (vertical list layout).
+local function modal(height: number?, icon: string?, color: Color3?): Frame
 	closeCurrent()
+	local accent = color or T.Accent
+	local holder = New("Frame", {
+		Name = "ModalHolder",
+		BackgroundColor3 = Color3.fromRGB(0, 4, 12),
+		BackgroundTransparency = 0.45,
+		Size = UDim2.new(1, 0, 1, 60),
+		Position = UDim2.fromOffset(0, -60),
+		Active = true,
+		ZIndex = 20,
+		Parent = controllers.UIController.Overlay,
+	})
+	local h = (height or 230) + 34
 	local f = Kit.Panel({
 		Name = "Modal",
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromOffset(380, height or 230),
-		Parent = controllers.UIController.Overlay,
-	}, { Kit.Padding(14), Kit.List(8, false, Enum.HorizontalAlignment.Center) })
+		Position = UDim2.new(0.5, 0, 0.5, 30),
+		Size = UDim2.fromOffset(400, h),
+		ZIndex = 21,
+		Parent = holder,
+	}, {
+		New("UIPadding", {
+			PaddingTop = UDim.new(0, 44),
+			PaddingBottom = UDim.new(0, 14),
+			PaddingLeft = UDim.new(0, 16),
+			PaddingRight = UDim.new(0, 16),
+		}),
+		Kit.List(8, false, Enum.HorizontalAlignment.Center),
+	})
+	local stroke = f:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		stroke.Color = accent
+		stroke.Transparency = 0.05
+		stroke.Thickness = 2.5
+	end
+	Kit.Glow(holder, accent, 170, { Position = UDim2.new(0.5, 0, 0.5, 30 - h / 2), ZIndex = 20 })
+	local badge = Kit.IconBadge(icon or "✦", accent, 76, {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, 30 - h / 2),
+		ZIndex = 23,
+		Parent = holder,
+	})
 	Kit.Pop(f)
+	Kit.Pop(badge)
 	current = f
+	currentHolder = holder
 	return f
+end
+
+local function title(parent: Frame, text: string, color: Color3?, order: number)
+	return Kit.Title({
+		Text = text,
+		TextSize = 24,
+		TextColor3 = color or T.Text,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		LayoutOrder = order,
+		Size = UDim2.new(1, 0, 0, 30),
+		ZIndex = 22,
+		Parent = parent,
+	})
 end
 
 local function buttonsRow(parent: Frame, order: number)
@@ -93,8 +147,8 @@ function OfferController.Show(key: string)
 	end
 	Net.OfferShown:FireServer(key)
 	local def = pass or product
-	local f = modal()
-	Kit.Label({ Text = def.name, Font = T.Bold, TextSize = 22, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 30), Parent = f })
+	local f = modal(nil, Icons.Get(key), T.Gold)
+	title(f, def.name, Kit.Lighten(T.Gold, 0.3), 1)
 	Kit.Label({
 		Text = OFFER_TEXT[key] or def.desc or "",
 		TextSize = 16,
@@ -112,7 +166,7 @@ function OfferController.Show(key: string)
 end
 
 function OfferController.Confirm(text: string, okLabel: string, callback: (boolean) -> ())
-	local f = modal(190)
+	local f = modal(190, "💬", T.Accent)
 	Kit.Label({ Text = text, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 70), Parent = f })
 	local row = buttonsRow(f, 2)
 	Kit.Button(okLabel, T.Good, function()
@@ -132,7 +186,7 @@ function OfferController.Confirm(text: string, okLabel: string, callback: (boole
 end
 
 local function deathScreen(info)
-	local f = modal(260)
+	local f = modal(260, if info.Cause == "Oxygen" then Icons.Get("Oxygen") else "💀", T.Bad)
 	local lowScare = (controllers.State.Get("Settings") or {}).LowScare
 	local causeText = ({
 		Leviathan = if lowScare then "The Leviathan got you." else "THE LEVIATHAN GOT YOU",
@@ -141,7 +195,7 @@ local function deathScreen(info)
 		Eel = "Shocked by an eel.",
 		Jellyfish = "Stung by jellyfish.",
 	})[info.Cause] or "You were knocked out."
-	Kit.Label({ Text = causeText, Font = T.Bold, TextSize = 20, TextColor3 = T.Bad, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 30), Parent = f })
+	title(f, causeText, Kit.Lighten(T.Bad, 0.3), 1)
 	local bagText = if info.BagCount > 0
 		then `Your bag ({info.BagCount} relics, ~{NumberFormat.short(info.BagValue)} Coins) will sink in`
 		else "Your bag was empty."
@@ -177,8 +231,8 @@ local function deathScreen(info)
 end
 
 local function robbedScreen(info)
-	local f = modal(250)
-	Kit.Label({ Text = "YOU WERE ROBBED!", Font = T.Bold, TextSize = 22, TextColor3 = T.Bad, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 30), Parent = f })
+	local f = modal(250, Icons.Get("Alert"), T.Bad)
+	title(f, "YOU WERE ROBBED!", Kit.Lighten(T.Bad, 0.3), 1)
 	Kit.Label({ Text = `{info.Thief} stole your {info.Rarity} {info.Relic}.`, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 40), Parent = f })
 	local row = buttonsRow(f, 3)
 	Kit.Button(`Revenge! ({info.RevengeSeconds}s)`, T.Bad, function()
@@ -195,8 +249,8 @@ local function robbedScreen(info)
 end
 
 local function offlineScreen(info)
-	local f = modal(240)
-	Kit.Label({ Text = "Welcome back, diver!", Font = T.Bold, TextSize = 22, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 30), Parent = f })
+	local f = modal(240, Icons.Get("Offline"), T.Good)
+	title(f, "Welcome back, diver!", nil, 1)
 	Kit.Label({
 		Text = `Your dock earned {NumberFormat.short(info.Amount)} Coins while you were away ({NumberFormat.time(math.min(info.Elapsed, info.CapHours * 3600))}, cap {info.CapHours}h).`,
 		TextSize = 16,

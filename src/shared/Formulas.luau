@@ -131,4 +131,24 @@ function Formulas.LevelXp(level: number): number
 	return math.floor(100 * level ^ 1.5)
 end
 
+-- Tide Pass tier rewards (§15.5). Shared so the client can preview exactly what the server grants.
+function Formulas.TierReward(tier: number, premium: boolean)
+	if premium then
+		if tier == Economy.TidePass.Tiers then
+			return { Relic = "Mythic" }
+		elseif tier % 10 == 0 then
+			return { Relic = "Epic" }
+		elseif tier % 5 == 0 then
+			return { Boost = "MutationPotion", Seconds = 600 }
+		end
+		return { Pearls = 10 }
+	end
+	if tier % 10 == 0 then
+		return { Relic = "Rare" }
+	elseif tier % 5 == 0 then
+		return { Pearls = 20 }
+	end
+	return { Coins = 500 * tier }
+end
+
 return Formulas

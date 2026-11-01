@@ -62,6 +62,7 @@ local EVENTS = {
 	"Offer",
 	"Leaderboards",
 	"CarryChanged",
+	"CoinBurst", -- (amount, worldPosition?, caption?): coin pop-up + fly-to-HUD effect
 }
 
 local UNRELIABLE = {

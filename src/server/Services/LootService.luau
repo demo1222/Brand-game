@@ -231,19 +231,78 @@ local function salvage(player: Player, part: BasePart, skipHold: boolean?): bool
 	return true
 end
 
+-- Visible node (UI/Visual Overhaul Plan, Phase 2): a sand mound with a glinting relic edge
+-- poking out, plus sparkles. Every node looks the same, so the look gives away nothing
+-- about the server-side roll; sonar reveals rarity.
+local function decorateNode(part: BasePart, zoneIndex: number)
+	local glint = nodeZoneColor(zoneIndex)
+	local cf = part.CFrame
+	Build.Part({
+		Name = "Mound",
+		Size = Vector3.new(3.4, 1.1, 3.0),
+		CFrame = cf * CFrame.new(0, -0.7, 0),
+		Color = Color3.fromRGB(150, 135, 105):Lerp(glint, 0.15),
+		Material = Enum.Material.Sand,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		Children = { Build.Instance("SpecialMesh", { MeshType = Enum.MeshType.Sphere }) },
+		Parent = part,
+	})
+	Build.Part({
+		Name = "Edge",
+		Size = Vector3.new(1.5, 1.1, 0.35),
+		CFrame = cf * CFrame.new(-0.2, 0.05, 0.1) * CFrame.Angles(math.rad(-15), 0, math.rad(22)),
+		Color = Color3.fromRGB(230, 190, 90),
+		Material = Enum.Material.Foil,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		Parent = part,
+	})
+	Build.Part({
+		Name = "Gem",
+		Shape = Enum.PartType.Ball,
+		Size = Vector3.one * 0.55,
+		CFrame = cf * CFrame.new(0.55, 0.15, 0.35),
+		Color = glint,
+		Material = Enum.Material.Neon,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		Parent = part,
+	})
+	local attach = Build.Instance("Attachment", { Name = "SparkleAttachment", Position = Vector3.new(0, 0.4, 0), Parent = part })
+	Build.Instance("ParticleEmitter", {
+		Name = "Sparkles",
+		Texture = "rbxasset://textures/particles/sparkles_main.dds",
+		Color = ColorSequence.new(glint),
+		LightEmission = 1,
+		Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0) }),
+		Lifetime = NumberRange.new(0.8, 1.4),
+		Rate = 6,
+		Speed = NumberRange.new(0.5, 1.5),
+		SpreadAngle = Vector2.new(180, 180),
+		Parent = attach,
+	})
+end
+
 spawnNode = function(zoneIndex: number)
 	local pos = services.WorldService.RandomPointInZone(zoneIndex, rng)
+	local yaw = rng:NextNumber(0, math.pi * 2)
 	local part = Build.Part({
 		Name = "Node",
 		Shape = Enum.PartType.Ball,
 		Size = Vector3.one * 2.2,
-		CFrame = CFrame.new(pos),
+		CFrame = CFrame.new(pos) * CFrame.Angles(0, yaw, 0),
 		Color = nodeZoneColor(zoneIndex),
 		Material = Enum.Material.Neon,
+		Transparency = 1, -- invisible hitbox; the visible "buried relic" is decoration below
 		CanCollide = false,
 		Parent = nodeFolder,
 	})
 	part:SetAttribute("Zone", zoneIndex)
+	decorateNode(part, zoneIndex)
 	Build.Instance("PointLight", { Range = 14, Brightness = 2, Color = part.Color, Parent = part })
 	local prompt = Build.Prompt(part, "Salvage", "Glinting relic", Formulas.SalvageSeconds({}), "Salvage")
 	prompt.MaxActivationDistance = MAX_SALVAGE_DISTANCE

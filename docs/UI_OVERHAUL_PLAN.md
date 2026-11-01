@@ -48,16 +48,31 @@ the `rbxassetid://` there and the UI switches from emoji to the image with no ot
 11. Fix the Lune test harness (it yielded inside a metamethod and crashed on Lune 0.8.9), and
     add RelicArt coverage tests.
 
-## Phase 2 — World & feedback
+## Phase 2 — World & feedback (done)
 
-- Loot nodes in the world: a glinting relic-shaped silhouette instead of a plain ball, with
-  rarity-tinted particles after a sonar ping.
-- Dock stands: a rarity-coloured pedestal ring, a slow bob and spin, and particle auras for
-  Legendary and above.
-- Floating "+1,240" coin pop-ups on collection (§18.3), and coin fly-to-HUD on collection.
-- Restyle the Quests, Tide Pass track (horizontal reward track), Rebirth (before/after
-  multiplier cards), Leaderboards (podium for the top 3), Trade (side-by-side relic cards) and
-  Offer modals.
+- **Loot nodes:** a sand mound with a glinting gold edge, a gem and sparkles replaces the neon
+  ball. Every node looks the same, so the look leaks nothing about the server-side roll. After
+  a sonar ping, the node's sparkles burst in the pinged rarity's colour.
+- **Sonar:** an expanding pulse around the diver, and markers restyled as rounded rarity
+  chips with a pointer.
+- **Dock displays** (`FXController`, client-only): relics on stands bob and spin, and stands get
+  a rarity-coloured glow ring. Legendary+ relics get sparkles and Mythic+ a light pillar.
+  Animation is limited to 60 stands within 110 studs and runs at 30 Hz.
+- **Coin feedback (§18.3):** a floating "+1.24K" with a caption, and coins that fly into the HUD
+  coin badge. Used for collecting, selling, Sell Commons and the offline claim (`CoinBurst`
+  remote).
+- **Quests:** a 7-day login calendar of reward tiles, and quest cards with progress bars and
+  reward pills.
+- **Tide Pass:** a horizontal free/premium reward track that scrolls to your tier. Previews use
+  `Formulas.TierReward`, now shared with the server.
+- **Rebirth:** NOW → AFTER comparison cards, a requirements progress bar, keep/reset
+  summary and a talent tree with level pips.
+- **Leaderboards:** board tabs, a podium for the top 3 and ranked rows below.
+- **Players:** avatar headshots (`rbxthumb://`, no upload needed).
+- **Trade:** both offers side by side as relic cards with ready states, and a card grid
+  picker for your storage.
+- **Popups:** offers, confirms, death, robbed and offline popups have a dim backdrop, a hero
+  icon badge and an accent glow.
 
 ## Phase 3 — Real art pass
 

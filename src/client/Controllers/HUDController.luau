@@ -366,6 +366,21 @@ local function build()
 	end
 end
 
+-- Screen position of the coin badge (FXController flies coins here)
+function HUDController.CoinTarget(): Vector2?
+	local b = refs.coinBadge
+	if not b then
+		return nil
+	end
+	return b.AbsolutePosition + b.AbsoluteSize / 2
+end
+
+function HUDController.BumpCoins()
+	if refs.coinBadge then
+		bump(refs.coinBadge)
+	end
+end
+
 local function refreshCurrencies()
 	local S = controllers.State
 	local coins = S.Get("Coins") or 0

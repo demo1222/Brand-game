@@ -94,7 +94,7 @@ Requirements and multipliers follow the plan, plus a talent tree with 4 talents.
 - Rarity is shown with icons as well as colours, so it works for colour-blind players.
 - **Visual overhaul, Phase 1** ([`UI_OVERHAUL_PLAN.md`](UI_OVERHAUL_PLAN.md)): every relic has a live 3D render (`RelicView`) on collectible cards (`RelicCard`). The Bag & Dock screen is a card grid with a detail panel, and the Codex is a 3D grid with silhouettes for undiscovered relics. The reveal is full-screen with rays and a spinning model. The HUD has currency pills, menu tiles and a responsive scale, the Shop is a tile grid, and Upgrades has progress bars and a 3D suit helmet. Window chrome adds a backdrop and header badges.
 - Icons are emoji in gradient badges (`client/UI/Icons.luau`). Put uploaded `rbxassetid://` ids in `Icons.Images` and they replace the emoji with no code changes.
-- 🟡 Quests, Tide Pass, Rebirth, Leaderboards and Trade use the new Kit styling, but not yet their Phase 2 layouts.
+- **Visual overhaul, Phase 2:** buried "glint" loot nodes, a sonar pulse with rarity-tinted node sparkles, animated dock displays with rarity rings, auras and pillars, and coin pop-ups that fly into the HUD. Also restyled: Quests, a horizontal Tide Pass track, a Rebirth before/after view, a Leaderboards podium, Players with avatars, Trade with relic cards, and popup modals.
 - 📋 Localization and final UI art. The UI is built in code with plain Instances, not Fusion, so it has no dependencies.
 
 ## Section 19 · Art and audio 🟡
