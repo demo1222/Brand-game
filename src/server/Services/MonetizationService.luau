@@ -209,6 +209,7 @@ local handlers: { [string]: (Player, any) -> boolean } = {
 			data.Suit = 2
 			services.DataService.Replicate(player, "Suit")
 			services.UpgradeService.PushDerived(player)
+			services.UpgradeService.ApplySuitVisual(player)
 		end
 		services.InventoryService.GrantRandomRelic(player, "Rare", "StarterPack")
 		services.DataService.Replicate(player, "StarterPackBought")

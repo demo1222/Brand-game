@@ -18,7 +18,7 @@ This file tracks how the code covers each section of [`ABYSS_SALVAGE_MASTER_PLAN
 - Diving without the right suit causes pressure damage (5% HP per second).
 - Air pockets in zones 3–5 (`WorldService`, `DiveService`). Three landmarks per zone.
 - 16 docks in a ring around the Harbor plaza.
-- 🟡 Landmarks are decoration only. They don't raise loot spawn weights yet.
+- Landmarks raise luck ×1.25 for relics found within 70 studs. Loot spawns on cliff shelves, spire ledges and landmarks, not in open water.
 - 🟡 Zone 6 (Sunken Throne) is Update 1. The Titan suit is in config and marked `ComingSoon`.
 
 ## Section 7 · Loot ✅
@@ -47,7 +47,7 @@ This file tracks how the code covers each section of [`ABYSS_SALVAGE_MASTER_PLAN
 - One Leviathan, plus one per 6 deep divers, doubled during Blood Tide.
 - Eels (oxygen hit and knockback) and jellyfish (damage over time and slow).
 - Death: bag lost, Vault Lock keeps one relic, revive in place (35 R$ or a Pass+ daily free revive), and a 90-second lootable bag drop.
-- 🟡 The Leviathan moves straight through obstacles. It uses direct steering, not PathfindingService. Anglerfish lures, pressure-crack geysers and whirlpools are not built yet.
+- The Leviathan steers around cliffs and spires (raycast probe and slide). Anglerfish lures (zone 4), pressure-crack geysers (zone 5) and whirlpools (zone 3) are built.
 
 ## Section 11 · Progression ✅
 All 10 upgrade tracks, 6 suits, player level and XP. Raiding unlocks at level 5 and trading at level 15.
@@ -59,7 +59,7 @@ Requirements and multipliers follow the plan, plus a talent tree with 4 talents.
 - Coins, Pearls and Rebirth Tokens. Selling pays 60 × CPS, with a Sell all Commons button.
 - Big-number formatting. Analytics economy events.
 - `tools/economy_sim.luau` implements §30.3. Run it and compare against §13.3 before you tune.
-- 🟡 Event Tokens and the event shop are not built yet.
+- Event Tokens are earned only by salvaging during live events, and spent in the Event shop tab.
 
 ## Section 14 · Social ✅
 - Dive Party (up to 4 players, shared sonar, +10% luck per member).
@@ -86,7 +86,7 @@ Requirements and multipliers follow the plan, plus a talent tree with 4 talents.
 ## Section 17 · FTUE ✅ / 🟡
 - Scripted first rolls: a Rusty Anchor, then a Rare Doubloon.
 - Objective hints with a guiding beam (`TutorialController`), Starter Pack at minute 8, raid tutorial, 7-day login calendar.
-- 🟡 There is no opening camera flyover.
+- Opening camera fly-over for new players (`IntroController`), skippable.
 
 ## Section 18 · UI ✅
 - HUD from §18.1, built mobile-first with buttons of at least 48 px.
@@ -99,6 +99,7 @@ Requirements and multipliers follow the plan, plus a talent tree with 4 talents.
 
 ## Section 19 · Art and audio 🟡
 - Depth-based lighting (fog, colour correction, bloom, atmosphere).
+- Diver suits are real welded gear per tier (`shared/SuitArt`). Players can hide each part in the Diver window. Swimming is animated procedurally (`SwimAnimController`).
 - Procedural low-poly relic models (`shared/RelicArt`): 60 recognisable models across 51 archetypes, with mutation materials and lights. The dock stands, the thief's carried relic and every UI render share them. `tools/relic_art_check` builds all of them with Lune's Roblox API in CI. Preview: [`docs/images/relic_art_preview.png`](images/relic_art_preview.png).
 - Adaptive music system: `AudioController` holds empty asset IDs. Fill them with licensed audio.
 - 📋 Final modelled art, animation, music, icon and thumbnails. To swap in a real mesh, change `RelicArt.Build` only.

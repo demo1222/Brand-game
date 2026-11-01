@@ -54,7 +54,11 @@ function LootService.BuildMods(player: Player, zoneIndex: number)
 	}
 end
 
-function LootService.RollFor(player: Player, zoneIndex: number)
+-- Landmarks are points of interest (§6): relics found near one roll with extra luck
+local LANDMARK_RADIUS = 70
+local LANDMARK_LUCK = 1.25
+
+function LootService.RollFor(player: Player, zoneIndex: number, position: Vector3?)
 	local data = services.DataService.GetData(player)
 	-- FTUE (§17): first salvage is a Rusty Anchor, second a guaranteed Rare Doubloon
 	if not data.Flags.TutorialSalvage1 then
@@ -64,7 +68,11 @@ function LootService.RollFor(player: Player, zoneIndex: number)
 		data.Flags.TutorialSalvage2 = true
 		return { id = "R021", rarity = "Rare", mutations = {}, size = 1.1 }
 	end
-	return LootRoll.Roll(rng, zoneIndex, LootService.BuildMods(player, zoneIndex))
+	local mods = LootService.BuildMods(player, zoneIndex)
+	if position and services.WorldService.IsNearLandmark(position, zoneIndex, LANDMARK_RADIUS) then
+		mods.luck = (mods.luck or 1) * LANDMARK_LUCK
+	end
+	return LootRoll.Roll(rng, zoneIndex, mods)
 end
 
 local function updatePity(player: Player, zoneIndex: number, rarity: string)
@@ -95,6 +103,7 @@ function LootService.OnRelicFound(player: Player, relic, zoneIndex: number)
 	end
 	services.DataService.Replicate(player, "Stats")
 	services.InventoryService.RecordCodex(player, relic)
+	services.EventService.AwardTokens(player, relic)
 
 	local tier = Rarities.TierOf(relic.rarity)
 	services.QuestService.Progress(player, "Salvage", 1)
@@ -177,7 +186,7 @@ end
 local function getPreRoll(player: Player, node)
 	local roll = node.preRolls[player]
 	if not roll then
-		roll = LootService.RollFor(player, node.zone)
+		roll = LootService.RollFor(player, node.zone, node.pos)
 		node.preRolls[player] = roll
 	end
 	return roll
@@ -306,7 +315,7 @@ spawnNode = function(zoneIndex: number)
 	Build.Instance("PointLight", { Range = 14, Brightness = 2, Color = part.Color, Parent = part })
 	local prompt = Build.Prompt(part, "Salvage", "Glinting relic", Formulas.SalvageSeconds({}), "Salvage")
 	prompt.MaxActivationDistance = MAX_SALVAGE_DISTANCE
-	local node = { zone = zoneIndex, preRolls = {}, holdStart = {}, taken = false }
+	local node = { zone = zoneIndex, pos = pos, preRolls = {}, holdStart = {}, taken = false }
 	nodes[part] = node
 	prompt.PromptButtonHoldBegan:Connect(function(player)
 		node.holdStart[player] = os.clock()

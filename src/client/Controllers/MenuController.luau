@@ -65,12 +65,13 @@ local function firstFreeStand(): number?
 end
 
 local function coinText(n: number): string
-	return `{Icons.Get("Coins")} {NumberFormat.short(n)}`
+	return NumberFormat.short(n)
 end
 
 ------------------------------------------------------------------------------------------
 -- Bag / Dock Manager: card grid + detail panel
 ------------------------------------------------------------------------------------------
+local realizeVisibleCards: () -> ()
 local bag = {
 	tab = nil :: string?,
 	sort = "Value",
@@ -196,9 +197,9 @@ local function renderDetail(item, mult: number)
 	local stats = Kit.Card({ Size = UDim2.new(1, 0, 0, 62), LayoutOrder = 4, Parent = panel }, { Kit.Padding(6), Kit.List(2) })
 	local cps = Formulas.RelicCPS(relic) * mult
 	for i, line in {
-		`{Icons.Get("Income")} +{NumberFormat.short(cps)} Coins/s on display`,
-		`{Icons.Get("Sell")} Sells for {NumberFormat.short(Formulas.SellPrice(relic, mult))}`,
-		`📏 Size {relic.size}x · Zone {def.Zone}`,
+		`+{NumberFormat.short(cps)} Coins/s on display`,
+		`Sells for {NumberFormat.short(Formulas.SellPrice(relic, mult))}`,
+		`Size {relic.size}x · Zone {def.Zone}`,
 	} do
 		Kit.Label({ Text = line, TextSize = 13, Font = T.Bold, Size = UDim2.new(1, 0, 0, 16), LayoutOrder = i, TextWrapped = false, Parent = stats })
 	end
@@ -221,19 +222,29 @@ local function renderDetail(item, mult: number)
 		LayoutOrder = 6,
 		Parent = panel,
 	})
-	local grid = Kit.Grid(Vector2.new(104, 44), 6)
-	grid.Parent = actions
-	local function act(text: string, color: Color3, fn)
-		Kit.Button(text, color, fn, { TextSize = 14, Parent = actions })
+	Kit.List(6, false).Parent = actions
+	-- Primary action full width, the rest in a row of small buttons (UI design)
+	local secondary = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 40), LayoutOrder = 2 })
+	local secGrid = Kit.Grid(Vector2.new(70, 40), 6)
+	secGrid.Parent = secondary
+	local primaryUsed = false
+	local function act(text: string, color: Color3, fn, icon: string?)
+		if not primaryUsed then
+			primaryUsed = true
+			Kit.Button(text, color, fn, { Size = UDim2.new(1, 0, 0, 46), TextSize = 14, Icon = icon, LayoutOrder = 1, Parent = actions })
+		else
+			secondary.Parent = actions
+			Kit.Button(text, color, fn, { TextSize = 12, Icon = icon, Parent = secondary })
+		end
 	end
 	if item.where == "Stands" or item.where == "Vault" then
-		act(`{Icons.Get("Take")} Take`, T.PanelLight, function()
+		act("Take", T.PanelLight, function()
 			bag.selected = nil
 			Net.RequestPickupRelic:FireServer(tonumber(item.slot), item.where == "Vault")
 		end)
 		return
 	end
-	act(`{Icons.Get("Display")} Display`, T.Good, function()
+	act("Display on dock", T.Accent, function()
 		local slot = firstFreeStand()
 		if slot then
 			bag.selected = nil
@@ -246,24 +257,42 @@ local function renderDetail(item, mult: number)
 		end
 	end)
 	if (S.Derived("VaultCount") or 0) > 0 then
-		act(`{Icons.Get("Vault")} Vault`, T.Gold, function()
+		act("Vault", T.PanelLight, function()
 			bag.selected = nil
 			placeInVault(relic)
 		end)
 	end
-	act(if relic.locked then "🔓 Unlock" else `{Icons.Get("Lock")} Lock`, T.PanelLight, function()
+	act(if relic.locked then "Unlock" else "Lock", T.PanelLight, function()
 		Net.RequestToggleLock:FireServer(relic.uid)
 	end)
 	if not relic.locked then
-		act(`{Icons.Get("Sell")} Sell`, T.Bad, function()
+		act("Sell", T.BadDeep, function()
 			bag.selected = nil
 			Net.RequestSell:FireServer(relic.uid)
 		end)
 	end
 	if table.find(relic.mutations, "Barnacled") then
-		act(`{Icons.Get("Clean")} Clean`, Color3.fromRGB(150, 130, 100), function()
+		act("Clean", Color3.fromRGB(110, 96, 74), function()
 			Net.RequestCleanBarnacle:FireServer(relic.uid)
 		end)
+	end
+end
+
+-- Build 3D models only for Bag cards that are (nearly) on screen
+realizeVisibleCards = function()
+	local grid = bagRefs.grid
+	if not grid or not grid.Parent then
+		return
+	end
+	local top = grid.AbsolutePosition.Y - 160
+	local bottom = grid.AbsolutePosition.Y + grid.AbsoluteSize.Y + 160
+	for _, card in grid:GetChildren() do
+		if card:IsA("TextButton") and not RelicCard.IsRealized(card) then
+			local y = card.AbsolutePosition.Y
+			if y + card.AbsoluteSize.Y >= top and y <= bottom then
+				RelicCard.Realize(card)
+			end
+		end
 	end
 end
 
@@ -284,15 +313,15 @@ local function renderBag()
 	for _ in S.Get("Vault") or {} do
 		displayN += 1
 	end
-	bagRefs.tabCaption.Bag.Text = `{Icons.Get("Bag")} Bag {#bagList}/{S.Derived("BagSize") or 3}`
-	bagRefs.tabCaption.Storage.Text = `📦 Storage {storageN}`
-	bagRefs.tabCaption.Display.Text = `{Icons.Get("Display")} Dock {displayN}`
+	bagRefs.tabCaption.Bag.Text = `Bag {#bagList}/{S.Derived("BagSize") or 3}`
+	bagRefs.tabCaption.Storage.Text = `Storage {storageN}`
+	bagRefs.tabCaption.Display.Text = `Dock {displayN}`
 	bagRefs.paintTabs(bag.tab)
 	bagRefs.sortButton.Text = `⇅ {bag.sort}`
 	bagRefs.sellCommons.Visible = bag.tab == "Storage"
 	bagRefs.hint.Text = if bag.tab == "Bag"
-		then "⚠ Bag relics are lost if you die. Swim home to secure them!"
-		elseif bag.tab == "Display" then `{Icons.Get("Income")} Your dock earns +{NumberFormat.short(S.Get("IncomePerSecond") or 0)}/s`
+		then "Bag relics are lost if you die. Swim home to secure them!"
+		elseif bag.tab == "Display" then `Your dock earns +{NumberFormat.short(S.Get("IncomePerSecond") or 0)}/s`
 		else "Display your best relics to earn Coins while you dive."
 	bagRefs.hint.TextColor3 = if bag.tab == "Bag" then T.Gold else T.Muted
 	if sig == bag.sig then
@@ -308,7 +337,8 @@ local function renderBag()
 		end
 		RelicCard.new({
 			Relic = it.relic,
-			Subtitle = `+{NumberFormat.short(Formulas.RelicCPS(it.relic) * mult)}/s`,
+			Subtitle = `+{NumberFormat.short(Formulas.RelicCPS(it.relic) * mult)} / s`,
+			LazyModel = true,
 			Selected = it.key == bag.selected,
 			LayoutOrder = i,
 			OnClick = function()
@@ -335,6 +365,7 @@ local function renderBag()
 		bag.selected = nil
 	end
 	renderDetail(selectedItem, mult)
+	task.defer(realizeVisibleCards)
 end
 
 local function buildBag(body: Frame)
@@ -368,7 +399,7 @@ local function buildBag(body: Frame)
 		bag.sig = ""
 		renderBag()
 	end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -128, 0, 0), Size = UDim2.fromOffset(110, 44), TextSize = 14, Parent = body })
-	bagRefs.sellCommons = Kit.Button(`{Icons.Get("Sell")} Commons`, T.Bad, function()
+	bagRefs.sellCommons = Kit.Button("Sell Commons", T.BadDeep, function()
 		Net.RequestSellCommons:FireServer()
 	end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.fromOffset(122, 44), TextSize = 14, Parent = body })
 	bagRefs.hint = Kit.Label({
@@ -382,7 +413,14 @@ local function buildBag(body: Frame)
 		Parent = body,
 	})
 	bagRefs.grid = Kit.Scroll({ Position = UDim2.fromOffset(0, 70), Size = UDim2.new(1, -246, 1, -70), Parent = body })
-	Kit.Grid(Vector2.new(108, 136), 8).Parent = bagRefs.grid
+	Kit.Grid(Vector2.new(112, 150), 10).Parent = bagRefs.grid
+	-- Only cards scrolled into view get their 3D model (keeps big storages smooth)
+	bagRefs.grid:GetPropertyChangedSignal("CanvasPosition"):Connect(function()
+		realizeVisibleCards()
+	end)
+	bagRefs.grid:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		realizeVisibleCards()
+	end)
 	New("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), Parent = bagRefs.grid })
 	local detailCard = Kit.Card({
 		AnchorPoint = Vector2.new(1, 0),
@@ -422,6 +460,10 @@ local function renderUpgrades()
 	}, { Kit.Corner(14), Kit.Sheen(0.5), Kit.Stroke(suit.Color, 2, 0.05) })
 	Kit.Glow(stage, suit.Color, 100)
 	RelicView.Archetype("helmet", { main = suit.Color, accent = Color3.fromRGB(255, 196, 64) }, { Spin = 30, ZIndex = 2, Parent = stage })
+	local custom = Kit.Button("", T.PanelDark, function()
+		controllers.UIController.Open("Diver")
+	end, { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -4, 1, -4), Size = UDim2.fromOffset(32, 32), ZIndex = 3, Parent = stage })
+	Kit.Icon.new("diver", 18, T.Accent, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), ZIndex = 4, Parent = custom })
 	Kit.Title({ Text = suit.Name, TextSize = 22, Position = UDim2.fromOffset(124, 8), Size = UDim2.new(1, -290, 0, 26), TextWrapped = false, Parent = sr })
 	Kit.Label({
 		Text = `Safe down to: {Zones.List[math.min(suitIndex, #Zones.List)].Name}`,
@@ -454,7 +496,7 @@ local function renderUpgrades()
 		})
 		Kit.Button(coinText(nextSuit.Cost), if affordable then T.Good else T.PanelLight, function()
 			Net.RequestBuySuit:FireServer()
-		end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 54), Size = UDim2.fromOffset(150, 52), TextSize = 18, Parent = sr })
+		end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 54), Size = UDim2.fromOffset(150, 52), TextSize = 18, Icon = "coin", Parent = sr })
 	else
 		Kit.Pill("MAX SUIT", T.Gold, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), TextSize = 16, Size = UDim2.fromOffset(0, 32), Parent = sr })
 	end
@@ -475,14 +517,14 @@ local function renderUpgrades()
 			local cost = Upgrades.Cost(track.Id, lvl)
 			Kit.Button(coinText(cost), if coins >= cost then T.Good else T.PanelLight, function()
 				Net.RequestUpgrade:FireServer(track.Id)
-			end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(140, 50), Parent = r })
+			end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(140, 50), Icon = "coin", Parent = r })
 		end
 	end
 	local g = row(upScroll, o(), 64)
 	Kit.IconBadge(Icons.Get("Gate"), T.Bad, 46, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 14, 0.5, 0), Parent = g })
 	Kit.Title({ Text = "Laser Gate", TextSize = 18, Position = UDim2.fromOffset(74, 8), Size = UDim2.new(1, -230, 0, 22), Parent = g })
 	Kit.Label({ Text = "Blocks raids on your dock for a while", TextColor3 = T.Muted, TextSize = 13, Position = UDim2.fromOffset(74, 32), Size = UDim2.new(1, -230, 0, 18), Parent = g })
-	Kit.Button("⚡ Activate", T.Bad, function()
+	Kit.Button("Activate", T.BadDeep, function()
 		Net.ActivateGate:FireServer()
 	end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(140, 48), Parent = g })
 end
@@ -514,7 +556,7 @@ local function renderCodex()
 	end)
 	local zone = Zones.List[codexZone]
 	local pct = math.floor(found / math.max(total, 1) * 100)
-	codexTitle.Text = `{Icons.Get(zone.Id)} {zone.Name}: {found}/{total} found · 100% = +5% luck here`
+	codexTitle.Text = `{zone.Name}: {found}/{total} found · 100% = +5% luck here`
 	codexSetBar(found / math.max(total, 1), if pct >= 100 then T.Gold else Kit.Lighten(zone.FogColor, 0.35), `{pct}%`)
 	codexPaintTabs(tostring(codexZone))
 
@@ -584,7 +626,7 @@ local function buildCodex(body: Frame)
 	local _, setBar = Kit.Bar({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -4, 0, 56), Size = UDim2.fromOffset(140, 18), TextSize = 12, Parent = body })
 	codexSetBar = setBar
 	codexScroll = Kit.Scroll({ Position = UDim2.fromOffset(0, 82), Size = UDim2.new(1, 0, 1, -82), Parent = body })
-	Kit.Grid(Vector2.new(112, 140), 8).Parent = codexScroll
+	Kit.Grid(Vector2.new(112, 150), 10).Parent = codexScroll
 	New("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), Parent = codexScroll })
 end
 
@@ -604,18 +646,18 @@ local function questDef(id: string)
 end
 
 local QUEST_ICONS = {
-	Salvage = "⛏️",
-	Escape = "🏝️",
-	RarePlus = "◆",
-	Mutated = "✨",
-	Collect = Icons.Get("Coins"),
-	Upgrade = "⬆️",
-	ReachZone3 = "⚓",
-	Sell = Icons.Get("Sell"),
-	LeviathanEscape = "🐉",
-	Steal = "🦹",
-	Mut_Bioluminescent = "💡",
-	EpicPlus = "★",
+	Salvage = "wrench",
+	Escape = "home",
+	RarePlus = "sparkle",
+	Mutated = "sparkle",
+	Collect = "coin",
+	Upgrade = "upgrade",
+	ReachZone3 = "anchor",
+	Sell = "coin",
+	LeviathanEscape = "eye",
+	Steal = "lock",
+	Mut_Bioluminescent = "sparkle",
+	EpicPlus = "star",
 }
 
 -- Icon, short text and colour for a reward table ({Coins}, {Pearls}, {Relic}, {Boost})
@@ -626,7 +668,7 @@ local function rewardInfo(reward): (string, string, Color3)
 	elseif reward.Boost then
 		return Icons.Get(reward.Boost), if reward.Boost == "LuckPotion" then "Luck potion" else "Mutation potion", Color3.fromRGB(170, 100, 255)
 	elseif reward.Coins and reward.Pearls then
-		return Icons.Get("Coins"), `{NumberFormat.short(reward.Coins)} + {reward.Pearls}{Icons.Get("Pearls")}`, T.Gold
+		return Icons.Get("Coins"), `{NumberFormat.short(reward.Coins)} + {reward.Pearls} pearls`, T.Gold
 	elseif reward.Pearls then
 		return Icons.Get("Pearls"), `{reward.Pearls} Pearls`, T.Pearl
 	end
@@ -686,7 +728,7 @@ local function renderQuests()
 	-- Login calendar
 	local streak = S.Get("LoginStreak") or 1
 	local claimedToday = (S.Get("LastDailyClaimDay") or 0) == os.time() // 86400
-	header(questScroll, o(), `🔥 DAILY LOGIN · {streak} day streak`)
+	header(questScroll, o(), `Daily login · {streak} day streak`)
 	local cal = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 108), LayoutOrder = o(), Parent = questScroll }, { Kit.List(6, true) })
 	local dayInCycle = ((streak - 1) % #Economy.DailyRewards) + 1
 	for i, reward in Economy.DailyRewards do
@@ -700,7 +742,7 @@ local function renderQuests()
 	end
 
 	local q = S.Get("Quests") or {}
-	for _, section in { { "📜 DAILY QUESTS", q.Daily or {} }, { "🗓️ WEEKLY QUESTS", q.Weekly or {} } } do
+	for _, section in { { "Daily quests", q.Daily or {} }, { "Weekly quests", q.Weekly or {} } } do
 		header(questScroll, o(), section[1])
 		for _, entry in section[2] do
 			local def = questDef(entry.Id)
@@ -711,18 +753,18 @@ local function renderQuests()
 					local s = r:FindFirstChildOfClass("UIStroke")
 					s.Color, s.Transparency, s.Thickness = T.Gold, 0, 2
 				end
-				Kit.IconBadge(QUEST_ICONS[def.Stat] or "📜", if done then T.Good else T.AccentDeep, 52, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Parent = r })
+				Kit.IconBadge(QUEST_ICONS[def.Stat] or "quests", if done then T.Good else T.AccentDeep, 52, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Parent = r })
 				Kit.Title({ Text = def.Text, TextSize = 17, Position = UDim2.fromOffset(72, 6), Size = UDim2.new(1, -220, 0, 22), TextWrapped = false, TextTruncate = Enum.TextTruncate.AtEnd, Parent = r })
 				local _, setBar = Kit.Bar({ Position = UDim2.fromOffset(72, 32), Size = UDim2.new(1, -220, 0, 16), TextSize = 11, Color = if done then T.Good else T.Accent, Parent = r })
 				setBar(entry.Progress / def.Goal, nil, `{math.min(entry.Progress, def.Goal)}/{def.Goal}`)
 				local pills = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(72, 52), Size = UDim2.new(1, -220, 0, 20), Parent = r }, { Kit.List(4, true) })
 				if def.Coins then
-					Kit.Pill(`{Icons.Get("Coins")} {NumberFormat.short(def.Coins)}`, Kit.Darken(T.Gold, 0.55), { TextColor3 = T.Gold, LayoutOrder = 1, Parent = pills })
+					Kit.Pill(NumberFormat.short(def.Coins), Kit.Darken(T.Gold, 0.7), { TextColor3 = T.Gold, Icon = "coin", LayoutOrder = 1, Parent = pills })
 				end
 				if def.Pearls then
-					Kit.Pill(`{Icons.Get("Pearls")} {def.Pearls}`, Kit.Darken(T.Pearl, 0.6), { TextColor3 = T.Pearl, LayoutOrder = 2, Parent = pills })
+					Kit.Pill(tostring(def.Pearls), Kit.Darken(T.Pearl, 0.7), { TextColor3 = T.Pearl, Icon = "pearl", LayoutOrder = 2, Parent = pills })
 				end
-				Kit.Pill(`🌊 +{def.Xp} XP`, Kit.Darken(T.Accent, 0.6), { TextColor3 = T.Accent, LayoutOrder = 3, Parent = pills })
+				Kit.Pill(`+{def.Xp} XP`, Kit.Darken(T.Accent, 0.7), { TextColor3 = T.Accent, LayoutOrder = 3, Parent = pills })
 				local b = Kit.Button(if entry.Claimed then "✓ Done" elseif done then "Claim!" else "In progress", if entry.Claimed then T.Good elseif done then T.Gold else T.PanelLight, function()
 					if done and not entry.Claimed then
 						Net.RequestClaimQuest:FireServer(entry.Id)
@@ -739,17 +781,17 @@ local function renderQuests()
 	local tp = S.Get("TidePass") or { XP = 0, Premium = false, ClaimedFree = {}, ClaimedPremium = {} }
 	local TPc = Economy.TidePass
 	local tier = tp.XP // TPc.XpPerTier
-	header(questScroll, o(), `🎫 TIDE PASS {TPc.SeasonId} · Tier {tier}/{TPc.Tiers}`, T.Gold)
+	header(questScroll, o(), `Tide Pass {TPc.SeasonId} · Tier {tier}/{TPc.Tiers}`, T.Gold)
 	local top = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 50), LayoutOrder = o(), Parent = questScroll })
 	local _, setTp = Kit.Bar({ Position = UDim2.fromOffset(0, 12), Size = UDim2.new(1, if tp.Premium then 0 else -390, 0, 24), Color = T.Gold, Parent = top })
 	setTp((tp.XP % TPc.XpPerTier) / TPc.XpPerTier, nil, `{tp.XP % TPc.XpPerTier}/{TPc.XpPerTier} XP to tier {tier + 1}`)
 	if not tp.Premium then
-		Kit.Button("🎫 Premium · 499 R$", T.Gold, function()
+		Kit.Button("Premium · 499 R$", T.Gold, function()
 			Net.RequestPurchase:FireServer("Product", "TidePassPremium")
-		end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -196, 0, 2), Size = UDim2.fromOffset(186, 46), TextSize = 14, Parent = top })
-		Kit.Button(`{Icons.Get("Pearls")} {TPc.PremiumPearlCost} Pearls`, T.Accent, function()
+		end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -196, 0, 2), Size = UDim2.fromOffset(186, 46), TextSize = 14, Icon = "ticket", Parent = top })
+		Kit.Button(`{TPc.PremiumPearlCost} Pearls`, T.PanelLight, function()
 			Net.RequestBuyTidePassPearls:FireServer()
-		end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 2), Size = UDim2.fromOffset(186, 46), TextSize = 14, Parent = top })
+		end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 2), Size = UDim2.fromOffset(186, 46), TextSize = 14, Icon = "pearl", Parent = top })
 	end
 	local track = Kit.Card({ Size = UDim2.new(1, -8, 0, 262), LayoutOrder = o(), BackgroundColor3 = T.PanelDark, Parent = questScroll })
 	Kit.Label({ Text = "FREE", Font = T.Title, TextSize = 14, TextColor3 = T.Muted, Position = UDim2.fromOffset(10, 44), Size = UDim2.fromOffset(60, 20), Parent = track })
@@ -816,35 +858,35 @@ local function renderRebirth()
 		end
 	end
 	statCard(UDim.new(0, 0), "NOW", T.AccentDeep, {
-		`🪙 x{Formulas.RebirthMultiplier(n)}`,
-		`🍀 +{math.min(n * 2, 30)}% luck`,
-		`{Icons.Get("Tokens")} {tokens} tokens`,
+		`x{Formulas.RebirthMultiplier(n)} Coins`,
+		`+{math.min(n * 2, 30)}% luck`,
+		`{tokens} tokens`,
 	})
 	statCard(UDim.new(0.5, 34), "AFTER RESURFACING", T.Gold, {
-		`🪙 x{Formulas.RebirthMultiplier(n + 1)}`,
-		`🍀 +{math.min((n + 1) * 2, 30)}% luck`,
-		`{Icons.Get("Tokens")} {tokens + 1} tokens`,
+		`x{Formulas.RebirthMultiplier(n + 1)} Coins`,
+		`+{math.min((n + 1) * 2, 30)}% luck`,
+		`{tokens + 1} tokens`,
 	})
-	Kit.IconBadge("➜", T.Gold, 52, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Parent = compare })
+	Kit.IconBadge("→", T.Gold, 52, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Parent = compare })
 
 	-- Requirements
 	local req = row(rebirthScroll, 2, 96)
 	Kit.Title({ Text = `Requirements · Resurfaces so far: {n}`, TextSize = 16, Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -24, 0, 20), Parent = req })
 	Kit.Label({
-		Text = `{suitOk and "✅" or "❌"} Own the {Upgrades.Suits[Economy.Rebirth.RequiredSuit].Name} suit`,
+		Text = `{suitOk and "✓" or "✗"} Own the {Upgrades.Suits[Economy.Rebirth.RequiredSuit].Name} suit`,
 		Font = T.Bold,
 		TextSize = 14,
 		Position = UDim2.fromOffset(12, 30),
 		Size = UDim2.new(1, -24, 0, 18),
 		Parent = req,
 	})
-	Kit.Label({ Text = `{coinOk and "✅" or "❌"} Lifetime Coins`, Font = T.Bold, TextSize = 14, Position = UDim2.fromOffset(12, 54), Size = UDim2.fromOffset(150, 18), Parent = req })
+	Kit.Label({ Text = `{coinOk and "✓" or "✗"} Lifetime Coins`, Font = T.Bold, TextSize = 14, Position = UDim2.fromOffset(12, 54), Size = UDim2.fromOffset(150, 18), Parent = req })
 	local _, setReq = Kit.Bar({ Position = UDim2.fromOffset(160, 54), Size = UDim2.new(1, -176, 0, 22), Color = if coinOk then T.Good else T.Gold, Parent = req })
 	setReq(lifetime / math.max(need, 1), nil, `{NumberFormat.short(lifetime)} / {NumberFormat.short(need)}`)
 
-	local btn = Kit.Button("🌊 RESURFACE", if ready then T.Gold else T.PanelLight, function()
+	local btn = Kit.Button("RESURFACE", if ready then T.Gold else T.PanelLight, function()
 		Net.RequestRebirth:FireServer()
-	end, { LayoutOrder = 3, Size = UDim2.new(1, -8, 0, 56), TextSize = 22, Font = T.Title, Parent = rebirthScroll })
+	end, { LayoutOrder = 3, Size = UDim2.new(1, -8, 0, 56), TextSize = 22, Font = T.Title, Icon = "rebirth", Parent = rebirthScroll })
 	if ready then
 		Kit.Shine(btn, 1)
 	end
@@ -855,16 +897,16 @@ local function renderRebirth()
 		Kit.Label({ Text = title, Font = T.Title, TextSize = 13, TextColor3 = color, Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -20, 0, 16), Parent = c })
 		Kit.Label({ Text = table.concat(items, " · "), TextSize = 12, TextColor3 = T.Muted, Position = UDim2.fromOffset(10, 22), Size = UDim2.new(1, -20, 0, 36), TextYAlignment = Enum.TextYAlignment.Top, Parent = c })
 	end
-	chipCard(UDim.new(0, 0), "✅ YOU KEEP", T.Good, { "Relics on stands", "Storage", "Codex", "Pearls", "Passes", "Level", "Display Slots" })
-	chipCard(UDim.new(0.5, 4), "♻️ RESETS", T.Bad, { "Coins", "Upgrades", "Suit", "Dive bag" })
+	chipCard(UDim.new(0, 0), "YOU KEEP", T.Good, { "Relics on stands", "Storage", "Codex", "Pearls", "Passes", "Level", "Display Slots" })
+	chipCard(UDim.new(0.5, 4), "RESETS", T.Bad, { "Coins", "Upgrades", "Suit", "Dive bag" })
 
-	header(rebirthScroll, 5, `{Icons.Get("Tokens")} TALENT TREE · {tokens} token{tokens == 1 and "" or "s"}`, T.Gold)
+	header(rebirthScroll, 5, `Talent tree · {tokens} token{tokens == 1 and "" or "s"}`, T.Gold)
 	local talents = S.Get("Talents") or {}
-	local TALENT_ICONS = { StartNeoprene = "🤿", ExtraBag = "🎒", QuietDiver = "🤫", Lungs = "🫁" }
+	local TALENT_ICONS = { StartNeoprene = "diver", ExtraBag = "bag", QuietDiver = "sonar", Lungs = "oxygen" }
 	for i, t in Economy.Rebirth.Talents do
 		local r = row(rebirthScroll, 5 + i, 72)
 		local lvl = talents[t.Id] or 0
-		Kit.IconBadge(TALENT_ICONS[t.Id] or "✦", Color3.fromRGB(170, 100, 255), 50, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Parent = r })
+		Kit.IconBadge(TALENT_ICONS[t.Id] or "star", Color3.fromRGB(170, 100, 255), 50, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Parent = r })
 		Kit.Title({ Text = t.Name, TextSize = 17, Position = UDim2.fromOffset(72, 8), Size = UDim2.new(1, -220, 0, 22), Parent = r })
 		Kit.Label({ Text = t.Desc, TextColor3 = T.Muted, TextSize = 13, Position = UDim2.fromOffset(72, 30), Size = UDim2.new(1, -220, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd, TextWrapped = false, Parent = r })
 		local pips = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(72, 50), Size = UDim2.fromOffset(120, 14), Parent = r }, { Kit.List(4, true) })
@@ -872,7 +914,7 @@ local function renderRebirth()
 			New("Frame", { BackgroundColor3 = if p <= lvl then T.Gold else T.PanelDark, Size = UDim2.fromOffset(22, 10), LayoutOrder = p, Parent = pips }, { Kit.Round() })
 		end
 		local maxed = lvl >= t.Max
-		Kit.Button(if maxed then "MAX" else `{Icons.Get("Tokens")} {t.Cost}`, if maxed then T.Gold elseif tokens >= t.Cost then T.Good else T.PanelLight, function()
+		Kit.Button(if maxed then "MAX" else `{t.Cost} token`, if maxed then T.Gold elseif tokens >= t.Cost then T.Good else T.PanelLight, function()
 			Net.RequestTalent:FireServer(t.Id)
 		end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(120, 46), Parent = r })
 	end
@@ -884,11 +926,11 @@ end
 local lbScroll, lbPaintTabs
 local lbBoard = "TotalValue"
 local LB_TABS = {
-	{ id = "TotalValue", text = "Dock", icon = "🏛️", color = T.Gold },
-	{ id = "Deepest", text = "Deepest", icon = "🌊", color = T.Accent },
-	{ id = "Rebirths", text = "Resurface", icon = "🔱", color = Color3.fromRGB(170, 100, 255) },
-	{ id = "Steals", text = "Steals", icon = "🦹", color = T.Bad },
-	{ id = "Codex", text = "Codex", icon = "📖", color = T.Good },
+	{ id = "TotalValue", text = "Dock", icon = "display", color = T.Gold },
+	{ id = "Deepest", text = "Deepest", icon = "down", color = T.Accent },
+	{ id = "Rebirths", text = "Resurface", icon = "rebirth", color = T.Accent },
+	{ id = "Steals", text = "Steals", icon = "lock", color = T.Accent },
+	{ id = "Codex", text = "Codex", icon = "codex", color = T.Accent },
 }
 local function renderLeaderboards()
 	Kit.Clear(lbScroll)
@@ -904,9 +946,9 @@ local function renderLeaderboards()
 	-- Podium (2nd, 1st, 3rd)
 	local podium = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 190), LayoutOrder = 1, Parent = lbScroll })
 	local spots = {
-		{ rank = 2, x = 0, h = 110, color = Color3.fromRGB(200, 210, 225), medal = "🥈" },
-		{ rank = 1, x = 1, h = 140, color = T.Gold, medal = "🥇" },
-		{ rank = 3, x = 2, h = 90, color = Color3.fromRGB(215, 140, 80), medal = "🥉" },
+		{ rank = 2, x = 0, h = 110, color = Color3.fromRGB(200, 210, 225), medal = "2" },
+		{ rank = 1, x = 1, h = 140, color = T.Gold, medal = "1" },
+		{ rank = 3, x = 2, h = 90, color = Color3.fromRGB(215, 140, 80), medal = "3" },
 	}
 	for _, spot in spots do
 		local r = rows[spot.rank]
@@ -990,7 +1032,7 @@ local function renderPlayers()
 	Kit.Clear(playersScroll)
 	local order = 0
 	local top = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 48), LayoutOrder = 0, Parent = playersScroll })
-	Kit.Label({ Text = "👥 Friends in your server give +10% Coins each. Party members share sonar and +10% luck.", TextColor3 = T.Muted, TextSize = 13, Size = UDim2.new(1, -170, 1, 0), Parent = top })
+	Kit.Label({ Text = "Friends in your server give +10% Coins each. Party members share sonar and +10% luck.", TextColor3 = T.Muted, TextSize = 13, Size = UDim2.new(1, -170, 1, 0), Parent = top })
 	Kit.Button("Leave party", T.PanelLight, function()
 		Net.PartyLeave:FireServer()
 	end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 2), Size = UDim2.fromOffset(150, 44), Parent = top })
@@ -1001,11 +1043,11 @@ local function renderPlayers()
 			avatar(other.UserId, 50, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 8, 0.5, 0), Parent = r })
 			Kit.Title({ Text = other.DisplayName, TextSize = 17, Position = UDim2.fromOffset(68, 10), Size = UDim2.new(1, -330, 0, 22), TextWrapped = false, TextTruncate = Enum.TextTruncate.AtEnd, Parent = r })
 			Kit.Label({ Text = `@{other.Name}`, TextColor3 = T.Muted, TextSize = 12, Position = UDim2.fromOffset(68, 34), Size = UDim2.new(1, -330, 0, 16), TextWrapped = false, Parent = r })
-			Kit.Button("🤿 Party", T.Accent, function()
+			Kit.Button("Party", T.PanelLight, function()
 				Net.PartyInvite:FireServer(other.UserId)
 				controllers.UIController.Toast(`Party invite sent to {other.DisplayName}`, "info")
 			end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -140, 0.5, 0), Size = UDim2.fromOffset(120, 46), Parent = r })
-			Kit.Button(`{Icons.Get("Trade")} Trade`, T.Gold, function()
+			Kit.Button("Trade", T.Gold, function()
 				Net.TradeRequest:FireServer(other.UserId)
 			end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(120, 46), Parent = r })
 		end
@@ -1038,7 +1080,7 @@ local function renderTrade()
 		return order
 	end
 	local banner = row(tradeScroll, o(), 50)
-	Kit.Title({ Text = `{Icons.Get("Trade")} Trading with {st.Partner}`, TextSize = 18, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(1, -200, 1, 0), TextWrapped = false, Parent = banner })
+	Kit.Title({ Text = `Trading with {st.Partner}`, TextSize = 18, Position = UDim2.fromOffset(12, 0), Size = UDim2.new(1, -200, 1, 0), TextWrapped = false, Parent = banner })
 	if st.Countdown then
 		Kit.Pill(`Completing in {math.ceil(st.Countdown)}s`, T.Good, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -12, 0.5, 0), TextSize = 15, Size = UDim2.fromOffset(0, 30), Parent = banner })
 	end
@@ -1063,10 +1105,10 @@ local function renderTrade()
 	side(UDim.new(0.5, 4), `{st.Partner}'s offer`, st.TheirOffer, st.TheirConfirm == true)
 
 	local actions = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 52), LayoutOrder = o(), Parent = tradeScroll }, { Kit.List(8, true, Enum.HorizontalAlignment.Center) })
-	Kit.Button("✓ Confirm", T.Good, function()
+	Kit.Button("Confirm", T.Good, function()
 		Net.TradeConfirm:FireServer()
-	end, { Size = UDim2.fromOffset(160, 48), Parent = actions })
-	Kit.Button("✕ Cancel", T.Bad, function()
+	end, { Size = UDim2.fromOffset(160, 48), Icon = "check", Parent = actions })
+	Kit.Button("Cancel", T.BadDeep, function()
 		Net.TradeCancel:FireServer()
 	end, { Size = UDim2.fromOffset(160, 48), Parent = actions })
 
@@ -1103,72 +1145,294 @@ end
 -- Settings
 ------------------------------------------------------------------------------------------
 local settingsScroll
+
+-- On/off switch (Settings, Diver window)
+local function toggle(parent: Instance, on: boolean, onChange: (boolean) -> (), props)
+	local track = New("TextButton", {
+		Text = "",
+		AutoButtonColor = false,
+		BackgroundColor3 = if on then T.Accent else T.PanelDark,
+		Size = UDim2.fromOffset(52, 30),
+		Parent = parent,
+	}, { Kit.Round(), Kit.Stroke(T.Text, 1, if on then 1 else 0.8) })
+	for k, v in props or {} do
+		(track :: any)[k] = v
+	end
+	New("Frame", {
+		BackgroundColor3 = if on then T.DarkText else T.Muted,
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, if on then 25 else 3, 0.5, 0),
+		Size = UDim2.fromOffset(24, 24),
+		Parent = track,
+	}, { Kit.Round() })
+	track.Activated:Connect(function()
+		onChange(not on)
+	end)
+	return track
+end
+
+-- Labelled row with a control area on the right
+local function settingRow(parent: Instance, order: number, title: string, subtitle: string?)
+	local r = row(parent, order, if subtitle then 60 else 52)
+	Kit.Label({
+		Text = title,
+		Font = T.Bold,
+		TextSize = 15,
+		Position = UDim2.fromOffset(14, if subtitle then 10 else 0),
+		Size = UDim2.new(1, -200, 0, if subtitle then 20 else 52),
+		TextWrapped = false,
+		Parent = r,
+	})
+	if subtitle then
+		Kit.Label({ Text = subtitle, TextSize = 12, TextColor3 = T.Muted, Position = UDim2.fromOffset(14, 31), Size = UDim2.new(1, -200, 0, 16), TextWrapped = false, TextTruncate = Enum.TextTruncate.AtEnd, Parent = r })
+	end
+	return r
+end
+
 local function renderSettings()
 	Kit.Clear(settingsScroll)
 	local settings = table.clone(S.Get("Settings") or { Music = 0.6, SFX = 0.8, LowScare = false })
-	local function stepper(order: number, label: string, key: string)
-		local r = row(settingsScroll, order, 54)
-		Kit.Label({ Text = `{label}: {math.floor(settings[key] * 100)}%`, Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -140, 1, 0), Parent = r })
-		Kit.Button("−", T.PanelLight, function()
-			settings[key] = math.max(0, settings[key] - 0.1)
-			Net.UpdateSettings:FireServer(settings)
-		end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -66, 0.5, 0), Size = UDim2.fromOffset(52, 44), Parent = r })
-		Kit.Button("+", T.PanelLight, function()
-			settings[key] = math.min(1, settings[key] + 0.1)
-			Net.UpdateSettings:FireServer(settings)
-		end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(52, 44), Parent = r })
-	end
-	stepper(1, "Music", "Music")
-	stepper(2, "Sound effects", "SFX")
-	local ls = row(settingsScroll, 3, 54)
-	Kit.Label({ Text = "Lower jump scares", Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -140, 1, 0), Parent = ls })
-	Kit.Button(settings.LowScare and "ON" or "OFF", settings.LowScare and T.Good or T.PanelLight, function()
-		settings.LowScare = not settings.LowScare
+	local function save()
 		Net.UpdateSettings:FireServer(settings)
-	end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(110, 44), Parent = ls })
+	end
+	header(settingsScroll, 1, "Sound")
+	local function volume(order: number, label: string, key: string)
+		local r = settingRow(settingsScroll, order, label)
+		local _, setBar = Kit.Bar({ AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -112, 0.5, 0), Size = UDim2.fromOffset(120, 12), Parent = r })
+		setBar(settings[key], nil, "")
+		Kit.Button("−", T.PanelDark, function()
+			settings[key] = math.max(0, math.floor(settings[key] * 10 - 0.5) / 10)
+			save()
+		end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -58, 0.5, 0), Size = UDim2.fromOffset(44, 40), TextSize = 20, Parent = r })
+		Kit.Button("+", T.PanelDark, function()
+			settings[key] = math.min(1, math.floor(settings[key] * 10 + 1.5) / 10)
+			save()
+		end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(44, 40), TextSize = 20, Parent = r })
+	end
+	volume(2, "Music", "Music")
+	volume(3, "Sound effects", "SFX")
 
-	local codeRow = row(settingsScroll, 4, 54)
-	local box = New("TextBox", {
-		PlaceholderText = "Enter code",
-		Text = "",
-		ClearTextOnFocus = false,
-		BackgroundColor3 = T.Bg,
-		TextColor3 = T.Text,
-		Font = T.Font,
-		TextSize = 16,
-		Position = UDim2.fromOffset(8, 7),
-		Size = UDim2.new(1, -140, 0, 40),
-		Parent = codeRow,
-	}, { Kit.Corner(8) })
-	Kit.Button("Redeem", T.Accent, function()
-		Net.RequestRedeemCode:FireServer(box.Text)
-	end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(110, 44), Parent = codeRow })
+	header(settingsScroll, 4, "Gameplay")
+	local ls = settingRow(settingsScroll, 5, "Lower jump scares", "Softer Leviathan warnings and effects")
+	toggle(ls, settings.LowScare == true, function(v)
+		settings.LowScare = v
+		save()
+	end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0) })
+	local diverRow = settingRow(settingsScroll, 6, "Diver appearance", "Show or hide helmet, tank, fins and gear")
+	Kit.Button("Open", T.PanelDark, function()
+		controllers.UIController.Open("Diver")
+	end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(110, 40), Icon = "diver", Parent = diverRow })
 
-	local nameRow = row(settingsScroll, 5, 54)
-	local nameBox = New("TextBox", {
-		PlaceholderText = `Dock name ({S.Get("RenameTokens") or 0} rename tokens)`,
-		Text = "",
-		ClearTextOnFocus = false,
-		BackgroundColor3 = T.Bg,
-		TextColor3 = T.Text,
-		Font = T.Font,
-		TextSize = 16,
-		Position = UDim2.fromOffset(8, 7),
-		Size = UDim2.new(1, -140, 0, 40),
-		Parent = nameRow,
-	}, { Kit.Corner(8) })
-	Kit.Button("Rename", T.Gold, function()
-		Net.RenameDock:FireServer(nameBox.Text)
-	end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(110, 44), TextColor3 = Color3.fromRGB(40, 25, 0), Parent = nameRow })
+	header(settingsScroll, 7, "Codes & dock")
+	local function inputRow(order: number, placeholder: string, buttonText: string, buttonColor: Color3, onSubmit: (string) -> ())
+		local r = row(settingsScroll, order, 56)
+		local box = New("TextBox", {
+			PlaceholderText = placeholder,
+			PlaceholderColor3 = T.Muted,
+			Text = "",
+			ClearTextOnFocus = false,
+			BackgroundColor3 = T.PanelDark,
+			TextColor3 = T.Text,
+			Font = T.Font,
+			TextSize = 15,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Position = UDim2.fromOffset(8, 8),
+			Size = UDim2.new(1, -140, 0, 40),
+			Parent = r,
+		}, { Kit.Corner(10), New("UIPadding", { PaddingLeft = UDim.new(0, 12) }) })
+		Kit.Button(buttonText, buttonColor, function()
+			onSubmit(box.Text)
+		end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(116, 40), Parent = r })
+	end
+	inputRow(8, "Enter code", "Redeem", T.Accent, function(text)
+		Net.RequestRedeemCode:FireServer(text)
+	end)
+	inputRow(9, `Dock name ({S.Get("RenameTokens") or 0} rename tokens)`, "Rename", T.Gold, function(text)
+		Net.RenameDock:FireServer(text)
+	end)
 
+	header(settingsScroll, 10, "Controls")
 	Kit.Label({
-		Text = "Graphics quality follows your Roblox settings (Esc → Settings). Controls: WASD swim · Space up · Ctrl/C down · Shift boost · Q sonar · G flare · R instant surface · B bag · U upgrades · M shop",
+		Text = "WASD swim · Space up · Ctrl/C down · Shift boost · Q sonar · G flare · R home · B bag · U upgrades · M shop. Graphics quality follows your Roblox settings (Esc → Settings).",
 		TextColor3 = T.Muted,
 		TextSize = 13,
-		LayoutOrder = 6,
-		Size = UDim2.new(1, -8, 0, 60),
+		LayoutOrder = 11,
+		Size = UDim2.new(1, -8, 0, 54),
 		Parent = settingsScroll,
 	})
+end
+
+------------------------------------------------------------------------------------------
+-- Diver window: suit tiers, live avatar preview, show/hide each part (UI design "Diver")
+------------------------------------------------------------------------------------------
+local diver = {
+	body = nil :: Frame?,
+	stage = nil :: Frame?,
+	list = nil :: ScrollingFrame?,
+	spin = nil :: RBXScriptConnection?,
+	previewToken = 0,
+	previewKey = "",
+	suitName = nil :: TextLabel?,
+	suitDesc = nil :: TextLabel?,
+}
+
+local SUIT_DESC = {
+	"Mask, snorkel and short fins.",
+	"Single tank, long fins and a dive computer.",
+	"Brass helmet, twin tanks and a chest plate.",
+	"Steel helmet, armour and weighted boots.",
+	"Armoured rig with a glowing visor and headlamps.",
+	"Gold heavy suit. Coming soon.",
+}
+
+local PART_TOGGLES = {
+	{ "SuitHelmet", "Helmet", nil },
+	{ "SuitTank", "Air tank", nil },
+	{ "SuitFins", "Fins & boots", nil },
+	{ "SuitGear", "Gloves & armour", nil },
+	{ "SuitColors", "Wetsuit colours", "Off keeps your own avatar outfit" },
+}
+
+-- Clone the local character into a viewport (shows exactly what others see)
+local function refreshDiverPreview()
+	local stage = diver.stage
+	if not stage then
+		return
+	end
+	diver.previewToken += 1
+	local token = diver.previewToken
+	task.delay(0.6, function() -- let the server finish re-dressing after a change
+		if token ~= diver.previewToken or not stage.Parent then
+			return
+		end
+		Kit.Clear(stage)
+		local char = player.Character
+		if not char then
+			return
+		end
+		local was = char.Archivable
+		char.Archivable = true
+		local clone = char:Clone()
+		char.Archivable = was
+		if not clone then
+			return
+		end
+		for _, d in clone:GetDescendants() do
+			if d:IsA("Script") or d:IsA("LocalScript") or d:IsA("Sound") then
+				d:Destroy()
+			end
+		end
+		local vpf = New("ViewportFrame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.fromScale(1, 1),
+			Ambient = Color3.fromRGB(150, 155, 170),
+			LightColor = Color3.fromRGB(255, 250, 240),
+			LightDirection = Vector3.new(-0.5, -1, -0.8),
+			Parent = stage,
+		})
+		local world = New("WorldModel", { Parent = vpf })
+		clone.Parent = world
+		local root = clone:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local base = if root then root.CFrame else clone:GetPivot()
+		local cf, size = clone:GetBoundingBox()
+		local cam = New("Camera", { FieldOfView = 30, Parent = vpf })
+		vpf.CurrentCamera = cam
+		local dist = math.max(size.Y, size.X) / math.tan(math.rad(15)) * 0.62
+		local center = cf.Position
+		if diver.spin then
+			diver.spin:Disconnect()
+		end
+		local t0 = os.clock()
+		diver.spin = game:GetService("RunService").RenderStepped:Connect(function()
+			if not vpf.Parent then
+				diver.spin:Disconnect()
+				return
+			end
+			local a = (os.clock() - t0) * 0.6 + math.pi
+			local dir = (base.LookVector * math.cos(a) + base.RightVector * math.sin(a)).Unit
+			cam.CFrame = CFrame.lookAt(center + dir * dist + Vector3.new(0, size.Y * 0.08, 0), center)
+		end)
+	end)
+end
+
+local function renderDiver()
+	local list = diver.list
+	if not list then
+		return
+	end
+	Kit.Clear(list)
+	local suitIndex = S.Get("Suit") or 1
+	local coins = S.Get("Coins") or 0
+	local settings = table.clone(S.Get("Settings") or {})
+	diver.suitName.Text = Upgrades.Suits[suitIndex].Name
+	diver.suitDesc.Text = `{SUIT_DESC[suitIndex] or ""} Safe down to {Zones.List[math.min(suitIndex, #Zones.List)].Name}.`
+
+	header(list, 1, "Suits")
+	local tiles = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -8, 0, 84), LayoutOrder = 2, Parent = list })
+	local g = New("UIGridLayout", { CellSize = UDim2.new(1 / 6, -7, 0, 80), CellPadding = UDim2.fromOffset(8, 0), SortOrder = Enum.SortOrder.LayoutOrder, Parent = tiles })
+	g.FillDirectionMaxCells = 6
+	for i, suit in Upgrades.Suits do
+		local owned = i <= suitIndex
+		local isNext = i == suitIndex + 1
+		local tile = New("TextButton", {
+			Text = "",
+			AutoButtonColor = false,
+			BackgroundColor3 = if owned then T.PanelLight else T.PanelDark,
+			LayoutOrder = i,
+			Parent = tiles,
+		}, { Kit.Corner(12) })
+		Kit.Stroke(if i == suitIndex then T.Accent else T.Text, if i == suitIndex then 2 else 1, if i == suitIndex then 0 else 0.85).Parent = tile
+		New("Frame", { BackgroundColor3 = suit.Color, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 14), Size = UDim2.fromOffset(26, 26) }, { Kit.Round() }).Parent = tile
+		Kit.Label({
+			Text = if owned then suit.Name:gsub("Pressure ", "") elseif suit.ComingSoon then "Soon" else NumberFormat.short(suit.Cost),
+			Font = T.Bold,
+			TextSize = 10,
+			TextColor3 = if owned then T.Text elseif isNext and coins >= suit.Cost then T.Gold else T.Muted,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Position = UDim2.new(0, 2, 1, -28),
+			Size = UDim2.new(1, -4, 0, 22),
+			TextWrapped = true,
+			Parent = tile,
+		})
+		Kit.Juice(tile)
+		tile.Activated:Connect(function()
+			if isNext and not suit.ComingSoon then
+				Net.RequestBuySuit:FireServer()
+			elseif not owned then
+				controllers.UIController.Toast("Buy the suits in order: the next one unlocks first.", "info")
+			end
+		end)
+	end
+
+	header(list, 3, "Show on my diver")
+	for i, entry in PART_TOGGLES do
+		local key, label, sub = entry[1], entry[2], entry[3]
+		local r = settingRow(list, 3 + i, label, sub)
+		toggle(r, settings[key] ~= false, function(v)
+			settings[key] = v
+			Net.UpdateSettings:FireServer(settings)
+		end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0) })
+	end
+	-- Re-clone the avatar only when what it wears changed (or the stage is empty)
+	local key = tostring(suitIndex)
+	for _, entry in PART_TOGGLES do
+		key ..= if settings[entry[1]] == false then "0" else "1"
+	end
+	if key ~= diver.previewKey or #diver.stage:GetChildren() <= 2 then
+		diver.previewKey = key
+		refreshDiverPreview()
+	end
+end
+
+local function buildDiver(body: Frame)
+	diver.body = body
+	local left = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(0, 280, 1, 0), Parent = body })
+	diver.stage = Kit.Card({ BackgroundColor3 = T.PanelDark, Size = UDim2.new(1, 0, 1, -76), ClipsDescendants = true, Parent = left })
+	Kit.Label({ Text = "CURRENT SUIT", Font = T.Bold, TextSize = 11, TextColor3 = Kit.Lighten(T.Accent, 0.35), Position = UDim2.new(0, 2, 1, -70), Size = UDim2.new(1, 0, 0, 14), Parent = left })
+	diver.suitName = Kit.Title({ Text = "", TextSize = 22, Position = UDim2.new(0, 2, 1, -54), Size = UDim2.new(1, 0, 0, 26), TextWrapped = false, Parent = left })
+	diver.suitDesc = Kit.Label({ Text = "", TextSize = 12, TextColor3 = T.Muted, Position = UDim2.new(0, 2, 1, -28), Size = UDim2.new(1, 0, 0, 30), TextYAlignment = Enum.TextYAlignment.Top, Parent = left })
+	diver.list = Kit.Scroll({ Position = UDim2.fromOffset(296, 0), Size = UDim2.new(1, -296, 1, 0), Parent = body })
+	Kit.List(6).Parent = diver.list
 end
 
 ------------------------------------------------------------------------------------------
@@ -1192,6 +1456,7 @@ function MenuController.Start()
 	UI.RegisterWindow("Trade", "Trade", function(body)
 		tradeScroll = scrollBody(body)
 	end, renderTrade)
+	UI.RegisterWindow("Diver", "Diver", buildDiver, renderDiver)
 	UI.RegisterWindow("Settings", "Settings", function(body)
 		settingsScroll = scrollBody(body)
 	end, renderSettings)
@@ -1214,6 +1479,9 @@ function MenuController.Start()
 		end
 		if keys.Settings or keys.RenameTokens then
 			UI.Refresh("Settings")
+		end
+		if keys.Settings or keys.Suit then
+			UI.Refresh("Diver")
 		end
 		if keys.Storage then
 			UI.Refresh("Trade")

@@ -11,6 +11,7 @@ local RateLimiter = require(Shared.RateLimiter)
 local Formulas = require(Shared.Formulas)
 local NumberFormat = require(Shared.NumberFormat)
 local Upgrades = require(Shared.Config.Upgrades)
+local SuitArt = require(Shared.SuitArt)
 
 local UpgradeService = {}
 local services
@@ -118,7 +119,8 @@ function UpgradeService.BuySuit(player: Player): boolean
 	return true
 end
 
--- Tints the R15 character to show the suit tier (stand-in until suit accessories exist)
+-- Dresses the character in the suit tier's gear (shared/SuitArt), honouring the player's
+-- visibility settings from the Diver window.
 function UpgradeService.ApplySuitVisual(player: Player)
 	local data = services.DataService.GetData(player)
 	local char = player.Character
@@ -126,16 +128,7 @@ function UpgradeService.ApplySuitVisual(player: Player)
 		return
 	end
 	local suit = Upgrades.Suits[data.Suit]
-	for _, part in char:GetChildren() do
-		if part:IsA("BasePart") and part.Name ~= "Head" and part.Name ~= "HumanoidRootPart" then
-			part.Color = suit.Color
-		end
-	end
-	for _, c in char:GetChildren() do
-		if c:IsA("Shirt") or c:IsA("Pants") then
-			c:Destroy()
-		end
-	end
+	SuitArt.Apply(char, data.Suit, suit.Color, data.Settings)
 end
 
 function UpgradeService.Start()
@@ -161,6 +154,9 @@ function UpgradeService.Start()
 			task.spawn(onChar, player.Character)
 		end
 		UpgradeService.PushDerived(player)
+	end)
+	services.DataService.SettingsChanged:Connect(function(player)
+		UpgradeService.ApplySuitVisual(player)
 	end)
 	services.MonetizationService.PassGranted:Connect(function(player)
 		UpgradeService.PushDerived(player)

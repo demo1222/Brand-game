@@ -95,6 +95,18 @@ return {
 	},
 
 	-- §15.5 Tide Pass
+	-- Event Tokens (§13 currency table): earned only by salvaging during a live event, spent
+	-- in the Event shop. Not sold for Robux, so events stay fair.
+	EventTokens = { Base = 1, RarePlus = 2, EpicPlus = 5 },
+	EventShop = {
+		{ Id = "Flares5", Name = "5 Flares", Icon = "flare", Cost = 25, Reward = { Flares = 5 } },
+		{ Id = "Luck5", Name = "Luck Potion · 5 min", Icon = "potion", Cost = 40, Reward = { Boost = "LuckPotion", Seconds = 300 } },
+		{ Id = "Mutation5", Name = "Mutation Potion · 5 min", Icon = "potion", Cost = 60, Reward = { Boost = "MutationPotion", Seconds = 300 } },
+		{ Id = "Pearls30", Name = "30 Pearls", Icon = "pearl", Cost = 90, Reward = { Pearls = 30 } },
+		{ Id = "RareRelic", Name = "Rare relic", Icon = "box", Cost = 120, Reward = { Relic = "Rare" } },
+		{ Id = "EpicRelic", Name = "Epic relic", Icon = "star", Cost = 400, Reward = { Relic = "Epic" } },
+	},
+
 	TidePass = {
 		SeasonId = "S1",
 		Tiers = 50,

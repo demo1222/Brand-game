@@ -99,7 +99,7 @@ local function marker(info, from: string?)
 	bb.Parent = p
 	local text = if rarity then `{rarity.Icon} {info.Rarity}` else "◎ Relic"
 	if info.Mutations and #info.Mutations > 0 then
-		text ..= "\n✨ " .. table.concat(info.Mutations, " ")
+		text ..= "\n" .. table.concat(info.Mutations, " ")
 	end
 	if from then
 		text ..= `\n({from})`

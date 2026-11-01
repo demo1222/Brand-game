@@ -7,6 +7,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Net = require(Shared.Net)
 local Events = require(Shared.Config.Events)
+local Economy = require(Shared.Config.Economy)
+local Rarities = require(Shared.Config.Rarities)
+local RateLimiter = require(Shared.RateLimiter)
 
 local EventService = {}
 local services
@@ -243,6 +246,58 @@ function EventService.Start()
 	Players.PlayerAdded:Connect(function(p)
 		task.wait(3)
 		Net.EventsChanged:FireClient(p, EventService.Snapshot())
+	end)
+end
+
+------------------------------------------------------------------------------------------
+-- Event Tokens + event shop
+------------------------------------------------------------------------------------------
+-- Called for every salvaged relic: tokens only while an event is live
+function EventService.AwardTokens(player: Player, relic)
+	if #EventService.GetActive() == 0 then
+		return
+	end
+	local data = services.DataService.GetData(player)
+	if not data then
+		return
+	end
+	local tier = Rarities.TierOf(relic.rarity)
+	local cfg = Economy.EventTokens
+	local amount = if tier >= Rarities.Epic.Tier then cfg.EpicPlus elseif tier >= Rarities.Rare.Tier then cfg.RarePlus else cfg.Base
+	data.EventTokens = (data.EventTokens or 0) + amount
+	services.DataService.Replicate(player, "EventTokens")
+end
+
+local shopLimiter = RateLimiter.new(4, 1)
+local function buyFromEventShop(player: Player, itemId: string)
+	local item = nil
+	for _, it in Economy.EventShop do
+		if it.Id == itemId then
+			item = it
+		end
+	end
+	local data = services.DataService.GetData(player)
+	if not item or not data then
+		return
+	end
+	if (data.EventTokens or 0) < item.Cost then
+		Net.Notify:FireClient(player, "Not enough Event Tokens. Salvage during live events to earn more!", "error")
+		return
+	end
+	data.EventTokens -= item.Cost
+	services.DataService.Replicate(player, "EventTokens")
+	local lines = services.CurrencyService.GrantReward(player, item.Reward, "EventShop")
+	services.AnalyticsService.Custom(player, "EventShopBuy", item.Cost, { CustomField01 = item.Id })
+	Net.Notify:FireClient(player, `{item.Name}: {table.concat(lines, ", ")}`, "reward")
+end
+
+local startEventService = EventService.Start
+function EventService.Start()
+	startEventService()
+	Net.RequestEventShopBuy.OnServerEvent:Connect(function(player, itemId)
+		if shopLimiter:Check(player) and typeof(itemId) == "string" then
+			buyFromEventShop(player, itemId)
+		end
 	end)
 end
 

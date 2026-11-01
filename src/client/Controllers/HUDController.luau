@@ -1,8 +1,9 @@
--- HUDController (Master Plan §18.1, UI/Visual Overhaul Plan): currency pills, menu tiles,
--- depth/zone meter, oxygen bar, bag chip, round mobile action buttons, events list,
--- intruder/carry/predator alerts and the low-oxygen quick buy.
--- Each corner cluster carries its own UIScale so the HUD fits phones (≈800×360) and scales
--- up a little on large screens.
+-- HUDController (Master Plan §18.1; UI design canvas "HUD · on the dock" / "HUD · diving").
+--   Top-left: coin + pearl capsules · left rail: navigation · top-right: live events
+--   Top-centre (diving): depth readout with a 5-zone band · centre: alerts
+--   Bottom-left: bag chip + oxygen capsule · bottom-right: round action buttons
+-- Each corner cluster has its own UIScale so the HUD fits phones (≈800×360) and grows a
+-- little on large screens; the rail switches to two columns on short screens.
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -14,7 +15,10 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared.Net)
 local NumberFormat = require(Shared.NumberFormat)
 local Zones = require(Shared.Config.Zones)
+local Quests = require(Shared.Config.Quests)
+local Economy = require(Shared.Config.Economy)
 local Kit = require(script.Parent.Parent.UI.Kit)
+local Icon = require(script.Parent.Parent.UI.Icon)
 local Icons = require(script.Parent.Parent.UI.Icons)
 
 local New, T = Kit.New, Kit.Theme
@@ -26,6 +30,7 @@ local controllers
 local refs = {}
 local scales: { UIScale } = {}
 local lastCoins = nil
+local GLASS = 0.12 -- HUD panel transparency (design: rgba(11,22,38,0.88))
 
 function HUDController.Init(c)
 	controllers = c
@@ -44,320 +49,468 @@ local function cluster(name: string, anchor: Vector2, position: UDim2, size: UDi
 	return f
 end
 
-local function updateScale()
-	local cam = Workspace.CurrentCamera
-	if not cam then
-		return
+local function glass(props, strokeColor: Color3?, strokeT: number?)
+	local p = { BackgroundColor3 = T.Panel, BackgroundTransparency = GLASS }
+	for k, v in props do
+		p[k] = v
 	end
-	local v = cam.ViewportSize
-	local s = math.clamp(math.min(v.Y / 700, v.X / 1100), 0.55, 1.1)
-	for _, sc in scales do
-		sc.Scale = s
-	end
+	local f = New("Frame", p)
+	Kit.Stroke(strokeColor or T.Hairline, 1, strokeT or 0.65).Parent = f
+	return f
 end
 
 local function bump(gui: GuiObject)
 	local sc = gui:FindFirstChild("BumpScale") :: UIScale or New("UIScale", { Name = "BumpScale", Parent = gui })
-	sc.Scale = 1.18
+	sc.Scale = 1.15
 	TweenService:Create(sc, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 end
 
--- Currency pill: badge overlapping the left edge, big value, optional sub-line
-local function currencyPill(parent: Instance, icon: string, color: Color3, size: Vector2, y: number)
-	local pill = New("Frame", {
-		BackgroundColor3 = T.PanelDark,
-		BackgroundTransparency = 0.12,
-		Position = UDim2.fromOffset(size.Y * 0.5, y),
-		Size = UDim2.fromOffset(size.X, size.Y),
-		Parent = parent,
-	}, { Kit.Round(), Kit.Stroke(color, 2, 0.15), Kit.Sheen(0.3) })
-	local badge = Kit.IconBadge(icon, color, size.Y + 6, {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0, 0, 0.5, 0),
-		ZIndex = 2,
-		Parent = pill,
-	})
-	return pill, badge
-end
+------------------------------------------------------------------------------------------
+-- Building blocks
+------------------------------------------------------------------------------------------
+local RAIL_ITEMS = {
+	{ "Shop", "SHOP" },
+	{ "Bag", "BAG" },
+	{ "Upgrades", "UPGRADE" },
+	{ "Codex", "CODEX" },
+	{ "Quests", "QUESTS" },
+	{ "Rebirth", "REBIRTH" },
+	{ "Leaderboards", "TOP" },
+	{ "Players", "FRIENDS" },
+	{ "Settings", "SETTINGS" },
+}
 
-local function menuTile(parent: Instance, key: string, label: string, order: number)
-	local color = Icons.Colors[key] or T.PanelLight
-	local tile = Kit.Button("", Kit.Darken(color, 0.15), function()
-		controllers.UIController.Toggle(key)
-	end, { Size = UDim2.fromOffset(60, 60), LayoutOrder = order, Parent = parent })
-	tile:FindFirstChildOfClass("UICorner").CornerRadius = UDim.new(0, 16)
-	New("TextLabel", {
-		BackgroundTransparency = 1,
-		Text = Icons.Get(key),
-		TextScaled = true,
-		Font = T.Bold,
+local function railButton(parent: Instance, key: string, label: string, order: number)
+	local isShop = key == "Shop"
+	local b = New("TextButton", {
+		Name = key,
+		Text = "",
+		AutoButtonColor = false,
+		BackgroundColor3 = if isShop then T.Gold else T.PanelLight,
+		BackgroundTransparency = if isShop then 0 else 1,
+		LayoutOrder = order,
+		Parent = parent,
+	}, { Kit.Corner(14) })
+	local fg = if isShop then T.DarkText else T.Accent
+	Icon.new(Icons.Get(key), 24, if key == "Settings" then T.Muted else fg, {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 5),
-		Size = UDim2.fromOffset(34, 34),
-		Parent = tile,
+		Position = UDim2.new(0.5, 0, 0, 8),
+		Parent = b,
 	})
-	Kit.Title({
+	Kit.Label({
 		Text = label,
-		TextSize = 12,
+		Font = T.Bold,
+		TextSize = 10,
+		TextColor3 = if isShop then T.DarkText else T.Text,
 		TextXAlignment = Enum.TextXAlignment.Center,
-		TextStrokeTransparency = 0.3,
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -2),
-		Size = UDim2.new(1, 0, 0, 16),
+		Position = UDim2.new(0.5, 0, 1, -6),
+		Size = UDim2.new(1, 0, 0, 12),
 		TextWrapped = false,
-		Parent = tile,
+		Parent = b,
 	})
-	if key == "Shop" then
-		Kit.Shine(tile, 2.5)
-	end
-	return tile
+	b.MouseEnter:Connect(function()
+		if not isShop then
+			b.BackgroundTransparency = 0.3
+		end
+	end)
+	b.MouseLeave:Connect(function()
+		if not isShop then
+			b.BackgroundTransparency = 1
+		end
+	end)
+	Kit.Juice(b)
+	b.Activated:Connect(function()
+		controllers.UIController.Toggle(key)
+	end)
+	return b
 end
 
 local function roundAction(
 	parent: Instance,
-	icon: string,
-	keyHint: string,
+	iconName: string,
+	label: string,
 	color: Color3,
 	size: number,
 	pos: UDim2,
 	onDown,
 	onUp
 )
-	local b = Kit.Button("", color, nil, { Size = UDim2.fromOffset(size, size), Position = pos, Parent = parent })
-	b:FindFirstChildOfClass("UICorner").CornerRadius = UDim.new(0.5, 0)
-	New("TextLabel", {
-		BackgroundTransparency = 1,
-		Text = icon,
-		TextScaled = true,
-		Font = T.Bold,
+	local b = New("TextButton", {
+		Text = "",
+		AutoButtonColor = false,
+		BackgroundColor3 = T.Panel,
+		BackgroundTransparency = GLASS,
+		Size = UDim2.fromOffset(size, size),
+		Position = pos,
+		Parent = parent,
+	}, { Kit.Round(), Kit.Stroke(color, 2, 0) })
+	local iconSize = math.floor(size * 0.36)
+	Icon.new(iconName, iconSize, color, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.45),
-		Size = UDim2.fromScale(0.5, 0.5),
+		Position = UDim2.new(0.5, 0, 0.5, if label ~= "" then -6 else 0),
 		Parent = b,
 	})
-	local hint = Kit.Title({
-		Text = keyHint,
-		TextSize = 11,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		TextStrokeTransparency = 0.2,
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -4),
-		Size = UDim2.new(1, 0, 0, 14),
-		TextWrapped = false,
-		Parent = b,
-	})
+	local text = nil
+	if label ~= "" then
+		text = Kit.Label({
+			Text = label,
+			Font = T.Bold,
+			TextSize = 10,
+			TextColor3 = color,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.5, iconSize / 2 + 4),
+			Size = UDim2.new(1, -6, 0, 12),
+			TextWrapped = false,
+			Parent = b,
+		})
+	end
+	Kit.Juice(b)
 	b.MouseButton1Down:Connect(onDown)
 	if onUp then
 		b.MouseButton1Up:Connect(onUp)
 		b.MouseLeave:Connect(onUp)
 	end
-	return b, hint
+	return b, text
 end
 
-local function alertLabel(name: string, color: Color3, anchor: Vector2, pos: UDim2, height: number)
-	local l = Kit.Title({
-		Name = name,
-		Text = "",
-		Visible = false,
-		TextSize = 20,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		BackgroundColor3 = Kit.Darken(color, 0.65),
-		BackgroundTransparency = 0.15,
-		AnchorPoint = anchor,
-		Position = pos,
-		Size = UDim2.new(0.8, 0, 0, height),
-		Parent = controllers.UIController.Root,
-	})
-	l.TextColor3 = Kit.Lighten(color, 0.35)
-	Kit.Round().Parent = l
-	Kit.Stroke(color, 2, 0.05).Parent = l
-	New("UISizeConstraint", { MaxSize = Vector2.new(560, height), Parent = l })
-	New("UIPadding", { PaddingLeft = UDim.new(0, 14), PaddingRight = UDim.new(0, 14), Parent = l })
-	return l
+------------------------------------------------------------------------------------------
+-- Layout
+------------------------------------------------------------------------------------------
+local function updateScale()
+	local cam = Workspace.CurrentCamera
+	if not cam then
+		return
+	end
+	local v = cam.ViewportSize
+	local s = math.clamp(math.min(v.Y / 720, v.X / 1280), 0.6, 1.1)
+	for _, sc in scales do
+		sc.Scale = s
+	end
+	-- Two-column rail on short screens so it never runs into the bottom-left cluster
+	if refs.railGrid then
+		local twoCol = v.Y < 560
+		refs.railGrid.FillDirectionMaxCells = if twoCol then 2 else 1
+		refs.rail.Size = if twoCol then UDim2.fromOffset(136, 0) else UDim2.fromOffset(72, 0)
+	end
 end
 
 local function build()
 	-- Currencies (top-left)
-	local top = cluster("Currencies", Vector2.new(0, 0), UDim2.fromOffset(12, 10), UDim2.fromOffset(270, 110))
-	local coinPill, coinBadge = currencyPill(top, Icons.Get("Coins"), T.Gold, Vector2.new(214, 50), 4)
-	refs.coinBadge = coinBadge
+	local top = cluster("Currencies", Vector2.new(0, 0), UDim2.fromOffset(20, 16), UDim2.fromOffset(280, 110))
+	local coinCap = glass({ Size = UDim2.fromOffset(220, 52), Parent = top }, T.Gold, 0.5)
+	Kit.Round().Parent = coinCap
+	refs.coinIcon = Icon.new("coin", 40, T.Gold, { Position = UDim2.fromOffset(6, 6), Parent = coinCap })
 	refs.coins = Kit.Title({
 		Text = "0",
-		TextSize = 26,
-		Position = UDim2.fromOffset(34, 2),
-		Size = UDim2.new(1, -40, 0, 28),
+		TextSize = 24,
+		Position = UDim2.fromOffset(56, 5),
+		Size = UDim2.new(1, -66, 0, 26),
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
-		Parent = coinPill,
+		Parent = coinCap,
 	})
 	refs.income = Kit.Label({
-		Text = "+0/s",
+		Text = "+0 / s",
 		Font = T.Bold,
-		TextColor3 = Color3.fromRGB(120, 255, 150),
-		TextSize = 13,
-		Position = UDim2.fromOffset(35, 29),
-		Size = UDim2.new(1, -40, 0, 16),
+		TextSize = 12,
+		TextColor3 = T.Good,
+		Position = UDim2.fromOffset(57, 30),
+		Size = UDim2.new(1, -66, 0, 14),
 		TextWrapped = false,
-		Parent = coinPill,
+		Parent = coinCap,
 	})
-	local pearlPill = currencyPill(top, Icons.Get("Pearls"), T.Pearl, Vector2.new(170, 36), 64)
+	local pearlCap =
+		glass({ Position = UDim2.fromOffset(0, 60), Size = UDim2.fromOffset(150, 40), Parent = top }, T.Pearl, 0.55)
+	Kit.Round().Parent = pearlCap
+	Icon.new("pearl", 30, T.Pearl, { Position = UDim2.fromOffset(5, 5), Parent = pearlCap })
 	refs.pearls = Kit.Title({
 		Text = "0",
-		TextSize = 20,
-		TextColor3 = Color3.fromRGB(215, 235, 255),
-		Position = UDim2.fromOffset(28, 0),
-		Size = UDim2.new(1, -34, 1, 0),
+		TextSize = 19,
+		Position = UDim2.fromOffset(44, 0),
+		Size = UDim2.new(1, -52, 1, 0),
 		TextWrapped = false,
-		Parent = pearlPill,
+		Parent = pearlCap,
 	})
 
-	-- Menu tiles (left-middle, two columns)
-	local menu = cluster("Menu", Vector2.new(0, 0.5), UDim2.new(0, 12, 0.5, 10), UDim2.fromOffset(128, 330))
-	local grid = Kit.Grid(Vector2.new(60, 60), 6)
-	grid.FillDirectionMaxCells = 2
-	grid.Parent = menu
-	for i, item in
-		{
-			{ "Shop", "Shop" },
-			{ "Bag", "Bag" },
-			{ "Upgrades", "Upgrade" },
-			{ "Codex", "Codex" },
-			{ "Quests", "Quests" },
-			{ "Rebirth", "Rebirth" },
-			{ "Leaderboards", "Top" },
-			{ "Players", "Friends" },
-			{ "Settings", "Settings" },
-		}
-	do
-		menuTile(menu, item[1], item[2], i)
+	-- Navigation rail (left)
+	local railCluster = cluster("Rail", Vector2.new(0, 0), UDim2.fromOffset(20, 136), UDim2.fromOffset(140, 600))
+	refs.rail = glass({ Size = UDim2.fromOffset(72, 0), AutomaticSize = Enum.AutomaticSize.Y, Parent = railCluster })
+	Kit.Corner(18).Parent = refs.rail
+	Kit.Padding(8).Parent = refs.rail
+	refs.railGrid = Kit.Grid(Vector2.new(56, 56), 4)
+	refs.railGrid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	refs.railGrid.Parent = refs.rail
+	for i, item in RAIL_ITEMS do
+		local b = railButton(refs.rail, item[1], item[2], i)
+		if item[1] == "Quests" then
+			refs.questDot = New("Frame", {
+				BackgroundColor3 = T.Bad,
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, -8, 0, 6),
+				Size = UDim2.fromOffset(10, 10),
+				Visible = false,
+				ZIndex = 3,
+				Parent = b,
+			}, { Kit.Round(), Kit.Stroke(T.Panel, 2, 0) })
+		end
 	end
 
-	-- Depth / zone meter (top-centre)
-	local depthCluster =
-		cluster("DepthCluster", Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 8), UDim2.fromOffset(330, 54))
-	refs.depth = New("Frame", {
-		Name = "Depth",
-		BackgroundColor3 = T.PanelDark,
-		BackgroundTransparency = 0.1,
-		Size = UDim2.fromScale(1, 1),
-		Visible = false,
-		Parent = depthCluster,
-	}, { Kit.Round(), Kit.Sheen(0.3) })
-	refs.depthStroke = Kit.Stroke(T.Accent, 2.5, 0.05)
-	refs.depthStroke.Parent = refs.depth
-	refs.depthBadgeHolder = New("Frame", {
-		BackgroundTransparency = 1,
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, -6, 0.5, 0),
-		Size = UDim2.fromOffset(60, 60),
-		ZIndex = 2,
-		Parent = refs.depth,
+	-- Live events (top-right)
+	local eventsCluster = cluster("Events", Vector2.new(1, 0), UDim2.new(1, -20, 0, 16), UDim2.fromOffset(280, 240))
+	refs.events = New("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = eventsCluster })
+	Kit.List(8, false, Enum.HorizontalAlignment.Right).Parent = refs.events
+
+	-- Depth readout (top-centre, diving only)
+	local depthCluster = cluster("Depth", Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 14), UDim2.fromOffset(420, 80))
+	refs.depth = New(
+		"Frame",
+		{ BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, Parent = depthCluster }
+	)
+	local readout = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 42), Parent = refs.depth }, {
+		Kit.List(8, true, Enum.HorizontalAlignment.Center),
 	})
+	readout:FindFirstChildOfClass("UIListLayout").VerticalAlignment = Enum.VerticalAlignment.Bottom
 	refs.depthValue = Kit.Title({
-		Text = "0m",
-		TextSize = 26,
-		Position = UDim2.fromOffset(62, 2),
-		Size = UDim2.new(0, 110, 1, -4),
+		Text = "0",
+		TextSize = 40,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromOffset(0, 42),
 		TextWrapped = false,
-		Parent = refs.depth,
+		LayoutOrder = 1,
+		TextStrokeTransparency = 0.7,
+		Parent = readout,
+	})
+	Kit.Title({
+		Text = "m",
+		TextSize = 18,
+		TextColor3 = T.Muted,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromOffset(0, 30),
+		TextWrapped = false,
+		LayoutOrder = 2,
+		Parent = readout,
 	})
 	refs.depthZone = Kit.Label({
 		Text = "",
 		Font = T.Bold,
-		TextSize = 14,
-		TextXAlignment = Enum.TextXAlignment.Right,
-		Position = UDim2.new(0, 170, 0, 0),
-		Size = UDim2.new(1, -186, 1, 0),
-		TextWrapped = true,
-		Parent = refs.depth,
-	})
-	refs.lastZoneIndex = 0
-
-	-- Oxygen + bag (bottom-left)
-	local bottom = cluster("Bottom", Vector2.new(0, 1), UDim2.new(0, 12, 1, -12), UDim2.fromOffset(330, 124))
-	local o2Frame, setO2 = Kit.Bar({
-		Size = UDim2.fromOffset(280, 30),
-		Position = UDim2.fromOffset(30, 88),
-		Text = "O₂ 100%",
-		TextSize = 15,
-		Parent = bottom,
-	})
-	refs.o2Frame, refs.setO2 = o2Frame, setO2
-	Kit.IconBadge(Icons.Get("Oxygen"), T.Accent, 44, {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(0, 0, 0.5, 0),
-		ZIndex = 4,
-		Parent = o2Frame,
-	})
-	refs.bag = Kit.Pill(`{Icons.Get("Bag")} 0/3`, T.PanelLight, {
-		TextSize = 16,
+		TextSize = 13,
+		TextColor3 = Kit.Lighten(T.Accent, 0.4),
+		AutomaticSize = Enum.AutomaticSize.X,
 		Size = UDim2.fromOffset(0, 30),
-		Position = UDim2.fromOffset(30, 50),
+		TextWrapped = false,
+		LayoutOrder = 3,
+		TextStrokeTransparency = 0.7,
+		Parent = readout,
+	})
+	local band = New(
+		"Frame",
+		{
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(0, 48),
+			Size = UDim2.new(1, 0, 0, 10),
+			Parent = refs.depth,
+		}
+	)
+	local bandList = Kit.List(3, true)
+	bandList.Parent = band
+	refs.bandSegments = {}
+	for i, zone in Zones.List do
+		refs.bandSegments[i] = New("Frame", {
+			BackgroundColor3 = Kit.Lighten(zone.FogColor, 0.2),
+			Size = UDim2.new(0.2, -3, 1, 0),
+			LayoutOrder = i,
+			Parent = band,
+		}, { Kit.Corner(3) })
+	end
+	refs.bandMarker = New("Frame", {
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0, 0.5),
+		Size = UDim2.fromOffset(4, 20),
+		ZIndex = 3,
+		Parent = band,
+	}, { Kit.Round() })
+	local labels = New(
+		"Frame",
+		{
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(0, 62),
+			Size = UDim2.new(1, 0, 0, 14),
+			Parent = refs.depth,
+		}
+	)
+	Kit.List(3, true).Parent = labels
+	refs.bandLabels = {}
+	for i, zone in Zones.List do
+		refs.bandLabels[i] = Kit.Label({
+			Text = string.upper(zone.Id),
+			Font = T.Bold,
+			TextSize = 10,
+			TextColor3 = T.Muted,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			TextStrokeTransparency = 0.7,
+			Size = UDim2.new(0.2, -3, 1, 0),
+			LayoutOrder = i,
+			Parent = labels,
+		})
+	end
+
+	-- Bag chip + oxygen capsule (bottom-left)
+	local bottom = cluster("Bottom", Vector2.new(0, 1), UDim2.new(0, 20, 1, -20), UDim2.fromOffset(380, 150))
+	refs.bagChip = glass({
+		Position = UDim2.fromOffset(0, 58),
+		Size = UDim2.fromOffset(0, 34),
+		AutomaticSize = Enum.AutomaticSize.X,
 		Parent = bottom,
 	})
-	refs.bagStroke = Kit.Stroke(T.Accent, 2, 0.2)
-	refs.bagStroke.Parent = refs.bag
-	refs.quickRefill = Kit.Button(`{Icons.Get("Oxygen")} Refill O₂ · 25 R$`, T.Bad, function()
-		Net.RequestPurchase:FireServer("Product", "OxygenRefill")
-	end, { Size = UDim2.fromOffset(200, 42), Position = UDim2.fromOffset(30, 2), Visible = false, Parent = bottom })
+	Kit.Round().Parent = refs.bagChip
+	New("UIPadding", { PaddingLeft = UDim.new(0, 12), PaddingRight = UDim.new(0, 14), Parent = refs.bagChip })
+	Kit.List(8, true).Parent = refs.bagChip
+	refs.bagIcon = Icon.new("bag", 18, T.Accent, { LayoutOrder = 1, Parent = refs.bagChip })
+	refs.bag = Kit.Title({
+		Text = "0 / 3",
+		TextSize = 16,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromOffset(0, 34),
+		TextWrapped = false,
+		LayoutOrder = 2,
+		Parent = refs.bagChip,
+	})
+	refs.bagHint = Kit.Label({
+		Text = "",
+		Font = T.Bold,
+		TextSize = 11,
+		TextColor3 = T.Gold,
+		AutomaticSize = Enum.AutomaticSize.X,
+		Size = UDim2.fromOffset(0, 34),
+		TextWrapped = false,
+		LayoutOrder = 3,
+		Parent = refs.bagChip,
+	})
+
+	refs.o2Cap = glass({ Position = UDim2.fromOffset(0, 100), Size = UDim2.fromOffset(340, 44), Parent = bottom })
+	Kit.Round().Parent = refs.o2Cap
+	refs.o2Stroke = refs.o2Cap:FindFirstChildOfClass("UIStroke")
+	refs.o2Icon = Icon.new(
+		"oxygen",
+		26,
+		T.Accent,
+		{ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Parent = refs.o2Cap }
+	)
+	local track = New("Frame", {
+		BackgroundColor3 = Color3.fromRGB(6, 16, 25),
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 46, 0.5, 0),
+		Size = UDim2.new(1, -110, 0, 14),
+		Parent = refs.o2Cap,
+	}, { Kit.Round() })
+	refs.o2Fill = New(
+		"Frame",
+		{ BackgroundColor3 = T.Accent, Size = UDim2.fromScale(1, 1), Parent = track },
+		{ Kit.Round() }
+	)
+	refs.o2Text = Kit.Title({
+		Text = "60s",
+		TextSize = 17,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -14, 0.5, 0),
+		Size = UDim2.fromOffset(52, 24),
+		TextWrapped = false,
+		Parent = refs.o2Cap,
+	})
+	refs.quickRefill = Kit.Button(
+		"Refill air · 25 R$",
+		T.Bad,
+		function()
+			Net.RequestPurchase:FireServer("Product", "OxygenRefill")
+		end,
+		{
+			Size = UDim2.fromOffset(200, 44),
+			Position = UDim2.fromOffset(0, 6),
+			Visible = false,
+			Icon = "oxygen",
+			Parent = bottom,
+		}
+	)
 
 	-- Action buttons (bottom-right)
-	local actions = cluster("Actions", Vector2.new(1, 1), UDim2.new(1, -12, 1, -12), UDim2.fromOffset(260, 200))
+	local actions = cluster("Actions", Vector2.new(1, 1), UDim2.new(1, -24, 1, -24), UDim2.fromOffset(260, 210))
 	local S = controllers.SwimController
-	roundAction(actions, Icons.Get("Up"), "Space", T.PanelLight, 58, UDim2.fromOffset(0, 66), function()
-		S.SetVertical(1)
-	end, function()
-		S.SetVertical(0)
-	end)
-	roundAction(actions, Icons.Get("Down"), "Ctrl", T.PanelLight, 58, UDim2.fromOffset(0, 136), function()
-		S.SetVertical(-1)
-	end, function()
-		S.SetVertical(0)
-	end)
-	roundAction(actions, Icons.Get("Sonar"), "Q", T.AccentDeep, 70, UDim2.fromOffset(72, 120), function()
-		controllers.SonarController.Ping()
-	end)
-	local flare
-	flare, refs.flareHint = roundAction(
-		actions,
-		Icons.Get("Flare"),
-		"G · 3",
-		Color3.fromRGB(230, 90, 40),
-		60,
-		UDim2.fromOffset(110, 40),
-		function()
-			Net.UseFlare:FireServer()
-		end
-	)
-	refs.flare = flare
-	roundAction(
-		actions,
-		Icons.Get("Surface"),
-		"R",
-		Color3.fromRGB(90, 120, 230),
-		60,
-		UDim2.fromOffset(190, 4),
-		function()
-			Net.RequestInstantSurface:FireServer()
-		end
-	)
-	roundAction(actions, Icons.Get("Boost"), "Shift", T.Good, 84, UDim2.fromOffset(160, 100), function()
+	roundAction(actions, "boost", "BOOST", T.Good, 88, UDim2.new(1, -88, 1, -88), function()
 		S.SetBoost(true)
 	end, function()
 		S.SetBoost(false)
 	end)
-
-	-- Events list (top-right)
-	local eventsCluster = cluster("Events", Vector2.new(1, 0), UDim2.new(1, -12, 0, 10), UDim2.fromOffset(250, 220))
-	refs.events = New("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = eventsCluster })
-	Kit.List(6, false, Enum.HorizontalAlignment.Right).Parent = refs.events
+	roundAction(actions, "sonar", "SONAR · Q", T.Accent, 72, UDim2.new(1, -176, 1, -78), function()
+		controllers.SonarController.Ping()
+	end)
+	local _, flareText = roundAction(
+		actions,
+		"flare",
+		"FLARE 3",
+		Color3.fromRGB(245, 154, 90),
+		60,
+		UDim2.new(1, -74, 1, -164),
+		function()
+			Net.UseFlare:FireServer()
+		end
+	)
+	refs.flareText = flareText
+	roundAction(actions, "home", "HOME · R", Color3.fromRGB(143, 180, 255), 60, UDim2.new(1, -150, 1, -160), function()
+		Net.RequestInstantSurface:FireServer()
+	end)
+	refs.upButton = roundAction(actions, "up", "", T.Text, 56, UDim2.new(1, -246, 1, -132), function()
+		S.SetVertical(1)
+	end, function()
+		S.SetVertical(0)
+	end)
+	refs.downButton = roundAction(actions, "down", "", T.Text, 56, UDim2.new(1, -246, 1, -66), function()
+		S.SetVertical(-1)
+	end, function()
+		S.SetVertical(0)
+	end)
+	for _, b in { refs.upButton, refs.downButton } do
+		b:FindFirstChildOfClass("UIStroke").Transparency = 0.5
+		b.Visible = false
+	end
 
 	-- Alerts (centre)
-	refs.alert = alertLabel("Alert", T.Bad, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 150), 54)
-	refs.carry = alertLabel("Carry", T.Gold, Vector2.new(0.5, 1), UDim2.new(0.5, 0, 1, -150), 42)
-	refs.predator =
-		alertLabel("Predator", Color3.fromRGB(255, 60, 60), Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 70), 34)
-	refs.predator.TextSize = 18
+	local function alertPill(name: string, color: Color3, anchor: Vector2, pos: UDim2)
+		local f = New("Frame", {
+			Name = name,
+			BackgroundColor3 = Kit.Darken(color, 0.78),
+			BackgroundTransparency = 0.1,
+			AnchorPoint = anchor,
+			Position = pos,
+			Size = UDim2.fromOffset(0, 44),
+			AutomaticSize = Enum.AutomaticSize.X,
+			Visible = false,
+			Parent = controllers.UIController.Root,
+		}, {
+			Kit.Round(),
+			Kit.Stroke(color, 1, 0),
+			New("UIPadding", { PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 18) }),
+			Kit.List(10, true),
+		})
+		Icon.new("alert", 22, Kit.Lighten(color, 0.3), { LayoutOrder = 1, Parent = f })
+		local label = Kit.Title({
+			Text = "",
+			TextSize = 17,
+			TextColor3 = Kit.Lighten(color, 0.65),
+			AutomaticSize = Enum.AutomaticSize.X,
+			Size = UDim2.fromOffset(0, 44),
+			TextWrapped = false,
+			LayoutOrder = 2,
+			Parent = f,
+		})
+		return f, label
+	end
+	refs.alert, refs.alertText = alertPill("Alert", T.Bad, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 150))
+	refs.carry, refs.carryText = alertPill("Carry", T.Gold, Vector2.new(0.5, 1), UDim2.new(0.5, 0, 1, -170))
+	refs.predator, refs.predatorText = alertPill("Predator", T.Bad, Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 104))
 
 	updateScale()
 	local cam = Workspace.CurrentCamera
@@ -366,9 +519,12 @@ local function build()
 	end
 end
 
--- Screen position of the coin badge (FXController flies coins here)
+------------------------------------------------------------------------------------------
+-- Public hooks
+------------------------------------------------------------------------------------------
+-- Screen position of the coin icon (FXController flies coins here)
 function HUDController.CoinTarget(): Vector2?
-	local b = refs.coinBadge
+	local b = refs.coinIcon
 	if not b then
 		return nil
 	end
@@ -376,66 +532,108 @@ function HUDController.CoinTarget(): Vector2?
 end
 
 function HUDController.BumpCoins()
-	if refs.coinBadge then
-		bump(refs.coinBadge)
+	if refs.coinIcon then
+		bump(refs.coinIcon)
 	end
 end
 
-local function refreshCurrencies()
+------------------------------------------------------------------------------------------
+-- Updates
+------------------------------------------------------------------------------------------
+local function questDef(id: string)
+	for _, list in { Quests.Daily, Quests.Weekly } do
+		for _, q in list do
+			if q.Id == id then
+				return q
+			end
+		end
+	end
+	return nil
+end
+
+-- Red dot on QUESTS when something can be claimed
+local function refreshQuestDot()
+	local S = controllers.State
+	local claimable = (S.Get("LastDailyClaimDay") or 0) ~= os.time() // 86400
+	local q = S.Get("Quests") or {}
+	for _, list in { q.Daily or {}, q.Weekly or {} } do
+		for _, entry in list do
+			local def = questDef(entry.Id)
+			if def and not entry.Claimed and entry.Progress >= def.Goal then
+				claimable = true
+			end
+		end
+	end
+	local tp = S.Get("TidePass")
+	if tp then
+		local tier = tp.XP // Economy.TidePass.XpPerTier
+		for t = 1, math.min(tier, Economy.TidePass.Tiers) do
+			if not (tp.ClaimedFree or {})[tostring(t)] then
+				claimable = true
+				break
+			end
+		end
+	end
+	refs.questDot.Visible = claimable
+end
+
+local function refreshCurrencies(keys)
 	local S = controllers.State
 	local coins = S.Get("Coins") or 0
 	refs.coins.Text = NumberFormat.short(coins)
 	if lastCoins and coins > lastCoins then
-		bump(refs.coinBadge)
+		bump(refs.coinIcon)
 	end
 	lastCoins = coins
 	refs.pearls.Text = NumberFormat.commas(S.Get("Pearls") or 0)
-	refs.income.Text = `{Icons.Get("Income")} +{NumberFormat.short(S.Get("IncomePerSecond") or 0)}/s`
+	refs.income.Text = `+{NumberFormat.short(S.Get("IncomePerSecond") or 0)} / s`
 	local bag = S.Get("Bag") or {}
 	local size = S.Derived("BagSize") or 3
 	local full = #bag >= size
-	refs.bag.Text = `{Icons.Get("Bag")} {#bag}/{size}{if full then "  FULL" else ""}`
-	refs.bag.BackgroundColor3 = if full then Kit.Darken(T.Bad, 0.2) else T.PanelLight
-	refs.bag.TextColor3 = Color3.new(1, 1, 1)
-	refs.bagStroke.Color = if full then T.Bad else T.Accent
-	refs.flareHint.Text = `G · {S.Get("Flares") or 0}`
+	refs.bag.Text = `{#bag} / {size}`
+	local diving = controllers.SwimController.IsSwimming()
+	refs.bagHint.Text = if full then "Bag full" elseif #bag > 0 and diving then "Swim home to secure" else ""
+	local chipColor = if full then T.Bad elseif #bag > 0 then T.Gold else T.Accent
+	refs.bagChip:FindFirstChildOfClass("UIStroke").Color = chipColor
+	refs.bagChip:FindFirstChildOfClass("UIStroke").Transparency = if #bag > 0 then 0.3 else 0.65
+	Icon.SetColor(refs.bagIcon, chipColor)
+	refs.bagHint.TextColor3 = chipColor
+	if refs.flareText then
+		refs.flareText.Text = `FLARE {S.Get("Flares") or 0}`
+	end
+	if not keys or keys.Quests or keys.TidePass or keys.LastDailyClaimDay then
+		refreshQuestDot()
+	end
 end
 
 local function onStatus(status)
 	local frac = status.O2 / math.max(status.Max, 1)
 	HUDController.O2Fraction = frac
 	local color = if frac < 0.25 then T.Bad elseif frac < 0.5 then T.Gold else T.Accent
-	refs.setO2(frac, color, `O₂ {math.floor(frac * 100)}%  ·  {math.floor(status.O2)}s`)
-	if frac < 0.25 and status.Zone > 0 then
-		refs.o2Frame.BackgroundColor3 = if (os.clock() * 4) % 2 < 1
-			then Color3.fromRGB(90, 0, 0)
-			else Color3.fromRGB(6, 12, 22)
-	else
-		refs.o2Frame.BackgroundColor3 = Color3.fromRGB(6, 12, 22)
-	end
+	refs.o2Fill.Size = UDim2.fromScale(math.clamp(frac, 0, 1), 1)
+	refs.o2Fill.Visible = frac > 0.005
+	refs.o2Fill.BackgroundColor3 = color
+	refs.o2Text.Text = `{math.floor(status.O2)}s`
+	Icon.SetColor(refs.o2Icon, color)
+	local critical = frac < 0.25 and status.Zone > 0
+	refs.o2Stroke.Color = color
+	refs.o2Stroke.Transparency = if critical and (os.clock() * 4) % 2 < 1 then 0 else if frac < 0.5 then 0.35 else 0.65
 	refs.quickRefill.Visible = frac < 0.15 and status.Zone > 0 and not controllers.State.Owns("DoubleOxygen")
-	if status.Zone > 0 then
+
+	local diving = status.Zone > 0
+	refs.upButton.Visible = diving
+	refs.downButton.Visible = diving
+	refs.depth.Visible = diving
+	if diving then
 		local zone = Zones.List[status.Zone]
-		refs.depth.Visible = true
-		local zoneColor = Kit.Lighten(zone.FogColor, 0.35)
-		if refs.lastZoneIndex ~= status.Zone then
-			refs.lastZoneIndex = status.Zone
-			Kit.Clear(refs.depthBadgeHolder)
-			Kit.IconBadge(Icons.Get(zone.Id), zoneColor, 56, {
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.5),
-				ZIndex = 3,
-				Parent = refs.depthBadgeHolder,
-			})
-			Kit.Pop(refs.depth)
+		refs.depthValue.Text = tostring(math.floor(status.Depth))
+		refs.depthZone.Text = if status.Pressure then "PRESSURE! UPGRADE YOUR SUIT" else string.upper(zone.Name)
+		refs.depthZone.TextColor3 = if status.Pressure then T.Bad else Kit.Lighten(zone.FogColor, 0.5)
+		local within = math.clamp((status.Depth - zone.MinDepth) / (zone.MaxDepth - zone.MinDepth), 0, 1)
+		refs.bandMarker.Position = UDim2.new(((status.Zone - 1) + within) / #Zones.List, 0, 0.5, 0)
+		for i, l in refs.bandLabels do
+			l.TextColor3 = if i == status.Zone then T.Text else T.Muted
 		end
-		refs.depthValue.Text = `{math.floor(status.Depth)}m`
-		refs.depthZone.Text = if status.Pressure then "⚠ PRESSURE!\nUpgrade your suit" else zone.Name
-		refs.depthZone.TextColor3 = if status.Pressure then T.Bad else zoneColor
-		refs.depthStroke.Color = if status.Pressure then T.Bad else zoneColor
-	else
-		refs.depth.Visible = false
-		refs.lastZoneIndex = 0
 	end
 end
 
@@ -443,20 +641,19 @@ local function refreshEvents(list)
 	Kit.Clear(refs.events)
 	for i, e in list do
 		local color = e.Color or T.Accent
-		local card = New("Frame", {
-			BackgroundColor3 = T.PanelDark,
-			BackgroundTransparency = 0.15,
-			Size = UDim2.fromOffset(240, 44),
-			LayoutOrder = i,
-			Parent = refs.events,
-		}, { Kit.Corner(12), Kit.Stroke(color, 2, 0.1) })
-		Kit.IconBadge(Icons.Get("Event"), color, 32, { Position = UDim2.fromOffset(6, 6), Parent = card })
+		local card = glass({ Size = UDim2.fromOffset(280, 52), LayoutOrder = i, Parent = refs.events }, color, 0.55)
+		Kit.Corner(14).Parent = card
+		Icon.new(
+			"event",
+			26,
+			color,
+			{ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 12, 0.5, 0), Parent = card }
+		)
 		Kit.Title({
-			Text = `{e.Name}  ·  {NumberFormat.time(e.Remaining)}`,
-			TextSize = 14,
-			TextColor3 = Kit.Lighten(color, 0.3),
-			Position = UDim2.fromOffset(44, 3),
-			Size = UDim2.new(1, -50, 0, 18),
+			Text = e.Name,
+			TextSize = 15,
+			Position = UDim2.fromOffset(48, 8),
+			Size = UDim2.new(1, -130, 0, 18),
 			TextWrapped = false,
 			TextTruncate = Enum.TextTruncate.AtEnd,
 			Parent = card,
@@ -465,9 +662,20 @@ local function refreshEvents(list)
 			Text = e.Desc,
 			TextSize = 11,
 			TextColor3 = T.Muted,
-			Position = UDim2.fromOffset(44, 21),
-			Size = UDim2.new(1, -50, 0, 18),
+			Position = UDim2.fromOffset(48, 27),
+			Size = UDim2.new(1, -130, 0, 16),
 			TextTruncate = Enum.TextTruncate.AtEnd,
+			TextWrapped = false,
+			Parent = card,
+		})
+		Kit.Title({
+			Text = NumberFormat.time(e.Remaining),
+			TextSize = 14,
+			TextColor3 = color,
+			TextXAlignment = Enum.TextXAlignment.Right,
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -14, 0.5, 0),
+			Size = UDim2.fromOffset(76, 20),
 			TextWrapped = false,
 			Parent = card,
 		})
@@ -484,7 +692,7 @@ function HUDController.Start()
 	local function alert(text: string, seconds: number)
 		alertToken += 1
 		local my = alertToken
-		refs.alert.Text = text
+		refs.alertText.Text = text
 		refs.alert.Visible = true
 		Kit.Pop(refs.alert)
 		task.delay(seconds, function()
@@ -495,14 +703,14 @@ function HUDController.Start()
 	end
 	Net.Intruder.OnClientEvent:Connect(function(info)
 		if info.Stealing then
-			alert(`🚨 {info.Name} is STEALING your {info.Stealing}! Tag them!`, 6)
+			alert(`{info.Name} is stealing your {info.Stealing}! Tag them!`, 6)
 		else
-			alert(`🔔 {info.Name} entered your dock`, 3)
+			alert(`{info.Name} entered your dock`, 3)
 		end
 	end)
 	Net.CarryChanged.OnClientEvent:Connect(function(info)
 		if info then
-			refs.carry.Text = `💰 Stolen from {info.Owner}: get to YOUR dock!`
+			refs.carryText.Text = `Stolen from {info.Owner}: get to YOUR dock!`
 			refs.carry.Visible = true
 			Kit.Pop(refs.carry)
 		else
@@ -512,11 +720,11 @@ function HUDController.Start()
 	Net.PredatorHint.OnClientEvent:Connect(function(hint)
 		local lowScare = (controllers.State.Get("Settings") or {}).LowScare
 		if hint.State == "WindUp" then
-			refs.predator.Text = if lowScare then "Leviathan lunging: turn!" else "⚠ IT'S LUNGING. TURN NOW! ⚠"
+			refs.predatorText.Text = if lowScare then "Leviathan lunging: turn!" else "IT'S LUNGING. TURN NOW!"
 			refs.predator.Visible = true
 		elseif hint.Distance and hint.Distance < 120 then
-			refs.predator.Text = if hint.State == "Hunt"
-				then "👁 The Leviathan is hunting you!"
+			refs.predatorText.Text = if hint.State == "Hunt"
+				then "The Leviathan is hunting you!"
 				else "Something huge is nearby…"
 			refs.predator.Visible = true
 		else

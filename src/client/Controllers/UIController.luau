@@ -11,6 +11,7 @@ local Net = require(Shared.Net)
 local Rarities = require(Shared.Config.Rarities)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Icons = require(script.Parent.Parent.UI.Icons)
+local Icon = require(script.Parent.Parent.UI.Icon)
 
 local New, T = Kit.New, Kit.Theme
 local player = Players.LocalPlayer
@@ -94,8 +95,8 @@ function UIController.RegisterWindow(name: string, title: string, build: (Frame)
 	local frame = Kit.Panel({
 		Name = name,
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.53),
-		Size = UDim2.new(0.94, 0, 0.8, 0),
+		Position = UDim2.fromScale(0.5, 0.52),
+		Size = UDim2.new(0.94, 0, 0.84, 0),
 		Visible = false,
 		ZIndex = 2,
 		Parent = UIController.Windows,
@@ -104,55 +105,48 @@ function UIController.RegisterWindow(name: string, title: string, build: (Frame)
 	local stroke = frame:FindFirstChildOfClass("UIStroke")
 	if stroke then
 		stroke.Color = accent
-		stroke.Transparency = 0.25
+		stroke.Transparency = 0.55
 	end
 
-	-- Header strip
-	local headerBar = New("Frame", {
+	-- Header: drawn icon, display title, square close button (UI design "Bag & Dock window")
+	local header = New("Frame", {
 		Name = "Header",
-		BackgroundColor3 = accent,
-		BackgroundTransparency = 0.55,
-		Size = UDim2.new(1, 0, 0, 52),
-		Parent = frame,
-	}, {
-		Kit.Corner(16),
-		New("UIGradient", {
-			Rotation = 0,
-			Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(1, 1) }),
-		}),
-	})
-	Kit.IconBadge(Icons.Get(name), accent, 46, {
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, -8, 0, 18),
-		ZIndex = 3,
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(20, 16),
+		Size = UDim2.new(1, -40, 0, 44),
 		Parent = frame,
 	})
+	Icon.new(Icons.Get(name), 28, accent, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 0, 0.5, 0), Parent = header })
 	Kit.Title({
 		Text = title,
 		TextSize = 26,
-		Position = UDim2.fromOffset(48, 8),
-		Size = UDim2.new(1, -120, 0, 36),
+		Position = UDim2.fromOffset(40, 0),
+		Size = UDim2.new(1, -100, 1, 0),
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
-		Parent = headerBar,
+		Parent = header,
 	})
-	local close = Kit.Button("✕", T.Bad, function()
-		UIController.Close()
-	end, {
+	local close = New("TextButton", {
+		Name = "Close",
+		Text = "",
+		AutoButtonColor = false,
+		BackgroundColor3 = T.PanelLight,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, 0, 0.5, 0),
 		Size = UDim2.fromOffset(44, 44),
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, 10, 0, -10),
-		TextSize = 20,
-		ZIndex = 4,
-		Parent = frame,
-	})
-	close:FindFirstChildOfClass("UICorner").CornerRadius = UDim.new(0.5, 0)
+		Parent = header,
+	}, { Kit.Corner(12), Kit.Stroke(T.Text, 1, 0.8) })
+	Icon.new("close", 18, T.Text, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Parent = close })
+	Kit.Juice(close)
+	close.Activated:Connect(function()
+		UIController.Close()
+	end)
 
 	local body = New("Frame", {
 		Name = "Body",
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(12, 58),
-		Size = UDim2.new(1, -24, 1, -68),
+		Position = UDim2.fromOffset(20, 72),
+		Size = UDim2.new(1, -40, 1, -90),
 		Parent = frame,
 	})
 	build(body)
@@ -162,7 +156,7 @@ end
 local function showBackdrop(on: boolean)
 	if on then
 		backdrop.Visible = true
-		TweenService:Create(backdrop, TweenInfo.new(0.2), { BackgroundTransparency = 0.45 }):Play()
+		TweenService:Create(backdrop, TweenInfo.new(0.2), { BackgroundTransparency = 0.5 }):Play()
 	else
 		backdrop.BackgroundTransparency = 1
 		backdrop.Visible = false
@@ -215,54 +209,54 @@ end
 local KIND_COLORS = {
 	error = T.Bad,
 	reward = T.Gold,
-	coins = T.Good,
+	coins = T.Gold,
 	upgrade = T.Accent,
-	info = T.PanelLight,
+	info = T.Accent,
 }
 
 function UIController.Toast(text: string, kind: string?)
 	local k = kind or "info"
-	local color = KIND_COLORS[k] or T.PanelLight
+	local color = KIND_COLORS[k] or T.Accent
 	local toast = New("Frame", {
-		BackgroundColor3 = T.PanelDark,
-		BackgroundTransparency = 0.08,
+		BackgroundColor3 = T.Panel,
+		BackgroundTransparency = 0.06,
 		Size = UDim2.new(1, 0, 0, 0),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Parent = toastList,
 	}, {
 		Kit.Corner(14),
-		Kit.Stroke(color, 2, 0.1),
+		Kit.Stroke(color, 1, 0.3),
 		New("UIPadding", {
-			PaddingTop = UDim.new(0, 8),
-			PaddingBottom = UDim.new(0, 8),
-			PaddingLeft = UDim.new(0, 50),
-			PaddingRight = UDim.new(0, 12),
+			PaddingTop = UDim.new(0, 10),
+			PaddingBottom = UDim.new(0, 10),
+			PaddingLeft = UDim.new(0, 46),
+			PaddingRight = UDim.new(0, 14),
 		}),
 	})
-	local badge = Kit.IconBadge(Icons.Get(k), color, 34, {
+	local icon = Icon.new(Icons.Get(k), 22, color, {
 		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, -42, 0.5, 0),
+		Position = UDim2.new(0, -34, 0.5, 0),
 		Parent = toast,
 	})
 	local label = Kit.Label({
 		Text = text,
 		Font = T.Bold,
-		TextSize = 16,
-		Size = UDim2.new(1, 0, 0, 26),
+		TextSize = 15,
+		Size = UDim2.new(1, 0, 0, 22),
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Parent = toast,
 	})
 	Kit.Pop(toast)
 	task.delay(4, function()
-		local fade = TweenInfo.new(0.4)
+		local fade = TweenInfo.new(0.35)
 		TweenService:Create(toast, fade, { BackgroundTransparency = 1 }):Play()
 		TweenService:Create(label, fade, { TextTransparency = 1 }):Play()
-		badge.Visible = false
-		local s = toast:FindFirstChildOfClass("UIStroke")
-		if s then
-			TweenService:Create(s, fade, { Transparency = 1 }):Play()
+		icon.Visible = false
+		local st = toast:FindFirstChildOfClass("UIStroke")
+		if st then
+			TweenService:Create(st, fade, { Transparency = 1 }):Play()
 		end
-		task.wait(0.45)
+		task.wait(0.4)
 		toast:Destroy()
 	end)
 	local kids = {}
@@ -271,7 +265,7 @@ function UIController.Toast(text: string, kind: string?)
 			table.insert(kids, c)
 		end
 	end
-	if #kids > 5 then
+	if #kids > 4 then
 		kids[1]:Destroy()
 	end
 end
@@ -281,25 +275,23 @@ function UIController.Banner(text: string, rarity: string?)
 	Kit.Clear(bannerFrame)
 	local color = Kit.RarityColor(rarity or "Rare", Rarities)
 	local r = Rarities[rarity or "Rare"]
-	local icon = if type(r) == "table" and r.Icon then r.Icon else "✦"
+	local glyph = if type(r) == "table" and r.Icon then r.Icon else "◆"
 	local banner = New("TextLabel", {
-		BackgroundColor3 = Kit.Darken(color, 0.55),
+		BackgroundColor3 = Kit.Darken(color, 0.82),
 		BackgroundTransparency = 0.05,
 		Size = UDim2.fromScale(1, 1),
-		Text = `{icon}  {text}  {icon}`,
+		Text = `{glyph}  {text}  {glyph}`,
 		TextScaled = true,
-		TextColor3 = Color3.new(1, 1, 1),
-		TextStrokeTransparency = 0.4,
+		TextColor3 = Kit.Lighten(color, 0.55),
 		Font = T.Title,
 		Parent = bannerFrame,
 	}, {
 		Kit.Round(),
-		Kit.Stroke(color, 3, 0),
-		Kit.Gradient(Kit.Lighten(color, 0.2), Kit.Darken(color, 0.3), 0),
-		New("UITextSizeConstraint", { MaxTextSize = 24 }),
-		New("UIPadding", { PaddingLeft = UDim.new(0, 16), PaddingRight = UDim.new(0, 16) }),
+		Kit.Stroke(color, 2, 0),
+		New("UITextSizeConstraint", { MaxTextSize = 22 }),
+		New("UIPadding", { PaddingLeft = UDim.new(0, 18), PaddingRight = UDim.new(0, 18), PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6) }),
 	})
-	Kit.Shine(banner, 0.8)
+	Kit.Shine(banner, 1.2)
 	Kit.Pop(banner)
 	task.delay(6, function()
 		if banner.Parent then

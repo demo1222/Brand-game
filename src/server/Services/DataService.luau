@@ -26,6 +26,7 @@ local CURRENT_VERSION = 2
 
 local DataService = {}
 DataService.ProfileLoaded = Signal.new() -- (player, profile)
+DataService.SettingsChanged = Signal.new() -- (player, settings)
 
 local profiles: { [Player]: any } = {}
 local releaseHooks: { (Player, any) -> () } = {}
@@ -42,6 +43,7 @@ local TEMPLATE = {
 	XP = 0,
 	Rebirths = 0,
 	RebirthTokens = 0,
+	EventTokens = 0,
 	Talents = {},
 	Upgrades = {},
 	Suit = 1,
@@ -428,7 +430,14 @@ function DataService.Start()
 		if typeof(settings.LowScare) == "boolean" then
 			s.LowScare = settings.LowScare
 		end
+		-- Diver appearance toggles (Diver window); missing keys mean "shown"
+		for _, key in { "SuitHelmet", "SuitTank", "SuitFins", "SuitGear", "SuitColors" } do
+			if typeof(settings[key]) == "boolean" then
+				s[key] = settings[key]
+			end
+		end
 		DataService.Replicate(player, "Settings")
+		DataService.SettingsChanged:Fire(player, s)
 	end)
 
 	-- Autosave loop + playtime tracking

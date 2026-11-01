@@ -20,7 +20,6 @@ local SURFACE = World.WaterSurfaceY
 
 local SwimController = {}
 local vertical = 0 -- -1..1 from mobile buttons
-local boostHeld = false
 local mobileBoost = false
 local swimming = false
 local lastBoostSent = false
@@ -157,7 +156,10 @@ local function step(dt: number)
 	if math.abs(face.Y) > 0.98 then
 		face = (face + flatLook * 0.2).Unit
 	end
-	align.CFrame = CFrame.lookAt(Vector3.zero, face) * CFrame.Angles(math.rad(-70) * (velocity.Magnitude / math.max(speed, 1)), 0, 0)
+	-- Horizontal (streamlined) when swimming, upright when treading water (SwimAnimController
+	-- animates the limbs to match)
+	local pitch = math.clamp(velocity.Magnitude / math.max(speed, 1) * 1.4, 0, 1)
+	align.CFrame = CFrame.lookAt(Vector3.zero, face) * CFrame.Angles(math.rad(-88) * pitch, 0, 0)
 end
 
 function SwimController.Start()
@@ -169,16 +171,6 @@ function SwimController.Start()
 	Net.Knockback.OnClientEvent:Connect(function(impulse: Vector3)
 		if typeof(impulse) == "Vector3" then
 			knock += impulse
-		end
-	end)
-	UserInputService.InputBegan:Connect(function(input, processed)
-		if not processed and input.KeyCode == Enum.KeyCode.LeftShift then
-			boostHeld = true
-		end
-	end)
-	UserInputService.InputEnded:Connect(function(input)
-		if input.KeyCode == Enum.KeyCode.LeftShift then
-			boostHeld = false
 		end
 	end)
 end

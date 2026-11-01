@@ -201,12 +201,40 @@ describe("Formulas", function()
 	end)
 end)
 
+describe("Event shop", function()
+	test("every item has a positive cost and a grantable reward", function()
+		local allowed = { Coins = true, Pearls = true, Boost = true, Seconds = true, Flares = true, Relic = true, TidePassXp = true }
+		local seen = {}
+		for _, item in Economy.EventShop do
+			expect(type(item.Cost) == "number" and item.Cost > 0, `{item.Id}: bad cost`)
+			expect(not seen[item.Id], `duplicate id {item.Id}`)
+			seen[item.Id] = true
+			for k in item.Reward do
+				expect(allowed[k], `{item.Id}: unknown reward key {k}`)
+			end
+			if item.Reward.Relic then
+				expect(Rarities[item.Reward.Relic] ~= nil, `{item.Id}: unknown rarity`)
+			end
+		end
+	end)
+end)
+
+describe("SuitArt", function()
+	test("one tier per suit with a helmet style", function()
+		local SuitArt = H.require("src/shared/SuitArt")
+		expect(#SuitArt.Tiers == #Upgrades.Suits, "tier count matches suits")
+		for i, t in SuitArt.Tiers do
+			expect(type(t.helmet) == "string" and type(t.feet) == "string", `tier {i} incomplete`)
+		end
+	end)
+end)
+
 describe("RelicArt (UI overhaul)", function()
 	test("every relic has art with an existing recipe and a main colour", function()
 		for _, def in Relics.List do
 			local art = RelicArt.Map[def.Id]
 			expect(art ~= nil, `no art for {def.Id}`)
-			expect(type(RelicArt.Recipes[art[1]]) == "function", `{def.Id}: unknown archetype '{tostring(art[1])}'`)
+			expect(type(RelicArt.Recipes[art.kind]) == "function", `{def.Id}: unknown archetype '{tostring(art.kind)}'`)
 			expect(type(art.main) == "table", `{def.Id}: missing main colour`)
 		end
 	end)
@@ -224,8 +252,8 @@ describe("RelicArt (UI overhaul)", function()
 		local used = {}
 		local n = 0
 		for _, art in RelicArt.Map do
-			if not used[art[1]] then
-				used[art[1]] = true
+			if not used[art.kind] then
+				used[art.kind] = true
 				n += 1
 			end
 		end

@@ -1,33 +1,37 @@
--- UI Kit v2 (UI/Visual Overhaul Plan, Phase 1). Declarative helpers with no dependencies.
--- Mobile-first: buttons >= 48px (§18.1). Everything is asset-free: depth comes from
--- UIGradient/UIStroke, icons from emoji badges (see Icons.luau), and item art from RelicView.
--- The v1 API (New, Corner, Stroke, Padding, List, Label, Button, Panel, Scroll, Clear, Pop,
--- Bar) is unchanged, so every existing screen picks up the new style automatically.
+-- UI Kit v3: the "instrument panel" style from the UI design canvas: dark glass panels with
+-- teal hairlines, solid flat buttons, drawn vector icons (UI/Icon) instead of emoji, Fredoka
+-- display text (FredokaOne) over Gotham body text. No dependencies, mobile-first (>= 44 px
+-- touch targets). The v1/v2 API is unchanged, so every screen picks up the style.
 
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 
+local Icon = require(script.Parent.Icon)
+
 local Kit = {}
 
 Kit.Theme = {
-	Bg = Color3.fromRGB(8, 16, 30),
-	Panel = Color3.fromRGB(16, 30, 52),
-	PanelLight = Color3.fromRGB(34, 56, 90),
-	PanelDark = Color3.fromRGB(10, 19, 34),
-	Accent = Color3.fromRGB(40, 205, 225),
-	AccentDeep = Color3.fromRGB(20, 110, 170),
-	Gold = Color3.fromRGB(255, 196, 50),
-	Good = Color3.fromRGB(60, 205, 105),
-	Bad = Color3.fromRGB(235, 70, 80),
-	Pearl = Color3.fromRGB(150, 200, 255),
-	Text = Color3.fromRGB(240, 248, 255),
-	Muted = Color3.fromRGB(150, 172, 200),
-	DarkText = Color3.fromRGB(45, 28, 0),
+	Bg = Color3.fromRGB(13, 26, 44),
+	Panel = Color3.fromRGB(13, 26, 44),
+	PanelLight = Color3.fromRGB(22, 38, 61),
+	PanelDark = Color3.fromRGB(8, 18, 31),
+	Accent = Color3.fromRGB(63, 214, 230),
+	AccentDeep = Color3.fromRGB(26, 92, 120),
+	Gold = Color3.fromRGB(245, 192, 74),
+	Good = Color3.fromRGB(123, 227, 160),
+	Bad = Color3.fromRGB(240, 90, 90),
+	BadDeep = Color3.fromRGB(90, 36, 48),
+	Pearl = Color3.fromRGB(191, 216, 255),
+	Text = Color3.fromRGB(234, 244, 255),
+	Muted = Color3.fromRGB(169, 189, 214),
+	DarkText = Color3.fromRGB(6, 32, 41),
+	Hairline = Color3.fromRGB(63, 214, 230),
 	Font = Enum.Font.GothamMedium,
 	Bold = Enum.Font.GothamBold,
 	Title = Enum.Font.FredokaOne,
 }
 local T = Kit.Theme
+Kit.Icon = Icon
 
 ------------------------------------------------------------------------------------------
 -- Colour helpers
@@ -40,13 +44,13 @@ function Kit.Lighten(c: Color3, amount: number): Color3
 	return c:Lerp(Color3.new(1, 1, 1), amount)
 end
 
--- Perceived brightness: pick dark text on bright buttons (gold, white)
+-- Dark text on bright fills (gold, teal, white), white text otherwise
 function Kit.TextOn(c: Color3): Color3
 	local l = 0.299 * c.R + 0.587 * c.G + 0.114 * c.B
-	return if l > 0.68 then T.DarkText else Color3.new(1, 1, 1)
+	return if l > 0.6 then T.DarkText else Color3.new(1, 1, 1)
 end
 
--- Display colour for a rarity (Secret is black in config; render it as silver on dark UI)
+-- Display colour for a rarity (Secret is black in config; shown as silver on dark UI)
 function Kit.RarityColor(rarityName: string?, rarities): Color3
 	if rarityName == "Secret" then
 		return Color3.fromRGB(225, 225, 240)
@@ -90,20 +94,19 @@ end
 -- Border stroke (never strokes text: ApplyStrokeMode = Border)
 function Kit.Stroke(color: Color3?, thickness: number?, transparency: number?)
 	return New("UIStroke", {
-		Color = color or T.Accent,
-		Thickness = thickness or 1.5,
-		Transparency = transparency or 0.3,
+		Color = color or T.Hairline,
+		Thickness = thickness or 1,
+		Transparency = transparency or 0.6,
 		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
 	})
 end
 
--- Vertical light-to-dark sheen; multiply over BackgroundColor3
-function Kit.Sheen(strength: number?, rotation: number?)
-	local s = strength or 0.3
-	return New("UIGradient", {
-		Rotation = rotation or 90,
-		Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.new(1 - s, 1 - s, 1 - s)),
-	})
+-- Flat design: kept for API compatibility, renders no visible gradient
+function Kit.Sheen(_strength: number?, rotation: number?)
+	return New(
+		"UIGradient",
+		{ Name = "Flat", Rotation = rotation or 90, Color = ColorSequence.new(Color3.new(1, 1, 1)) }
+	)
 end
 
 function Kit.Gradient(c1: Color3, c2: Color3, rotation: number?)
@@ -153,13 +156,12 @@ function Kit.Label(props)
 	return New("TextLabel", p)
 end
 
--- Big display text (titles, numbers) with a soft dark outline
+-- Display text (titles, numbers)
 function Kit.Title(props)
 	local p = {
 		Font = T.Title,
 		TextSize = 22,
-		TextStrokeTransparency = 0.55,
-		TextStrokeColor3 = Color3.new(0, 0, 0),
+		TextStrokeTransparency = 1,
 	}
 	for k, v in props do
 		p[k] = v
@@ -176,33 +178,32 @@ end
 
 function Kit.Pop(gui: GuiObject)
 	local scale = scaleOf(gui)
-	scale.Scale = 0.85
-	TweenService:Create(scale, TweenInfo.new(0.22, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	scale.Scale = 0.92
+	TweenService:Create(scale, TweenInfo.new(0.18, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 end
 
--- Press/hover feedback for any GuiButton
+-- Subtle press/hover feedback for any GuiButton
 function Kit.Juice(button: GuiButton)
 	local scale = scaleOf(button)
 	local quick = TweenInfo.new(0.08, Enum.EasingStyle.Quad)
 	local hovering = false
 	button.MouseEnter:Connect(function()
 		hovering = true
-		TweenService:Create(scale, quick, { Scale = 1.04 }):Play()
+		TweenService:Create(scale, quick, { Scale = 1.02 }):Play()
 	end)
 	button.MouseLeave:Connect(function()
 		hovering = false
 		TweenService:Create(scale, quick, { Scale = 1 }):Play()
 	end)
 	button.MouseButton1Down:Connect(function()
-		TweenService:Create(scale, quick, { Scale = 0.93 }):Play()
+		TweenService:Create(scale, quick, { Scale = 0.96 }):Play()
 	end)
 	button.MouseButton1Up:Connect(function()
-		TweenService:Create(scale, TweenInfo.new(0.16, Enum.EasingStyle.Back), { Scale = if hovering then 1.04 else 1 })
-			:Play()
+		TweenService:Create(scale, quick, { Scale = if hovering then 1.02 else 1 }):Play()
 	end)
 end
 
--- Diagonal light sweep that repeats (VIP banner, Legendary+ cards, claimable rewards)
+-- Soft light sweep (claimable rewards, Legendary+ cards, the VIP banner)
 function Kit.Shine(gui: GuiObject, period: number?)
 	local corner = gui:FindFirstChildOfClass("UICorner")
 	local shine = New("Frame", {
@@ -220,7 +221,7 @@ function Kit.Shine(gui: GuiObject, period: number?)
 		Transparency = NumberSequence.new({
 			NumberSequenceKeypoint.new(0, 1),
 			NumberSequenceKeypoint.new(0.42, 1),
-			NumberSequenceKeypoint.new(0.5, 0.55),
+			NumberSequenceKeypoint.new(0.5, 0.78),
 			NumberSequenceKeypoint.new(0.58, 1),
 			NumberSequenceKeypoint.new(1, 1),
 		}),
@@ -235,7 +236,7 @@ function Kit.Shine(gui: GuiObject, period: number?)
 	return shine
 end
 
--- Fake radial glow: stacked circles with falling opacity
+-- Soft radial glow: stacked circles with falling opacity
 function Kit.Glow(parent: Instance, color: Color3, size: number, props)
 	local holder = New("Frame", {
 		Name = "Glow",
@@ -248,7 +249,7 @@ function Kit.Glow(parent: Instance, color: Color3, size: number, props)
 	for k, v in props or {} do
 		(holder :: any)[k] = v
 	end
-	for i, t in { 0.88, 0.8, 0.7, 0.6 } do
+	for i, t in { 0.93, 0.88, 0.82, 0.76 } do
 		local s = 1 - (i - 1) * 0.22
 		New("Frame", {
 			BackgroundColor3 = color,
@@ -263,10 +264,10 @@ function Kit.Glow(parent: Instance, color: Color3, size: number, props)
 	return holder
 end
 
--- Continuous gentle pulse of a UIScale (claimable buttons, alerts)
+-- Gentle pulse (alerts, claimable dots)
 function Kit.Pulse(gui: GuiObject, amount: number?)
 	local scale = scaleOf(gui)
-	local a = amount or 0.06
+	local a = amount or 0.05
 	local conn
 	conn = RunService.Heartbeat:Connect(function()
 		if not gui.Parent then
@@ -279,8 +280,38 @@ function Kit.Pulse(gui: GuiObject, amount: number?)
 end
 
 ------------------------------------------------------------------------------------------
+-- Icons inside text controls
+------------------------------------------------------------------------------------------
+-- Pins a drawn icon just left of a control's (centred or left-aligned) text. The control gets
+-- left padding for it; position follows TextBounds so icon + text stay together.
+function Kit.AttachIcon(control: TextLabel | TextButton, iconName: string, color: Color3?, size: number?)
+	local s = size or math.floor(control.TextSize * 1.15)
+	local gap = 6
+	local pad = control:FindFirstChildOfClass("UIPadding") or New("UIPadding", { Parent = control })
+	pad.PaddingLeft = UDim.new(0, pad.PaddingLeft.Offset + s + gap)
+	local icon = Icon.new(iconName, s, color or control.TextColor3, {
+		Name = "LeadIcon",
+		AnchorPoint = Vector2.new(0, 0.5),
+		ZIndex = control.ZIndex + 1,
+		Parent = control,
+	})
+	local function place()
+		-- child positions are relative to the padded content box
+		local contentW = control.AbsoluteSize.X - pad.PaddingLeft.Offset - pad.PaddingRight.Offset
+		local textW = math.min(control.TextBounds.X, contentW)
+		local textLeft = if control.TextXAlignment == Enum.TextXAlignment.Center then (contentW - textW) / 2 else 0
+		icon.Position = UDim2.new(0, textLeft - gap - s, 0.5, 0)
+	end
+	control:GetPropertyChangedSignal("TextBounds"):Connect(place)
+	control:GetPropertyChangedSignal("AbsoluteSize"):Connect(place)
+	task.defer(place)
+	return icon
+end
+
+------------------------------------------------------------------------------------------
 -- Controls
 ------------------------------------------------------------------------------------------
+-- Solid button. props.Icon = drawn icon name shown before the text.
 function Kit.Button(text: string, color: Color3?, onClick: (() -> ())?, props)
 	local c = color or T.Accent
 	local p = {
@@ -288,19 +319,26 @@ function Kit.Button(text: string, color: Color3?, onClick: (() -> ())?, props)
 		BackgroundColor3 = c,
 		TextColor3 = Kit.TextOn(c),
 		Font = T.Bold,
-		TextSize = 16,
-		Size = UDim2.fromOffset(120, 48),
+		TextSize = 15,
+		Size = UDim2.fromOffset(120, 46),
 		AutoButtonColor = false,
-		TextStrokeTransparency = if Kit.TextOn(c) == T.DarkText then 1 else 0.75,
+		TextStrokeTransparency = 1,
 	}
+	local iconName = nil
 	for k, v in props or {} do
-		p[k] = v
+		if k == "Icon" then
+			iconName = v
+		else
+			p[k] = v
+		end
 	end
 	local b = New("TextButton", p, {
 		Kit.Corner(12),
-		Kit.Sheen(0.32),
-		Kit.Stroke(Kit.Darken(c, 0.45), 2, 0.1),
+		Kit.Stroke(Kit.Lighten(c, 0.3), 1, 0.75),
 	})
+	if iconName and Icon.Has(iconName) then
+		Kit.AttachIcon(b, iconName)
+	end
 	Kit.Juice(b)
 	if onClick then
 		b.Activated:Connect(onClick)
@@ -308,51 +346,67 @@ function Kit.Button(text: string, color: Color3?, onClick: (() -> ())?, props)
 	return b
 end
 
--- Pill-shaped label that sizes to its text
+-- Small rounded tag that sizes to its text. props.Icon = drawn icon name.
 function Kit.Pill(text: string, color: Color3, props)
 	local p = {
 		Text = text,
 		BackgroundColor3 = color,
-		BackgroundTransparency = 0.1,
+		BackgroundTransparency = 0,
 		TextColor3 = Kit.TextOn(color),
 		Font = T.Bold,
 		TextSize = 12,
 		AutomaticSize = Enum.AutomaticSize.X,
-		Size = UDim2.fromOffset(0, 20),
+		Size = UDim2.fromOffset(0, 22),
 		TextWrapped = false,
 		TextXAlignment = Enum.TextXAlignment.Center,
 	}
+	local iconName = nil
 	for k, v in props or {} do
-		p[k] = v
+		if k == "Icon" then
+			iconName = v
+		else
+			p[k] = v
+		end
 	end
 	local l = New("TextLabel", p, {
-		Kit.Round(),
-		New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }),
+		New("UICorner", { CornerRadius = UDim.new(0, 8) }),
+		New("UIPadding", { PaddingLeft = UDim.new(0, 9), PaddingRight = UDim.new(0, 9) }),
 	})
+	if iconName and Icon.Has(iconName) then
+		Kit.AttachIcon(l, iconName, l.TextColor3, math.floor(l.TextSize * 1.2))
+	end
 	return l
 end
 
--- Round gradient badge holding an emoji (or an image id from Icons.Images)
+-- Rounded-square tile holding a drawn icon (or a text glyph such as a rarity symbol)
 function Kit.IconBadge(icon: string, color: Color3, size: number, props)
 	local badge = New("Frame", {
 		Name = "IconBadge",
-		BackgroundColor3 = color,
+		BackgroundColor3 = Kit.Darken(color, 0.62),
 		Size = UDim2.fromOffset(size, size),
 	}, {
-		Kit.Round(),
-		Kit.Gradient(Kit.Lighten(color, 0.35), Kit.Darken(color, 0.25), 135),
-		Kit.Stroke(Kit.Darken(color, 0.5), math.max(1.5, size / 28), 0.05),
+		New("UICorner", { CornerRadius = UDim.new(0, math.floor(size * 0.3)) }),
+		Kit.Stroke(color, 1, 0.45),
 	})
 	for k, v in props or {} do
 		(badge :: any)[k] = v
 	end
+	local fg = Kit.Lighten(color, 0.15)
 	if string.sub(icon, 1, 13) == "rbxassetid://" then
 		New("ImageLabel", {
 			BackgroundTransparency = 1,
 			Image = icon,
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(0.5, 0.5),
-			Size = UDim2.fromScale(0.72, 0.72),
+			Size = UDim2.fromScale(0.62, 0.62),
+			ZIndex = badge.ZIndex + 1,
+			Parent = badge,
+		})
+	elseif Icon.Has(icon) then
+		local s = math.floor(size * 0.62)
+		Icon.new(icon, s, fg, {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.5),
 			ZIndex = badge.ZIndex + 1,
 			Parent = badge,
 		})
@@ -361,71 +415,64 @@ function Kit.IconBadge(icon: string, color: Color3, size: number, props)
 			BackgroundTransparency = 1,
 			Text = icon,
 			TextScaled = true,
-			Font = T.Bold,
-			TextColor3 = Color3.new(1, 1, 1),
+			Font = T.Title,
+			TextColor3 = fg,
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5, 0.52),
-			Size = UDim2.fromScale(0.64, 0.64),
+			Position = UDim2.fromScale(0.5, 0.5),
+			Size = UDim2.fromScale(0.6, 0.6),
 			ZIndex = badge.ZIndex + 1,
 			Parent = badge,
 		})
 	end
-	-- top highlight
-	New("Frame", {
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		BackgroundTransparency = 0.82,
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.fromScale(0.5, 0.08),
-		Size = UDim2.fromScale(0.62, 0.3),
-		ZIndex = badge.ZIndex,
-		Parent = badge,
-	}, { Kit.Round() })
 	return badge
 end
 
--- Segmented tabs. items = { {id=, text=, icon=?, color=?} }. Returns frame, setSelected(id)
+-- Segmented tabs. items = { {id=, text=, icon=?, color=?} }. Returns frame, setSelected(id).
+-- props.TabWidth fixes each tab's width (for scrolling tab strips).
 function Kit.Tabs(parent: Instance, items, selected: string, onSelect: (string) -> (), props)
 	local frame = New("Frame", {
 		Name = "Tabs",
 		BackgroundColor3 = T.PanelDark,
-		BackgroundTransparency = 0.2,
 		Size = UDim2.new(1, 0, 0, 44),
 		Parent = parent,
 	}, { Kit.Corner(12), Kit.Padding(4), Kit.List(4, true) })
+	local width = nil
 	for k, v in props or {} do
-		if k ~= "TabWidth" then
+		if k == "TabWidth" then
+			width = v
+		else
 			(frame :: any)[k] = v
 		end
 	end
 	local buttons = {}
-	local width = props and props.TabWidth
 	local function paint(id: string)
 		for itemId, b in buttons do
-			local item = b.item
 			local on = itemId == id
-			local c = item.color or T.Accent
-			b.button.BackgroundColor3 = if on then c else T.PanelLight
-			b.button.BackgroundTransparency = if on then 0 else 0.35
+			local c = b.item.color or T.Accent
+			b.button.BackgroundColor3 = c
+			b.button.BackgroundTransparency = if on then 0 else 1
 			b.button.TextColor3 = if on then Kit.TextOn(c) else T.Muted
-			b.stroke.Color = if on then Kit.Darken(c, 0.45) else T.PanelDark
+			if b.icon then
+				Icon.SetColor(b.icon, b.button.TextColor3)
+			end
 		end
 	end
 	for i, item in items do
+		local hasIcon = item.icon and Icon.Has(item.icon)
 		local b = New("TextButton", {
-			Text = if item.icon then `{item.icon} {item.text}` else item.text,
+			Text = if item.icon and not hasIcon then `{item.icon} {item.text}` else item.text,
 			Font = T.Bold,
-			TextSize = 14,
+			TextSize = 13,
 			AutoButtonColor = false,
 			BackgroundColor3 = T.PanelLight,
 			Size = if width then UDim2.new(0, width, 1, 0) else UDim2.new(1 / #items, -4, 1, 0),
 			LayoutOrder = i,
 			TextTruncate = Enum.TextTruncate.AtEnd,
 			Parent = frame,
-		}, { Kit.Corner(9), Kit.Sheen(0.25) })
-		local stroke = Kit.Stroke(T.PanelDark, 1.5, 0.1)
-		stroke.Parent = b
+		}, { Kit.Corner(9) })
+		local icon = if hasIcon then Kit.AttachIcon(b, item.icon, T.Muted, 16) else nil
 		Kit.Juice(b)
-		buttons[item.id] = { button = b, item = item, stroke = stroke }
+		buttons[item.id] = { button = b, item = item, icon = icon }
 		b.Activated:Connect(function()
 			paint(item.id)
 			onSelect(item.id)
@@ -435,27 +482,26 @@ function Kit.Tabs(parent: Instance, items, selected: string, onSelect: (string) 
 	return frame, paint
 end
 
+-- Window / HUD panel: dark glass with a teal hairline
 function Kit.Panel(props, children)
 	local p = {
 		BackgroundColor3 = T.Panel,
-		BackgroundTransparency = 0.04,
+		BackgroundTransparency = 0.02,
 		BorderSizePixel = 0,
 	}
 	for k, v in props do
 		p[k] = v
 	end
 	local f = New("Frame", p, children)
-	Kit.Corner(16).Parent = f
-	Kit.Stroke(T.Accent, 2, 0.45).Parent = f
-	Kit.Sheen(0.35).Parent = f
+	Kit.Corner(18).Parent = f
+	Kit.Stroke(T.Hairline, 1, 0.62).Parent = f
 	return f
 end
 
--- Flat inner card (rows inside windows)
+-- Inner card (rows inside windows). Its UIStroke is invisible until a screen highlights it.
 function Kit.Card(props, children)
 	local p = {
 		BackgroundColor3 = T.PanelLight,
-		BackgroundTransparency = 0.15,
 		BorderSizePixel = 0,
 	}
 	for k, v in props do
@@ -463,45 +509,33 @@ function Kit.Card(props, children)
 	end
 	local f = New("Frame", p, children)
 	Kit.Corner(12).Parent = f
-	Kit.Stroke(Kit.Lighten(T.PanelLight, 0.15), 1, 0.6).Parent = f
-	Kit.Sheen(0.25).Parent = f
+	Kit.Stroke(T.Hairline, 1, 1).Parent = f
 	return f
 end
 
--- Section header with an accent bar
+-- Section label: small bold caps in the accent colour
 function Kit.Header(parent: Instance, order: number, text: string, color: Color3?)
-	local f = New("Frame", {
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, -8, 0, 30),
+	return Kit.Label({
+		Text = string.upper(text),
+		Font = T.Bold,
+		TextSize = 12,
+		TextColor3 = color or Kit.Lighten(T.Accent, 0.35),
+		Size = UDim2.new(1, -8, 0, 24),
+		TextYAlignment = Enum.TextYAlignment.Bottom,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		TextWrapped = false,
 		LayoutOrder = order,
 		Parent = parent,
 	})
-	New("Frame", {
-		BackgroundColor3 = color or T.Accent,
-		Position = UDim2.fromOffset(0, 6),
-		Size = UDim2.fromOffset(4, 18),
-		Parent = f,
-	}, { Kit.Round() })
-	Kit.Title({
-		Text = text,
-		TextSize = 17,
-		TextColor3 = color or T.Accent,
-		Position = UDim2.fromOffset(12, 0),
-		Size = UDim2.new(1, -12, 1, 0),
-		TextTruncate = Enum.TextTruncate.AtEnd,
-		TextWrapped = false,
-		Parent = f,
-	})
-	return f
 end
 
 function Kit.Scroll(props)
 	local p = {
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		ScrollBarThickness = 5,
+		ScrollBarThickness = 4,
 		ScrollBarImageColor3 = T.Accent,
-		ScrollBarImageTransparency = 0.3,
+		ScrollBarImageTransparency = 0.4,
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		CanvasSize = UDim2.new(),
 		Size = UDim2.fromScale(1, 1),
@@ -521,37 +555,29 @@ function Kit.Clear(container: Instance)
 	end
 end
 
--- Bar with fill; returns frame and a setter(fraction, color?, text?)
+-- Flat progress bar; returns frame and a setter(fraction, color?, text?)
 function Kit.Bar(props)
 	local frame = New("Frame", {
-		BackgroundColor3 = Color3.fromRGB(6, 12, 22),
+		BackgroundColor3 = Color3.fromRGB(6, 16, 25),
 		Size = props.Size or UDim2.fromOffset(240, 22),
 		Position = props.Position,
 		AnchorPoint = props.AnchorPoint,
 		LayoutOrder = props.LayoutOrder,
 		Parent = props.Parent,
-	}, { Kit.Round(), Kit.Stroke(Color3.new(0, 0, 0), 2, 0.35) })
+	}, { Kit.Round() })
 	local fill = New("Frame", {
 		Name = "Fill",
 		BackgroundColor3 = props.Color or T.Accent,
 		Size = UDim2.fromScale(1, 1),
 		Parent = frame,
-	}, { Kit.Round(), Kit.Sheen(0.4) })
-	-- glossy top strip
-	New("Frame", {
-		BackgroundColor3 = Color3.new(1, 1, 1),
-		BackgroundTransparency = 0.8,
-		Position = UDim2.new(0, 6, 0, 2),
-		Size = UDim2.new(1, -12, 0.3, 0),
-		Parent = fill,
 	}, { Kit.Round() })
 	local label = Kit.Label({
 		Text = props.Text or "",
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Size = UDim2.fromScale(1, 1),
-		TextSize = props.TextSize or 14,
+		TextSize = props.TextSize or 13,
 		Font = T.Bold,
-		TextStrokeTransparency = 0.4,
+		TextStrokeTransparency = 0.6,
 		ZIndex = 3,
 		Parent = frame,
 	})

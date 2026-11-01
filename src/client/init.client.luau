@@ -10,7 +10,9 @@ local ORDER = {
 	"State",
 	"UIController",
 	"SwimController",
+	"SwimAnimController",
 	"LightingController",
+	"AmbientController",
 	"AudioController",
 	"PromptController",
 	"HUDController",
@@ -21,6 +23,7 @@ local ORDER = {
 	"MenuController",
 	"OfferController",
 	"TutorialController",
+	"IntroController",
 }
 
 pcall(function()

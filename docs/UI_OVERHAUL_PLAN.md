@@ -74,12 +74,52 @@ the `rbxassetid://` there and the UI switches from emoji to the image with no ot
 - **Popups:** offers, confirms, death, robbed and offline popups have a dim backdrop, a hero
   icon badge and an accent glow.
 
-## Phase 3 — Real art pass
+## Phase 3 — Instrument-panel redesign, suits, swimming, sea (done)
 
-- Replace emoji with an uploaded icon set (fill `Icons.Images`).
-- Replace procedural relics with modelled meshes. Keep `RelicArt.Build` as the single entry
-  point, so only that module changes.
-- 9-slice frames, custom font (`Font.new` with an uploaded family), sounds for UI clicks.
+Design canvas: https://claude.ai/artifact/MRRHqKZZeK878v1eSp7MaM (HUD on the dock, HUD while
+diving, Bag & Dock window, Diver window, icon set).
+
+- **No more emoji.** Newer emoji (🪙 🫧 🫁) rendered as empty boxes on Roblox, and the
+  coloured set looked generic. `UI/Icon` draws 52 monochrome icons from lines, circles and
+  rounded rectangles on a 24-unit grid, with Frames, UICorner and UIStroke. `Icons.luau` maps
+  game keys to them, and `Icons.Images` still overrides any key with uploaded art.
+- **Kit v3:** dark glass panels with teal hairlines, solid flat buttons (a drawn icon via
+  `Icon=`), rounded-square icon tiles, small-caps section labels, flat bars, subtle press
+  feedback. Fredoka (FredokaOne) display text, Gotham body text.
+- **HUD per the design:** coin and pearl capsules, a labelled navigation rail (gold SHOP, red
+  dot on QUESTS when something is claimable, two columns on short screens), event cards, a
+  depth readout with a 5-zone band and position marker, a bag chip, a colour-coded O₂ capsule,
+  and round outlined action buttons. Up/down only show while swimming.
+- **Window chrome:** a drawn icon, a display title, a square close button and a hairline
+  border. Toasts and banners use the same language.
+- **Relic cards:** a flat rarity tint, the rarity in small caps (with its symbol for
+  colour-blind players), name and income at the bottom. 3D models are built lazily as cards
+  scroll into view.
+- **Diver window:** a live 3D preview of your own avatar, the suit tiers, and switches for
+  helmet, air tank, fins & boots, gloves & armour, and wetsuit colours. Reach it from the
+  Upgrades suit card or from Settings. Settings is restyled with rows and switches.
+- **Suits (`shared/SuitArt`):** real welded gear per tier instead of a body recolour. Basic
+  and Neoprene get a mask, snorkel and fins. Mk I and Mk II get a brass or steel dome helmet
+  with portholes, twin tanks and a chest plate. Abyssal Rig gets an armoured helmet with a neon
+  visor, headlamps and a rebreather. Titan is gold. "Wetsuit colours off" keeps the player's
+  own clothes, which are stored and restored, never deleted.
+- **Swimming (`SwimAnimController`):** procedural freestyle strokes and flutter kick while
+  moving, and sculling and treading while idle, for every underwater character, on R15 and R6.
+  Bubble trails, and the body goes horizontal while swimming.
+- **Sea:** Studio's template Baseplate (z-fighting at the water line, the flicker) is removed
+  at runtime. Cliff walls with boulders and a rock shelf at every zone floor, plus 16 seabed
+  spires with ledges. Zone props sit on those surfaces: coral, kelp, wreckage, tube worms and
+  crystals, vents with smoke. Loot spawns on surfaces. Client-side marine snow and fish
+  schools. World labels are sized in studs and dock signs are painted panels.
+- **Gameplay gaps closed:** landmark luck (×1.25 within 70 studs), Leviathan obstacle
+  avoidance (raycast slide), anglerfish lures, pressure-crack geysers, whirlpools, Event Tokens
+  with an Event shop tab, and the opening camera fly-over for new players.
+
+## Phase 4 — Real art pass
+
+- Upload an icon set (fill `Icons.Images`) and modelled relic meshes (only `RelicArt.Build`
+  changes). Licensed audio for `AudioController` (including the new `Coins` slot).
+- Custom font through `Font.new` with an uploaded family, and UI click sounds.
 
 ## Verification
 

@@ -1,7 +1,8 @@
--- Icon registry (UI/Visual Overhaul Plan). Every icon in the UI is looked up here.
--- Today icons are colour emoji shown in gradient badges (Kit.IconBadge). When real icon art is
--- uploaded, put "rbxassetid://<id>" in Images under the same key and the UI switches to the
--- image automatically; no screen code changes.
+-- Icon registry: maps game keys (menu entries, passes, products, upgrade tracks, zones, toast
+-- kinds) to drawn icon names from UI/Icon. No emoji: newer emoji render as empty boxes on
+-- Roblox and the coloured set clashed with the UI design.
+-- When real art is uploaded, put "rbxassetid://<id>" in Images under the same key; anything
+-- that draws icons through Kit.IconBadge switches to the image automatically.
 
 local Icons = {}
 
@@ -9,124 +10,127 @@ Icons.Images = {
 	-- e.g. Coins = "rbxassetid://1234567890",
 }
 
-Icons.Emoji = {
-	-- Currencies
-	Coins = "🪙",
-	Pearls = "🫧",
-	Tokens = "🔱",
-	Robux = "💎",
-	Income = "📈",
-	-- Menu / windows
-	Shop = "🛒",
-	Bag = "🎒",
-	Upgrades = "⚒️",
-	Codex = "📖",
-	Quests = "📜",
-	Rebirth = "🌊",
-	Leaderboards = "🏆",
-	Players = "👥",
-	Settings = "⚙️",
-	Trade = "🤝",
-	-- HUD actions
-	Sonar = "📡",
-	Flare = "🧨",
-	Surface = "🏝️",
-	Up = "⬆️",
-	Down = "⬇️",
-	Boost = "💨",
-	Oxygen = "🫁",
-	Depth = "🌊",
-	Event = "⚡",
-	Lock = "🔒",
-	Sell = "💰",
-	Display = "🏛️",
-	Vault = "🔐",
-	Clean = "🧽",
-	Take = "✋",
-	Huge = "🔺",
-	Alert = "🚨",
-	-- Passes
-	VIP = "👑",
-	DoubleOxygen = "🫁",
-	Drone = "🛸",
-	LuckySonar = "🍀",
-	VaultLock = "🔐",
-	ExtraSlots = "🏛️",
-	BigBag = "🎒",
-	InstantSurface = "🚀",
-	SpeedFins = "🦈",
-	AutoCollect = "🧲",
-	MutationScan = "🔬",
-	Radio = "📻",
-	DeepDiverBundle = "🤿",
-	CollectorBundle = "🗃️",
-	PassPlus = "🌟",
-	Premium = "⭐",
-	StarterPack = "🎁",
-	-- Products
-	LuckPotion = "🍀",
-	MutationPotion = "🧪",
-	ServerLuck = "🌈",
-	Flares5 = "🧨",
-	OxygenRefill = "🫁",
-	SkipPity = "🎲",
-	TierSkip = "⏩",
-	RenameDock = "🪧",
-	Revive = "❤️",
-	GateRecharge = "🔋",
-	BarnacleClean = "🧽",
-	TidePassPremium = "🎫",
-	CrateSingle = "📦",
-	CrateTriple = "📦",
-	-- Upgrade tracks
-	Oxygen_Track = "🫁",
-	Fins = "🦈",
-	Bag_Track = "🎒",
-	Sonar_Track = "📡",
-	Salvage = "🔧",
-	Display_Track = "🏛️",
-	Offline = "🌙",
-	Gate = "🚧",
-	Crab = "🦀",
-	Alarm = "🔔",
-	Suit = "🤿",
-	-- Zones
-	Reef = "🐠",
-	Kelp = "🌿",
-	Wrecks = "⚓",
-	Abyss = "🦑",
-	Trench = "🌋",
-	-- Toast kinds
-	error = "⚠️",
-	reward = "🎁",
-	coins = "🪙",
-	upgrade = "⬆️",
-	info = "💬",
+Icons.Names = {
+	-- currencies
+	Coins = "coin",
+	Pearls = "pearl",
+	Tokens = "token",
+	Income = "upgrade",
+	-- menu / windows
+	Shop = "shop",
+	Bag = "bag",
+	Upgrades = "upgrade",
+	Codex = "codex",
+	Quests = "quests",
+	Rebirth = "rebirth",
+	Leaderboards = "top",
+	Players = "friends",
+	Settings = "settings",
+	Trade = "trade",
+	Diver = "diver",
+	-- HUD actions and states
+	Sonar = "sonar",
+	Flare = "flare",
+	Surface = "home",
+	Up = "up",
+	Down = "down",
+	Boost = "boost",
+	Oxygen = "oxygen",
+	Depth = "down",
+	Event = "event",
+	Lock = "lock",
+	Sell = "coin",
+	Display = "display",
+	Vault = "lock",
+	Clean = "sparkle",
+	Take = "down",
+	Huge = "up",
+	Alert = "alert",
+	Close = "close",
+	Check = "check",
+	Offline = "clock",
+	Death = "alert",
+	-- passes
+	VIP = "crown",
+	DoubleOxygen = "oxygen",
+	Drone = "drone",
+	LuckySonar = "sonar",
+	VaultLock = "lock",
+	ExtraSlots = "display",
+	BigBag = "bag",
+	InstantSurface = "home",
+	SpeedFins = "boost",
+	AutoCollect = "magnet",
+	MutationScan = "scan",
+	Radio = "radio",
+	DeepDiverBundle = "diver",
+	CollectorBundle = "box",
+	PassPlus = "star",
+	Premium = "star",
+	StarterPack = "gift",
+	-- products
+	LuckPotion = "potion",
+	MutationPotion = "potion",
+	ServerLuck = "star",
+	Flares5 = "flare",
+	OxygenRefill = "oxygen",
+	SkipPity = "sparkle",
+	TierSkip = "upgrade",
+	RenameDock = "sign",
+	Revive = "heart",
+	GateRecharge = "event",
+	BarnacleClean = "sparkle",
+	TidePassPremium = "ticket",
+	CrateSingle = "box",
+	CrateTriple = "box",
+	-- upgrade tracks (prefixed: some ids collide with menu keys)
+	Track_Oxygen = "oxygen",
+	Track_Fins = "boost",
+	Track_Bag = "bag",
+	Track_Sonar = "sonar",
+	Track_Salvage = "wrench",
+	Track_Display = "display",
+	Track_Offline = "clock",
+	Track_Gate = "gate",
+	Track_Crab = "shield",
+	Track_Alarm = "bell",
+	Gate = "gate",
+	-- zones
+	Reef = "fish",
+	Kelp = "kelp",
+	Wrecks = "anchor",
+	Abyss = "eye",
+	Trench = "vent",
+	-- toast kinds
+	error = "alert",
+	reward = "gift",
+	coins = "coin",
+	upgrade = "upgrade",
+	info = "info",
 }
 
--- Upgrade track ids collide with menu keys; map them explicitly
-local TRACK_KEYS = { Oxygen = "Oxygen_Track", Bag = "Bag_Track", Sonar = "Sonar_Track", Display = "Display_Track" }
-
+-- Icon to draw for a key: an uploaded image id if one exists, else a drawn icon name
 function Icons.Get(key: string): string
-	return Icons.Images[key] or Icons.Emoji[key] or "✦"
+	return Icons.Images[key] or Icons.Names[key] or "info"
 end
 
 function Icons.Track(trackId: string): string
-	return Icons.Get(TRACK_KEYS[trackId] or trackId)
+	return Icons.Images["Track_" .. trackId] or Icons.Names["Track_" .. trackId] or "upgrade"
 end
 
--- Badge colours per menu key (HUD tiles, window headers)
+-- Accent colours per menu key (window header hairlines, HUD rail)
 Icons.Colors = {
-	Shop = Color3.fromRGB(255, 196, 50),
-	Bag = Color3.fromRGB(60, 160, 255),
-	Upgrades = Color3.fromRGB(255, 140, 60),
-	Codex = Color3.fromRGB(170, 100, 255),
-	Quests = Color3.fromRGB(80, 205, 120),
-	Rebirth = Color3.fromRGB(40, 205, 225),
-	Leaderboards = Color3.fromRGB(255, 170, 40),
-	Players = Color3.fromRGB(255, 100, 160),
-	Settings = Color3.fromRGB(130, 150, 175),
-	Trade = Color3.fromRGB(255, 196, 50),
+	Shop = Color3.fromRGB(245, 192, 74),
+	Bag = Color3.fromRGB(63, 214, 230),
+	Upgrades = Color3.fromRGB(63, 214, 230),
+	Codex = Color3.fromRGB(63, 214, 230),
+	Quests = Color3.fromRGB(63, 214, 230),
+	Rebirth = Color3.fromRGB(63, 214, 230),
+	Leaderboards = Color3.fromRGB(245, 192, 74),
+	Players = Color3.fromRGB(63, 214, 230),
+	Settings = Color3.fromRGB(169, 189, 214),
+	Trade = Color3.fromRGB(245, 192, 74),
+	Diver = Color3.fromRGB(63, 214, 230),
 }
 
 return Icons

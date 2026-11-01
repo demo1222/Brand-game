@@ -44,6 +44,7 @@ local EVENTS = {
 	"UpdateSettings",
 	"RenameDock",
 	"OfferShown",
+	"RequestEventShopBuy", -- (itemId): spend Event Tokens in the event shop
 	-- server -> client
 	"StateUpdated",
 	"Notify",

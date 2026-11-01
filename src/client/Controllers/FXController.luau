@@ -14,7 +14,7 @@ local Net = require(Shared.Net)
 local NumberFormat = require(Shared.NumberFormat)
 local Rarities = require(Shared.Config.Rarities)
 local Kit = require(script.Parent.Parent.UI.Kit)
-local Icons = require(script.Parent.Parent.UI.Icons)
+local Icon = require(script.Parent.Parent.UI.Icon)
 
 local New, T = Kit.New, Kit.Theme
 local FXController = {}
@@ -101,16 +101,13 @@ function FXController.CoinBurst(amount: number, worldPos: Vector3?, caption: str
 	local count = math.clamp(math.floor(3 + math.log10(math.max(amount, 1)) * 2), 4, 14)
 	local rng = Random.new()
 	for i = 1, count do
-		local coin = New("TextLabel", {
-			BackgroundTransparency = 1,
-			Text = Icons.Get("Coins"),
-			TextScaled = true,
+		local coin = Icon.new("coin", 28, T.Gold, {
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromOffset(start.X, start.Y),
-			Size = UDim2.fromOffset(30, 30),
 			ZIndex = 29,
 			Parent = overlay,
 		})
+		local coinScale = New("UIScale", { Parent = coin })
 		local spread = start + Vector2.new(rng:NextNumber(-90, 90), rng:NextNumber(-70, 40))
 		local out = TweenService:Create(coin, TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 			Position = UDim2.fromOffset(spread.X, spread.Y),
@@ -120,8 +117,8 @@ function FXController.CoinBurst(amount: number, worldPos: Vector3?, caption: str
 		task.delay(0.28 + i * 0.045, function()
 			local fly = TweenService:Create(coin, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 				Position = UDim2.fromOffset(target.X, target.Y),
-				Size = UDim2.fromOffset(18, 18),
 			})
+			TweenService:Create(coinScale, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Scale = 0.6 }):Play()
 			fly:Play()
 			fly.Completed:Wait()
 			coin:Destroy()

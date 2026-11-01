@@ -166,7 +166,7 @@ function OfferController.Show(key: string)
 end
 
 function OfferController.Confirm(text: string, okLabel: string, callback: (boolean) -> ())
-	local f = modal(190, "💬", T.Accent)
+	local f = modal(190, "info", T.Accent)
 	Kit.Label({ Text = text, TextSize = 17, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 1, Size = UDim2.new(1, 0, 0, 70), Parent = f })
 	local row = buttonsRow(f, 2)
 	Kit.Button(okLabel, T.Good, function()
@@ -186,14 +186,15 @@ function OfferController.Confirm(text: string, okLabel: string, callback: (boole
 end
 
 local function deathScreen(info)
-	local f = modal(260, if info.Cause == "Oxygen" then Icons.Get("Oxygen") else "💀", T.Bad)
+	local f = modal(260, if info.Cause == "Oxygen" then Icons.Get("Oxygen") else Icons.Get("Death"), T.Bad)
 	local lowScare = (controllers.State.Get("Settings") or {}).LowScare
 	local causeText = ({
 		Leviathan = if lowScare then "The Leviathan got you." else "THE LEVIATHAN GOT YOU",
 		Oxygen = "You ran out of air.",
-		Pressure = "The pressure was too much — get a stronger suit.",
+		Pressure = "The pressure was too much. Get a stronger suit.",
 		Eel = "Shocked by an eel.",
 		Jellyfish = "Stung by jellyfish.",
+		Anglerfish = "An anglerfish got you. Never follow the light!",
 	})[info.Cause] or "You were knocked out."
 	title(f, causeText, Kit.Lighten(T.Bad, 0.3), 1)
 	local bagText = if info.BagCount > 0

@@ -4,6 +4,7 @@
 -- clients only receive positions via replication plus a lightweight PredatorHint for audio/UI.
 
 local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage.Shared
@@ -143,13 +144,37 @@ local function despawnLeviathan()
 	end
 end
 
+-- Obstacle avoidance (§10 follow-up): probe ahead against the cliffs, spires and ledges and
+-- slide along whatever is in the way instead of swimming through it.
+local avoidParams: RaycastParams? = nil
+local function avoid(lev, dir: Vector3, speed: number): Vector3
+	if not avoidParams then
+		local ocean = services.WorldService.Root():FindFirstChild("Ocean")
+		if not ocean then
+			return dir
+		end
+		avoidParams = RaycastParams.new()
+		avoidParams.FilterType = Enum.RaycastFilterType.Include
+		avoidParams.FilterDescendantsInstances = { ocean }
+	end
+	local probe = math.max(30, speed * 1.5)
+	local hit = Workspace:Raycast(lev.pos, dir * probe, avoidParams)
+	if not hit then
+		return dir
+	end
+	local n = hit.Normal
+	local slide = dir - n * dir:Dot(n)
+	local out = slide + n * (1 - hit.Distance / probe) * 1.5
+	return if out.Magnitude > 1e-3 then out.Unit else n
+end
+
 local function moveToward(lev, goal: Vector3, speed: number, dt: number)
 	local delta = goal - lev.pos
 	local dist = delta.Magnitude
 	if dist < 0.1 then
 		return dist
 	end
-	local dir = delta / dist
+	local dir = avoid(lev, delta / dist, speed)
 	-- smooth turning
 	local turned = lev.look:Lerp(dir, math.clamp(dt * 3, 0, 1))
 	lev.look = if turned.Magnitude > 1e-3 then turned.Unit else dir
@@ -159,9 +184,9 @@ local function moveToward(lev, goal: Vector3, speed: number, dt: number)
 	local minY = SURFACE - World.SeabedDepth + 10
 	local maxY = SURFACE - L.MinDepth + 60
 	lev.pos = Vector3.new(
-		math.clamp(lev.pos.X, -World.OceanRadius + 20, World.OceanRadius - 20),
+		math.clamp(lev.pos.X, -World.OceanRadius + 70, World.OceanRadius - 70),
 		math.clamp(lev.pos.Y, minY, maxY),
-		math.clamp(lev.pos.Z, -World.OceanRadius + 20, World.OceanRadius - 20)
+		math.clamp(lev.pos.Z, -World.OceanRadius + 70, World.OceanRadius - 70)
 	)
 	return dist
 end
@@ -377,7 +402,7 @@ local function spawnHazards()
 	-- Electric eels: zone 2+, dart between two points
 	for i = 1, 14 do
 		local zoneIndex = if i <= 8 then 2 else 3
-		local a = services.WorldService.RandomPointInZone(zoneIndex, rng)
+		local a = services.WorldService.RandomPointInZone(zoneIndex, rng, true)
 		local b = a + Vector3.new(rng:NextNumber(-60, 60), rng:NextNumber(-15, 15), rng:NextNumber(-60, 60))
 		local part = Build.Part({
 			Name = "Eel",
@@ -394,7 +419,7 @@ local function spawnHazards()
 	-- Jellyfish swarms: zone 3+
 	for i = 1, 18 do
 		local zoneIndex = 3 + (i % 3)
-		local pos = services.WorldService.RandomPointInZone(zoneIndex, rng)
+		local pos = services.WorldService.RandomPointInZone(zoneIndex, rng, true)
 		local part = Build.Part({
 			Name = "Jellyfish",
 			Shape = Enum.PartType.Ball,
@@ -408,6 +433,90 @@ local function spawnHazards()
 			Parent = creatureFolder,
 		})
 		table.insert(hazards, { kind = "Jelly", part = part, base = pos, t = rng:NextNumber(0, 10) })
+	end
+	-- Anglerfish (§10, zone 4): a glowing lure in the dark; lunges at divers who come close
+	for _ = 1, 8 do
+		local pos = services.WorldService.RandomPointInZone(4, rng, true)
+		local body = Build.Part({
+			Name = "Anglerfish",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.one * 6,
+			CFrame = CFrame.new(pos),
+			Color = Color3.fromRGB(28, 26, 36),
+			Material = Enum.Material.SmoothPlastic,
+			CanCollide = false,
+			CanQuery = false,
+			Parent = creatureFolder,
+		})
+		local lure = Build.Part({
+			Name = "Lure",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.one * 1.4,
+			CFrame = CFrame.new(pos + Vector3.new(0, 4, -3)),
+			Color = Color3.fromRGB(255, 240, 140),
+			Material = Enum.Material.Neon,
+			CanCollide = false,
+			CanQuery = false,
+			Parent = body,
+		})
+		Build.Instance("PointLight", { Range = 22, Brightness = 2.5, Color = lure.Color, Parent = lure })
+		for _, x in { -1, 1 } do
+			Build.Part({
+				Name = "Tooth",
+				Size = Vector3.new(0.3, 1, 0.3),
+				CFrame = CFrame.new(pos + Vector3.new(x * 1.2, -0.8, -2.8)),
+				Color = Color3.fromRGB(235, 230, 210),
+				CanCollide = false,
+				CanQuery = false,
+				Parent = body,
+			})
+		end
+		table.insert(hazards, { kind = "Angler", part = body, lure = lure, home = pos, pos = pos, t = rng:NextNumber(0, 10), lunge = 0, target = nil })
+	end
+	-- Pressure-crack geysers (§10, zone 5): telegraph, then erupt and blast divers upward
+	for _ = 1, 10 do
+		local pos = services.WorldService.RandomPointInZone(5, rng)
+		local crack = Build.Part({
+			Name = "Geyser",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.6, 6, 6),
+			CFrame = CFrame.new(pos - Vector3.new(0, 1, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(70, 20, 12),
+			Material = Enum.Material.CrackedLava,
+			CanCollide = false,
+			CanQuery = false,
+			Parent = creatureFolder,
+		})
+		local column = Build.Part({
+			Name = "Column",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(40, 6, 6),
+			CFrame = CFrame.new(pos + Vector3.new(0, 19, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(255, 160, 120),
+			Material = Enum.Material.Neon,
+			Transparency = 1,
+			CanCollide = false,
+			CanQuery = false,
+			Parent = crack,
+		})
+		table.insert(hazards, { kind = "Geyser", part = crack, column = column, base = pos, t = rng:NextNumber(0, 10), period = rng:NextNumber(8, 12) })
+	end
+	-- Whirlpools (§10, zone 3): a spinning current that drags divers in
+	for _ = 1, 5 do
+		local pos = services.WorldService.RandomPointInZone(3, rng, true)
+		local ring = Build.Part({
+			Name = "Whirlpool",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(1, 50, 50),
+			CFrame = CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = Color3.fromRGB(120, 200, 255),
+			Material = Enum.Material.ForceField,
+			Transparency = 0.2,
+			CanCollide = false,
+			CanQuery = false,
+			Parent = creatureFolder,
+		})
+		table.insert(hazards, { kind = "Whirl", part = ring, base = pos, t = 0, radius = 25 })
 	end
 end
 
@@ -430,9 +539,43 @@ local function tickHazards(dt: number)
 			local pos = h.a:Lerp(h.b, alpha)
 			local dir = (h.b - h.a).Unit * (if math.cos(h.t * math.pi) >= 0 then 1 else -1)
 			h.part.CFrame = CFrame.lookAt(pos, pos + dir)
-		else
+		elseif h.kind == "Jelly" then
 			h.t += dt
 			h.part.Position = h.base + Vector3.new(math.sin(h.t * 0.5) * 4, math.sin(h.t) * 3, math.cos(h.t * 0.5) * 4)
+		elseif h.kind == "Angler" then
+			h.t += dt
+			local goal = h.home + Vector3.new(math.sin(h.t * 0.2) * 10, math.sin(h.t * 0.5) * 2, math.cos(h.t * 0.2) * 10)
+			if h.lunge > 0 and h.target and h.target.Parent then
+				h.lunge -= dt
+				goal = h.target.Position
+				h.pos = h.pos + (goal - h.pos).Unit * math.min((goal - h.pos).Magnitude, 34 * dt)
+			else
+				h.lunge = 0
+				h.pos = h.pos:Lerp(goal, math.clamp(dt * 0.8, 0, 1))
+			end
+			local look = if (goal - h.pos).Magnitude > 0.5 then (goal - h.pos).Unit else Vector3.new(0, 0, -1)
+			local cf = CFrame.lookAt(h.pos, h.pos + look)
+			local delta = cf * h.part.CFrame:Inverse()
+			for _, d in h.part:GetDescendants() do
+				if d:IsA("BasePart") then
+					d.CFrame = delta * d.CFrame
+				end
+			end
+			h.part.CFrame = cf
+			-- the lure flickers when hunting
+			h.lure.Transparency = if h.lunge > 0 and (h.t * 10) % 2 < 1 then 0.6 else 0
+		elseif h.kind == "Geyser" then
+			h.t += dt
+			local phase = h.t % h.period
+			local warning = phase > h.period - 1.5
+			local erupting = phase < 2
+			h.part.Color = if warning then Color3.fromRGB(255, 90, 30) else Color3.fromRGB(70, 20, 12)
+			h.part.Material = if warning then Enum.Material.Neon else Enum.Material.CrackedLava
+			h.column.Transparency = if erupting then 0.35 else 1
+			h.erupting = erupting
+		elseif h.kind == "Whirl" then
+			h.t += dt
+			h.part.CFrame = CFrame.new(h.base) * CFrame.Angles(0, h.t * 2, 0) * CFrame.Angles(0, 0, math.rad(90))
 		end
 		for _, p in positions do
 			local dist = (p.hrp.Position - h.part.Position).Magnitude
@@ -453,6 +596,45 @@ local function tickHazards(dt: number)
 				services.DiveService.SetCause(p.player, "Jellyfish")
 				p.hum:TakeDamage(p.hum.MaxHealth * 0.05 * dt)
 				p.player.Character:SetAttribute("JellySlowUntil", os.clock() + 1.5)
+			elseif h.kind == "Angler" then
+				if h.lunge <= 0 and dist < 25 and dist > 6 then
+					h.lunge, h.target = 2, p.hrp
+				elseif dist < 5 then
+					local key = "A" .. p.player.UserId
+					if (hazardCooldown[key] or 0) < os.clock() then
+						hazardCooldown[key] = os.clock() + 3
+						services.DiveService.SetCause(p.player, "Anglerfish")
+						p.hum:TakeDamage(p.hum.MaxHealth * 0.25)
+						Net.Knockback:FireClient(p.player, (p.hrp.Position - h.pos).Unit * 60)
+						Net.Notify:FireClient(p.player, "An anglerfish bit you! Don't follow strange lights.", "error")
+						h.lunge = 0
+					end
+				end
+			elseif h.kind == "Geyser" and h.erupting then
+				local flat = Vector3.new(p.hrp.Position.X - h.base.X, 0, p.hrp.Position.Z - h.base.Z).Magnitude
+				local above = p.hrp.Position.Y - h.base.Y
+				if flat < 4 and above > -2 and above < 40 then
+					local key = "G" .. p.player.UserId
+					if (hazardCooldown[key] or 0) < os.clock() then
+						hazardCooldown[key] = os.clock() + 1.5
+						services.DiveService.SetCause(p.player, "Pressure")
+						p.hum:TakeDamage(p.hum.MaxHealth * 0.15)
+						Net.Knockback:FireClient(p.player, Vector3.new(0, 90, 0))
+						Net.Notify:FireClient(p.player, "A pressure geyser erupted under you!", "error")
+					end
+				end
+			elseif h.kind == "Whirl" and dist < h.radius then
+				-- pull inward and around, every half second
+				local key = "W" .. p.player.UserId
+				if (hazardCooldown[key] or 0) < os.clock() then
+					hazardCooldown[key] = os.clock() + 0.5
+					local toCenter = h.base - p.hrp.Position
+					local flat = Vector3.new(toCenter.X, 0, toCenter.Z)
+					if flat.Magnitude > 1 then
+						local tangent = Vector3.new(-flat.Z, 0, flat.X).Unit
+						Net.Knockback:FireClient(p.player, flat.Unit * 14 + tangent * 18)
+					end
+				end
 			end
 		end
 	end

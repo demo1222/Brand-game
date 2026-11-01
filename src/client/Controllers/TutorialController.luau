@@ -86,7 +86,7 @@ local function objective(): (string?, Vector3?)
 	end
 	if not flags.F_FirstUpgrade and next(stands) ~= nil then
 		local pad = dock and dock:FindFirstChild("CollectorPad")
-		return "Step on the green pad to collect Coins, then buy an upgrade (⬆️).", pad and pad.Position
+		return "Step on the green pad to collect Coins, then open UPGRADE and buy one.", pad and pad.Position
 	end
 	if (S.Get("Suit") or 1) < 2 then
 		return `Next goal: buy the Neoprene suit ({NumberFormat.short(Upgrades.Suits[2].Cost)} Coins) to dive into the Kelp Twilight.`, nil

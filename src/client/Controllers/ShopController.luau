@@ -67,7 +67,7 @@ local function preview(key: string): string?
 end
 
 -- Shop tile: big icon badge, name, benefit text and a price button (3 per row)
-local function card(order: number, title: string, desc: string, priceText: string, owned: boolean, onBuy, highlight: Color3?, icon: string?)
+local function card(order: number, title: string, desc: string, priceText: string, owned: boolean, onBuy, highlight: Color3?, icon: string?, tag: string?)
 	local accent = highlight or T.AccentDeep
 	local f = Kit.Card({
 		BackgroundColor3 = if highlight then Kit.Darken(highlight, 0.6) else T.PanelLight,
@@ -81,7 +81,7 @@ local function card(order: number, title: string, desc: string, priceText: strin
 			s.Thickness = 2.5
 			s.Transparency = 0.05
 		end
-		Kit.Pill("★ BEST", highlight, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 6), TextSize = 11, ZIndex = 3, Parent = f })
+		Kit.Pill(tag or "★ BEST", highlight, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 6), TextSize = 11, ZIndex = 3, Parent = f })
 	end
 	Kit.Glow(f, accent, 96, { Position = UDim2.new(0.5, 0, 0, 44) })
 	Kit.IconBadge(icon or "✦", accent, 62, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 12), ZIndex = 2, Parent = f })
@@ -121,6 +121,8 @@ end
 local function buy(kind: string, key: string)
 	Net.RequestPurchase:FireServer(kind, key)
 end
+
+local paintTabs: ((string) -> ())? = nil -- set in build(); declared before render() uses it
 
 local function render()
 	Kit.Clear(content)
@@ -174,7 +176,7 @@ local function render()
 					buy("Product", key)
 				end,
 				if key == "CoinsXL" then T.Gold else nil,
-				string.rep(Icons.Get("Coins"), math.min(table.find(COINS, key) or 1, 3))
+				Icons.Get("Coins")
 			)
 		end
 	elseif currentTab == "Pearls" then
@@ -182,7 +184,7 @@ local function render()
 			local def = Products[key]
 			card(nextOrder(), def.name, "Premium currency for cosmetics, crates and the Tide Pass", `{def.price} R$`, false, function()
 				buy("Product", key)
-			end, if key == "Pearls2600" then T.Gold else nil, string.rep(Icons.Get("Pearls"), math.min(table.find(PEARLS, key) or 1, 3)))
+			end, if key == "Pearls2600" then T.Gold else nil, Icons.Get("Pearls"))
 		end
 	elseif currentTab == "Crates" then
 		if S.Derived("CanBuyRandom") == false then
@@ -204,9 +206,9 @@ local function render()
 		end, nil, Icons.Get("CrateSingle"))
 		card(nextOrder(), Products.CrateTriple.name, "Three rolls on the odds table", `{Products.CrateTriple.price} R$`, false, function()
 			buy("Product", "CrateTriple")
-		end, T.Gold, "📦📦📦")
+		end, T.Gold, Icons.Get("CrateTriple"))
 		local oddsCard = Kit.Card({ LayoutOrder = nextOrder(), Parent = content }, { Kit.Padding(10) })
-		Kit.Title({ Text = "🎲 Exact odds", TextSize = 16, Size = UDim2.new(1, 0, 0, 20), Parent = oddsCard })
+		Kit.Title({ Text = "Exact odds", TextSize = 16, Size = UDim2.new(1, 0, 0, 20), Parent = oddsCard })
 		Kit.Label({
 			Text = table.concat(lines, "\n"),
 			TextSize = 12,
@@ -216,6 +218,27 @@ local function render()
 			TextScaled = #lines > 9,
 			Parent = oddsCard,
 		})
+	elseif currentTab == "Event" then
+		-- Event shop: Event Tokens are earned only by salvaging during live events
+		local tokens = S.Get("EventTokens") or 0
+		local info = Kit.Card({ LayoutOrder = nextOrder(), BackgroundColor3 = T.PanelDark, Parent = content }, { Kit.Padding(14) })
+		Kit.Icon.new("event", 40, T.Gold, { Parent = info })
+		Kit.Title({ Text = tostring(tokens), TextSize = 34, Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 0, 38), Parent = info })
+		Kit.Label({ Text = "Event Tokens", Font = T.Bold, TextSize = 13, TextColor3 = T.Gold, Position = UDim2.fromOffset(0, 88), Size = UDim2.new(1, 0, 0, 16), Parent = info })
+		Kit.Label({
+			Text = "Earn them by salvaging while an event is live: +1 per relic, +2 Rare+, +5 Epic+. Never sold for Robux.",
+			TextSize = 11,
+			TextColor3 = T.Muted,
+			TextYAlignment = Enum.TextYAlignment.Top,
+			Position = UDim2.fromOffset(0, 110),
+			Size = UDim2.new(1, 0, 1, -110),
+			Parent = info,
+		})
+		for _, item in Economy.EventShop do
+			card(nextOrder(), item.Name, `{item.Cost} Event Tokens`, `{item.Cost} tokens`, false, function()
+				Net.RequestEventShopBuy:FireServer(item.Id)
+			end, if tokens >= item.Cost then T.Gold else nil, item.Icon, "CAN BUY")
+		end
 	elseif currentTab == "Pass+" then
 		card(
 			nextOrder(),
@@ -251,14 +274,14 @@ local function render()
 end
 
 local TABS = {
-	{ id = "Passes", text = "Passes", icon = "🎟️", color = T.Gold },
-	{ id = "Boosts", text = "Boosts", icon = "🧪", color = Color3.fromRGB(170, 100, 255) },
-	{ id = "Coins", text = "Coins", icon = Icons.Get("Coins"), color = T.Gold },
-	{ id = "Pearls", text = "Pearls", icon = Icons.Get("Pearls"), color = T.Pearl },
-	{ id = "Crates", text = "Crates", icon = "📦", color = Color3.fromRGB(255, 140, 60) },
-	{ id = "Pass+", text = "Pass+", icon = "🌟", color = T.Accent },
+	{ id = "Passes", text = "Passes", icon = "ticket", color = T.Gold },
+	{ id = "Boosts", text = "Boosts", icon = "potion", color = T.Gold },
+	{ id = "Coins", text = "Coins", icon = "coin", color = T.Gold },
+	{ id = "Pearls", text = "Pearls", icon = "pearl", color = T.Gold },
+	{ id = "Crates", text = "Crates", icon = "box", color = T.Gold },
+	{ id = "Pass+", text = "Pass+", icon = "star", color = T.Gold },
+	{ id = "Event", text = "Event", icon = "event", color = T.Gold },
 }
-local paintTabs
 
 local function build(body: Frame)
 	local banner = Kit.Button("", T.Gold, function()
@@ -330,7 +353,7 @@ end
 function ShopController.Start()
 	controllers.UIController.RegisterWindow("Shop", "Shop", build, render)
 	controllers.State.Changed:Connect(function(keys)
-		if keys.Passes or keys.Derived or keys.Subscribed then
+		if keys.Passes or keys.Derived or keys.Subscribed or keys.EventTokens then
 			controllers.UIController.Refresh("Shop")
 		end
 	end)

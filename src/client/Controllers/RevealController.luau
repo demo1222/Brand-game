@@ -179,14 +179,14 @@ local function showNext()
 		for i, m in relic.mutations do
 			local md = Mutations.ById[m]
 			Kit.Pill(
-				`✨ {m} x{md and md.Mult or 1}`,
+				`{m} ×{md and md.Mult or 1}`,
 				md and md.Color or T.Accent,
 				{ TextSize = 14, Size = UDim2.fromOffset(0, 24), LayoutOrder = i, ZIndex = 4, Parent = chips }
 			)
 		end
 	end
 	Kit.Pill(
-		`🪙 +{NumberFormat.short(Formulas.RelicCPS(relic))} Coins/s on display  ·  Size {relic.size}x`,
+		`+{NumberFormat.short(Formulas.RelicCPS(relic))} Coins/s on display  ·  Size {relic.size}×`,
 		T.PanelDark,
 		{
 			TextSize = 14,

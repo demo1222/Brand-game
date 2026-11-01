@@ -32,86 +32,86 @@ local NAMED = {
 }
 
 ------------------------------------------------------------------------------------------
--- Per-relic art: archetype + palette. main = body colour (mutations recolour it),
+-- Per-relic art: kind (archetype) + palette. main = body colour (mutations recolour it),
 -- accent = trim, glow = emissive bits (Neon). mat = main material, trans = main transparency.
 ------------------------------------------------------------------------------------------
 RelicArt.Map = {
 	-- Zone 1 · Sunlit Reef
-	R001 = { "anchor", main = rgb(150, 92, 60), accent = rgb(105, 64, 44), mat = "CorrodedMetal" },
-	R002 = { "bottle", main = rgb(120, 220, 170), accent = rgb(160, 110, 70), mat = "Glass", trans = 0.35 },
-	R003 = { "snorkel", main = rgb(255, 170, 40), accent = rgb(40, 40, 50) },
-	R004 = { "shard", main = rgb(110, 230, 200), accent = rgb(180, 250, 235), mat = "Glass", trans = 0.2 },
-	R005 = { "flipflop", main = rgb(255, 110, 150), accent = rgb(80, 200, 255) },
-	R006 = { "starfish", main = rgb(230, 175, 120), accent = rgb(190, 130, 90), mat = "Sandstone" },
-	R007 = { "boat", main = rgb(220, 70, 60), accent = rgb(240, 240, 235), mat = "Metal" },
-	R008 = { "crown", main = rgb(255, 120, 110), accent = rgb(255, 210, 120), mat = "Sandstone" },
-	R009 = { "bell", main = rgb(200, 150, 70), accent = rgb(130, 95, 50), mat = "Metal" },
-	R010 = { "clam", main = rgb(250, 190, 200), accent = rgb(255, 250, 240), glow = rgb(255, 245, 225) },
-	R011 = { "mask", main = rgb(250, 210, 60), accent = rgb(40, 40, 48) },
-	R012 = { "comb", main = rgb(245, 238, 220), accent = rgb(110, 220, 210), mat = "Marble" },
-	R013 = { "idol", main = rgb(90, 200, 170), accent = rgb(255, 200, 80), glow = rgb(120, 255, 230), mat = "Slate" },
+	R001 = { kind = "anchor", main = rgb(150, 92, 60), accent = rgb(105, 64, 44), mat = "CorrodedMetal" },
+	R002 = { kind = "bottle", main = rgb(120, 220, 170), accent = rgb(160, 110, 70), mat = "Glass", trans = 0.35 },
+	R003 = { kind = "snorkel", main = rgb(255, 170, 40), accent = rgb(40, 40, 50) },
+	R004 = { kind = "shard", main = rgb(110, 230, 200), accent = rgb(180, 250, 235), mat = "Glass", trans = 0.2 },
+	R005 = { kind = "flipflop", main = rgb(255, 110, 150), accent = rgb(80, 200, 255) },
+	R006 = { kind = "starfish", main = rgb(230, 175, 120), accent = rgb(190, 130, 90), mat = "Sandstone" },
+	R007 = { kind = "boat", main = rgb(220, 70, 60), accent = rgb(240, 240, 235), mat = "Metal" },
+	R008 = { kind = "crown", main = rgb(255, 120, 110), accent = rgb(255, 210, 120), mat = "Sandstone" },
+	R009 = { kind = "bell", main = rgb(200, 150, 70), accent = rgb(130, 95, 50), mat = "Metal" },
+	R010 = { kind = "clam", main = rgb(250, 190, 200), accent = rgb(255, 250, 240), glow = rgb(255, 245, 225) },
+	R011 = { kind = "mask", main = rgb(250, 210, 60), accent = rgb(40, 40, 48) },
+	R012 = { kind = "comb", main = rgb(245, 238, 220), accent = rgb(110, 220, 210), mat = "Marble" },
+	R013 = { kind = "idol", main = rgb(90, 200, 170), accent = rgb(255, 200, 80), glow = rgb(120, 255, 230), mat = "Slate" },
 	-- Zone 2 · Kelp Twilight
-	R014 = { "lantern", main = rgb(70, 90, 60), accent = rgb(110, 140, 80), glow = rgb(90, 255, 120), mat = "Metal" },
-	R015 = { "key", main = rgb(232, 222, 196), accent = rgb(190, 175, 150) },
-	R016 = { "boot", main = rgb(110, 75, 50), accent = rgb(225, 215, 190), mat = "Fabric" },
-	R017 = { "scroll", main = rgb(60, 140, 70), accent = rgb(30, 90, 45), mat = "Grass" },
-	R018 = { "helmet", main = rgb(200, 115, 60), accent = rgb(230, 180, 80), mat = "Metal" },
-	R019 = { "pouch", main = rgb(70, 110, 120), accent = rgb(40, 60, 70), glow = rgb(140, 230, 255), mat = "Fabric" },
-	R020 = { "spoons", main = rgb(215, 220, 230), accent = rgb(255, 210, 120), mat = "Metal" },
-	R021 = { "coin", main = rgb(255, 196, 64), accent = rgb(200, 140, 40), mat = "Foil" },
-	R022 = { "turtle", main = rgb(60, 170, 110), accent = rgb(30, 120, 80), mat = "Marble" },
-	R023 = { "mirror", main = rgb(230, 200, 120), accent = rgb(170, 90, 230), glow = rgb(200, 240, 255), mat = "Foil" },
-	R024 = { "statue", main = rgb(70, 130, 90), accent = rgb(220, 190, 90), glow = rgb(120, 255, 150), mat = "Slate" },
-	R025 = { "harp", main = rgb(255, 200, 70), accent = rgb(60, 160, 80), glow = rgb(255, 235, 140), mat = "Foil" },
+	R014 = { kind = "lantern", main = rgb(70, 90, 60), accent = rgb(110, 140, 80), glow = rgb(90, 255, 120), mat = "Metal" },
+	R015 = { kind = "key", main = rgb(232, 222, 196), accent = rgb(190, 175, 150) },
+	R016 = { kind = "boot", main = rgb(110, 75, 50), accent = rgb(225, 215, 190), mat = "Fabric" },
+	R017 = { kind = "scroll", main = rgb(60, 140, 70), accent = rgb(30, 90, 45), mat = "Grass" },
+	R018 = { kind = "helmet", main = rgb(200, 115, 60), accent = rgb(230, 180, 80), mat = "Metal" },
+	R019 = { kind = "pouch", main = rgb(70, 110, 120), accent = rgb(40, 60, 70), glow = rgb(140, 230, 255), mat = "Fabric" },
+	R020 = { kind = "spoons", main = rgb(215, 220, 230), accent = rgb(255, 210, 120), mat = "Metal" },
+	R021 = { kind = "coin", main = rgb(255, 196, 64), accent = rgb(200, 140, 40), mat = "Foil" },
+	R022 = { kind = "turtle", main = rgb(60, 170, 110), accent = rgb(30, 120, 80), mat = "Marble" },
+	R023 = { kind = "mirror", main = rgb(230, 200, 120), accent = rgb(170, 90, 230), glow = rgb(200, 240, 255), mat = "Foil" },
+	R024 = { kind = "statue", main = rgb(70, 130, 90), accent = rgb(220, 190, 90), glow = rgb(120, 255, 150), mat = "Slate" },
+	R025 = { kind = "harp", main = rgb(255, 200, 70), accent = rgb(60, 160, 80), glow = rgb(255, 235, 140), mat = "Foil" },
 	-- Zone 3 · Midnight Wrecks
-	R026 = { "wheel", main = rgb(130, 85, 50), accent = rgb(220, 180, 90), mat = "Wood" },
-	R027 = { "cannonball", main = rgb(55, 58, 66), accent = rgb(150, 110, 70), mat = "Metal" },
+	R026 = { kind = "wheel", main = rgb(130, 85, 50), accent = rgb(220, 180, 90), mat = "Wood" },
+	R027 = { kind = "cannonball", main = rgb(55, 58, 66), accent = rgb(150, 110, 70), mat = "Metal" },
 	R028 = {
-		"porthole",
+		kind = "porthole",
 		main = rgb(200, 160, 80),
 		accent = rgb(60, 120, 200),
 		glow = rgb(255, 230, 120),
 		mat = "Metal",
 	},
-	R029 = { "barrel", main = rgb(140, 92, 52), accent = rgb(70, 70, 76), mat = "Wood" },
-	R030 = { "spyglass", main = rgb(205, 160, 70), accent = rgb(110, 60, 40), glow = rgb(170, 230, 255), mat = "Metal" },
-	R031 = { "lantern", main = rgb(60, 70, 85), accent = rgb(90, 105, 125), glow = rgb(160, 250, 255), mat = "Metal" },
-	R032 = { "chest", main = rgb(125, 78, 42), accent = rgb(255, 196, 64), glow = rgb(255, 215, 90), mat = "Wood" },
-	R033 = { "medal", main = rgb(255, 196, 64), accent = rgb(40, 70, 170), mat = "Foil" },
-	R034 = { "compass", main = rgb(210, 165, 75), accent = rgb(220, 50, 60), mat = "Metal" },
-	R035 = { "map", main = rgb(205, 190, 150), accent = rgb(90, 30, 120), mat = "Fabric" },
-	R036 = { "figurehead", main = rgb(235, 215, 185), accent = rgb(150, 40, 50), mat = "Wood" },
-	R037 = { "cutlass", main = rgb(185, 190, 200), accent = rgb(80, 30, 110), glow = rgb(190, 70, 255), mat = "Metal" },
-	R038 = { "bell", main = rgb(255, 190, 70), accent = rgb(120, 220, 210), mat = "Foil", big = true },
+	R029 = { kind = "barrel", main = rgb(140, 92, 52), accent = rgb(70, 70, 76), mat = "Wood" },
+	R030 = { kind = "spyglass", main = rgb(205, 160, 70), accent = rgb(110, 60, 40), glow = rgb(170, 230, 255), mat = "Metal" },
+	R031 = { kind = "lantern", main = rgb(60, 70, 85), accent = rgb(90, 105, 125), glow = rgb(160, 250, 255), mat = "Metal" },
+	R032 = { kind = "chest", main = rgb(125, 78, 42), accent = rgb(255, 196, 64), glow = rgb(255, 215, 90), mat = "Wood" },
+	R033 = { kind = "medal", main = rgb(255, 196, 64), accent = rgb(40, 70, 170), mat = "Foil" },
+	R034 = { kind = "compass", main = rgb(210, 165, 75), accent = rgb(220, 50, 60), mat = "Metal" },
+	R035 = { kind = "map", main = rgb(205, 190, 150), accent = rgb(90, 30, 120), mat = "Fabric" },
+	R036 = { kind = "figurehead", main = rgb(235, 215, 185), accent = rgb(150, 40, 50), mat = "Wood" },
+	R037 = { kind = "cutlass", main = rgb(185, 190, 200), accent = rgb(80, 30, 110), glow = rgb(190, 70, 255), mat = "Metal" },
+	R038 = { kind = "bell", main = rgb(255, 190, 70), accent = rgb(120, 220, 210), mat = "Foil", big = true },
 	-- Zone 4 · The Abyss
-	R039 = { "pebble", main = rgb(130, 255, 220), accent = rgb(60, 140, 130), mat = "Neon" },
-	R040 = { "lure", main = rgb(70, 60, 80), accent = rgb(120, 90, 110), glow = rgb(255, 245, 140) },
-	R041 = { "lantern", main = rgb(30, 40, 60), accent = rgb(255, 196, 64), glow = rgb(80, 220, 255), mat = "Metal" },
-	R042 = { "pearl", main = rgb(20, 20, 30), accent = rgb(90, 80, 110), glow = rgb(170, 120, 255) },
-	R043 = { "skull", main = rgb(225, 215, 190), accent = rgb(30, 30, 35), glow = rgb(120, 255, 220) },
-	R044 = { "orb", main = rgb(60, 240, 255), accent = rgb(150, 170, 190), mat = "Neon" },
-	R045 = { "totem", main = rgb(60, 70, 90), accent = rgb(40, 110, 120), glow = rgb(100, 255, 200), mat = "Slate" },
-	R046 = { "squid", main = rgb(130, 20, 45), accent = rgb(70, 10, 30), glow = rgb(90, 160, 255) },
-	R047 = { "facemask", main = rgb(18, 16, 24), accent = rgb(60, 50, 70), glow = rgb(255, 110, 40), mat = "Glass" },
-	R048 = { "scale", main = rgb(40, 140, 140), accent = rgb(20, 70, 80), glow = rgb(90, 255, 220), mat = "Metal" },
-	R049 = { "coral", main = rgb(60, 40, 120), accent = rgb(30, 20, 70), glow = rgb(255, 240, 150) },
-	R050 = { "eye", main = rgb(240, 50, 60), accent = rgb(40, 10, 20), glow = rgb(255, 230, 90) },
+	R039 = { kind = "pebble", main = rgb(130, 255, 220), accent = rgb(60, 140, 130), mat = "Neon" },
+	R040 = { kind = "lure", main = rgb(70, 60, 80), accent = rgb(120, 90, 110), glow = rgb(255, 245, 140) },
+	R041 = { kind = "lantern", main = rgb(30, 40, 60), accent = rgb(255, 196, 64), glow = rgb(80, 220, 255), mat = "Metal" },
+	R042 = { kind = "pearl", main = rgb(20, 20, 30), accent = rgb(90, 80, 110), glow = rgb(170, 120, 255) },
+	R043 = { kind = "skull", main = rgb(225, 215, 190), accent = rgb(30, 30, 35), glow = rgb(120, 255, 220) },
+	R044 = { kind = "orb", main = rgb(60, 240, 255), accent = rgb(150, 170, 190), mat = "Neon" },
+	R045 = { kind = "totem", main = rgb(60, 70, 90), accent = rgb(40, 110, 120), glow = rgb(100, 255, 200), mat = "Slate" },
+	R046 = { kind = "squid", main = rgb(130, 20, 45), accent = rgb(70, 10, 30), glow = rgb(90, 160, 255) },
+	R047 = { kind = "facemask", main = rgb(18, 16, 24), accent = rgb(60, 50, 70), glow = rgb(255, 110, 40), mat = "Glass" },
+	R048 = { kind = "scale", main = rgb(40, 140, 140), accent = rgb(20, 70, 80), glow = rgb(90, 255, 220), mat = "Metal" },
+	R049 = { kind = "coral", main = rgb(60, 40, 120), accent = rgb(30, 20, 70), glow = rgb(255, 240, 150) },
+	R050 = { kind = "eye", main = rgb(240, 50, 60), accent = rgb(40, 10, 20), glow = rgb(255, 230, 90) },
 	R051 = {
-		"conch",
+		kind = "conch",
 		main = rgb(230, 220, 250),
 		accent = rgb(255, 160, 200),
 		glow = rgb(190, 150, 255),
 		mat = "Marble",
 	},
 	-- Zone 5 · The Trench
-	R052 = { "tooth", main = rgb(240, 236, 220), accent = rgb(110, 20, 30), glow = rgb(255, 60, 60) },
-	R053 = { "crystals", main = rgb(255, 120, 40), accent = rgb(50, 30, 30), mat = "Neon" },
-	R054 = { "tablet", main = rgb(120, 115, 105), accent = rgb(80, 75, 70), glow = rgb(90, 220, 255), mat = "Slate" },
-	R055 = { "diamond", main = rgb(200, 240, 255), accent = rgb(255, 255, 255), mat = "Glass", trans = 0.15 },
-	R056 = { "tooth", main = rgb(170, 230, 120), accent = rgb(40, 70, 30), glow = rgb(150, 255, 60), fang = true },
-	R057 = { "idol", main = rgb(150, 35, 30), accent = rgb(60, 20, 20), glow = rgb(255, 80, 30), mat = "Basalt" },
+	R052 = { kind = "tooth", main = rgb(240, 236, 220), accent = rgb(110, 20, 30), glow = rgb(255, 60, 60) },
+	R053 = { kind = "crystals", main = rgb(255, 120, 40), accent = rgb(50, 30, 30), mat = "Neon" },
+	R054 = { kind = "tablet", main = rgb(120, 115, 105), accent = rgb(80, 75, 70), glow = rgb(90, 220, 255), mat = "Slate" },
+	R055 = { kind = "diamond", main = rgb(200, 240, 255), accent = rgb(255, 255, 255), mat = "Glass", trans = 0.15 },
+	R056 = { kind = "tooth", main = rgb(170, 230, 120), accent = rgb(40, 70, 30), glow = rgb(150, 255, 60), fang = true },
+	R057 = { kind = "idol", main = rgb(150, 35, 30), accent = rgb(60, 20, 20), glow = rgb(255, 80, 30), mat = "Basalt" },
 	R058 = {
-		"crown",
+		kind = "crown",
 		main = rgb(255, 196, 64),
 		accent = rgb(40, 140, 140),
 		glow = rgb(90, 255, 220),
@@ -119,13 +119,13 @@ RelicArt.Map = {
 		king = true,
 	},
 	R059 = {
-		"gauntlet",
+		kind = "gauntlet",
 		main = rgb(120, 125, 140),
 		accent = rgb(255, 196, 64),
 		glow = rgb(255, 120, 40),
 		mat = "DiamondPlate",
 	},
-	R060 = { "heart", main = rgb(200, 20, 40), accent = rgb(80, 0, 15), glow = rgb(255, 60, 80), mat = "Neon" },
+	R060 = { kind = "heart", main = rgb(200, 20, 40), accent = rgb(80, 0, 15), glow = rgb(255, 60, 80), mat = "Neon" },
 }
 
 ------------------------------------------------------------------------------------------
@@ -916,10 +916,10 @@ end
 
 function RelicArt.ArtFor(relicId: string, fallbackShape: string?)
 	local art = RelicArt.Map[relicId]
-	if art and R[art[1]] then
+	if art and R[art.kind] then
 		return art
 	end
-	return { fallbackShape or "Ball", main = Color3.fromRGB(170, 170, 170), accent = Color3.fromRGB(110, 110, 120) }
+	return { kind = fallbackShape or "Ball", main = Color3.fromRGB(170, 170, 170), accent = Color3.fromRGB(110, 110, 120) }
 end
 
 -- Build a model from an archetype + palette directly (used for suit helmets etc.)
@@ -1000,13 +1000,23 @@ function RelicArt.BuildArchetype(archetype: string, palette, opts)
 	return model
 end
 
+-- Move a freshly built model so its centre (the Root, at the origin) lands on `cf`.
+-- Same result as Model:PivotTo for these models; plain CFrame math, so it also runs in Lune.
+function RelicArt.Place(model: Model, cf: CFrame)
+	for _, part in model:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.CFrame = cf * part.CFrame
+		end
+	end
+end
+
 -- def: Relics.ById entry. opts: see header.
 function RelicArt.Build(def, opts)
 	opts = opts or {}
 	local art = RelicArt.ArtFor(def.Id, def.Shape)
 	local o = table.clone(opts)
 	o.name = o.name or def.Id
-	return RelicArt.BuildArchetype(art[1], art, o)
+	return RelicArt.BuildArchetype(art.kind, art, o)
 end
 
 return RelicArt
