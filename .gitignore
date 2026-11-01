@@ -1,0 +1,14 @@
+# Roblox place files (don't commit these)
+*.rbxl
+*.rbxlx
+
+# Aftman lockfile (optional, keep if you want reproducible versions)
+# aftman.toml
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/settings.json
