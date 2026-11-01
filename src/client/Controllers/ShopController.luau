@@ -12,6 +12,7 @@ local Passes = require(Shared.Config.Passes)
 local Products = require(Shared.Config.Products)
 local Economy = require(Shared.Config.Economy)
 local Kit = require(script.Parent.Parent.UI.Kit)
+local Icons = require(script.Parent.Parent.UI.Icons)
 
 local New, T = Kit.New, Kit.Theme
 local ShopController = {}
@@ -65,34 +66,55 @@ local function preview(key: string): string?
 	return nil
 end
 
-local function card(order: number, title: string, desc: string, priceText: string, owned: boolean, onBuy, highlight: Color3?)
-	local f = New("Frame", {
-		BackgroundColor3 = T.PanelLight,
-		Size = UDim2.new(1, -8, 0, 78),
+-- Shop tile: big icon badge, name, benefit text and a price button (3 per row)
+local function card(order: number, title: string, desc: string, priceText: string, owned: boolean, onBuy, highlight: Color3?, icon: string?)
+	local accent = highlight or T.AccentDeep
+	local f = Kit.Card({
+		BackgroundColor3 = if highlight then Kit.Darken(highlight, 0.6) else T.PanelLight,
 		LayoutOrder = order,
 		Parent = content,
-	}, { Kit.Corner(10) })
+	})
 	if highlight then
-		Kit.Stroke(highlight, 2).Parent = f
+		local s = f:FindFirstChildOfClass("UIStroke")
+		if s then
+			s.Color = highlight
+			s.Thickness = 2.5
+			s.Transparency = 0.05
+		end
+		Kit.Pill("★ BEST", highlight, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -6, 0, 6), TextSize = 11, ZIndex = 3, Parent = f })
 	end
-	Kit.Label({ Text = title, Font = T.Bold, TextSize = 18, Position = UDim2.fromOffset(12, 6), Size = UDim2.new(1, -160, 0, 24), Parent = f })
+	Kit.Glow(f, accent, 96, { Position = UDim2.new(0.5, 0, 0, 44) })
+	Kit.IconBadge(icon or "✦", accent, 62, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 12), ZIndex = 2, Parent = f })
+	Kit.Title({
+		Text = title,
+		TextSize = 17,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Position = UDim2.fromOffset(6, 80),
+		Size = UDim2.new(1, -12, 0, 22),
+		TextScaled = true,
+		ZIndex = 2,
+		Parent = f,
+	}, nil)
 	Kit.Label({
 		Text = desc,
 		TextColor3 = T.Muted,
-		TextSize = 14,
-		Position = UDim2.fromOffset(12, 30),
-		Size = UDim2.new(1, -160, 0, 44),
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Center,
 		TextYAlignment = Enum.TextYAlignment.Top,
+		Position = UDim2.fromOffset(8, 104),
+		Size = UDim2.new(1, -16, 1, -160),
+		ZIndex = 2,
 		Parent = f,
 	})
 	local b = Kit.Button(if owned then "Owned ✓" else priceText, if owned then T.Good else T.Gold, if owned then nil else onBuy, {
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -10, 0.5, 0),
-		Size = UDim2.fromOffset(130, 50),
-		TextColor3 = if owned then Color3.new(1, 1, 1) else Color3.fromRGB(40, 25, 0),
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -8),
+		Size = UDim2.new(1, -16, 0, 44),
+		TextSize = 17,
+		ZIndex = 2,
 		Parent = f,
 	})
-	b.AutoButtonColor = not owned
+	b.Active = not owned
 	return f
 end
 
@@ -102,6 +124,9 @@ end
 
 local function render()
 	Kit.Clear(content)
+	if paintTabs then
+		paintTabs(currentTab)
+	end
 	local S = controllers.State
 	local order = 0
 	local function nextOrder()
@@ -115,7 +140,7 @@ local function render()
 			local desc = def.desc .. (if extra then "\n" .. extra else "")
 			card(nextOrder(), def.name, desc, `{def.price} R$`, S.Owns(key), function()
 				buy("Pass", key)
-			end, if key == "VIP" then T.Gold else nil)
+			end, if key == "VIP" or def.grants then T.Gold else nil, Icons.Get(key))
 		end
 	elseif currentTab == "Boosts" then
 		for _, key in BOOSTS do
@@ -132,7 +157,7 @@ local function render()
 			})[key] or ""
 			card(nextOrder(), def.name, desc, `{def.price} R$`, false, function()
 				buy("Product", key)
-			end)
+			end, if key == "ServerLuck" then T.Accent else nil, Icons.Get(key))
 		end
 	elseif currentTab == "Coins" then
 		local income = S.Get("IncomePerSecond") or 0
@@ -147,7 +172,9 @@ local function render()
 				false,
 				function()
 					buy("Product", key)
-				end
+				end,
+				if key == "CoinsXL" then T.Gold else nil,
+				string.rep(Icons.Get("Coins"), math.min(table.find(COINS, key) or 1, 3))
 			)
 		end
 	elseif currentTab == "Pearls" then
@@ -155,7 +182,7 @@ local function render()
 			local def = Products[key]
 			card(nextOrder(), def.name, "Premium currency for cosmetics, crates and the Tide Pass", `{def.price} R$`, false, function()
 				buy("Product", key)
-			end)
+			end, if key == "Pearls2600" then T.Gold else nil, string.rep(Icons.Get("Pearls"), math.min(table.find(PEARLS, key) or 1, 3)))
 		end
 	elseif currentTab == "Crates" then
 		if S.Derived("CanBuyRandom") == false then
@@ -172,19 +199,23 @@ local function render()
 		for i, e in odds do
 			table.insert(lines, `{Economy.Crate[i].label}: {NumberFormat.percent(e.percent)}`)
 		end
-		Kit.Label({
-			Text = "ODDS (exact):\n" .. table.concat(lines, "\n"),
-			TextSize = 14,
-			LayoutOrder = nextOrder(),
-			Size = UDim2.new(1, -8, 0, 22 + #lines * 18),
-			Parent = content,
-		})
-		card(nextOrder(), Products.CrateSingle.name, "One random reward from the table above", `{Products.CrateSingle.price} R$`, false, function()
+		card(nextOrder(), Products.CrateSingle.name, "One random reward from the odds table", `{Products.CrateSingle.price} R$`, false, function()
 			buy("Product", "CrateSingle")
-		end)
-		card(nextOrder(), Products.CrateTriple.name, "Three rolls on the table above", `{Products.CrateTriple.price} R$`, false, function()
+		end, nil, Icons.Get("CrateSingle"))
+		card(nextOrder(), Products.CrateTriple.name, "Three rolls on the odds table", `{Products.CrateTriple.price} R$`, false, function()
 			buy("Product", "CrateTriple")
-		end)
+		end, T.Gold, "📦📦📦")
+		local oddsCard = Kit.Card({ LayoutOrder = nextOrder(), Parent = content }, { Kit.Padding(10) })
+		Kit.Title({ Text = "🎲 Exact odds", TextSize = 16, Size = UDim2.new(1, 0, 0, 20), Parent = oddsCard })
+		Kit.Label({
+			Text = table.concat(lines, "\n"),
+			TextSize = 12,
+			TextYAlignment = Enum.TextYAlignment.Top,
+			Position = UDim2.fromOffset(0, 24),
+			Size = UDim2.new(1, 0, 1, -24),
+			TextScaled = #lines > 9,
+			Parent = oddsCard,
+		})
 	elseif currentTab == "Pass+" then
 		card(
 			nextOrder(),
@@ -195,11 +226,12 @@ local function render()
 			function()
 				buy("Subscription", "PassPlus")
 			end,
-			T.Accent
+			T.Accent,
+			Icons.Get("PassPlus")
 		)
 		card(nextOrder(), "Roblox Premium", "+10% Coins and a Premium Chest every 24h", "Get Premium", S.Get("Premium") == true, function()
 			buy("Premium", "Premium")
-		end)
+		end, nil, Icons.Get("Premium"))
 		if S.Derived("StarterPackAvailable") then
 			local remaining = Products.StarterPack.offerHours * 3600 - (os.time() - (S.Derived("StarterPackShownAt") or os.time()))
 			card(
@@ -211,36 +243,83 @@ local function render()
 				function()
 					buy("Product", "StarterPack")
 				end,
-				T.Gold
+				T.Gold,
+				Icons.Get("StarterPack")
 			)
 		end
 	end
 end
 
+local TABS = {
+	{ id = "Passes", text = "Passes", icon = "🎟️", color = T.Gold },
+	{ id = "Boosts", text = "Boosts", icon = "🧪", color = Color3.fromRGB(170, 100, 255) },
+	{ id = "Coins", text = "Coins", icon = Icons.Get("Coins"), color = T.Gold },
+	{ id = "Pearls", text = "Pearls", icon = Icons.Get("Pearls"), color = T.Pearl },
+	{ id = "Crates", text = "Crates", icon = "📦", color = Color3.fromRGB(255, 140, 60) },
+	{ id = "Pass+", text = "Pass+", icon = "🌟", color = T.Accent },
+}
+local paintTabs
+
 local function build(body: Frame)
-	local banner = Kit.Button("👑 VIP DIVER — 1.5x Coins, VIP lounge, daily chest · 249 R$", T.Gold, function()
+	local banner = Kit.Button("", T.Gold, function()
 		buy("Pass", "VIP")
-	end, {
-		Size = UDim2.new(1, 0, 0, 44),
-		TextColor3 = Color3.fromRGB(40, 25, 0),
+	end, { Size = UDim2.new(1, 0, 0, 54), Parent = body })
+	New("UIGradient", {
+		Rotation = 0,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 230, 120)),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 180, 40)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(230, 120, 30)),
+		}),
+		Parent = banner,
+	})
+	for _, g in banner:GetChildren() do
+		if g:IsA("UIGradient") and g.Rotation == 90 then
+			g:Destroy() -- one gradient per object: keep the gold sweep
+		end
+	end
+	Kit.IconBadge(Icons.Get("VIP"), Color3.fromRGB(255, 120, 40), 44, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 6, 0.5, 0), Parent = banner })
+	local bt = Kit.Title({
+		Text = "VIP DIVER  ·  1.5x Coins · VIP lounge · daily chest",
+		TextColor3 = T.DarkText,
+		TextStrokeTransparency = 1,
 		TextScaled = true,
+		Position = UDim2.fromOffset(58, 6),
+		Size = UDim2.new(1, -170, 1, -12),
+		Parent = banner,
+	})
+	New("UITextSizeConstraint", { MaxTextSize = 20, Parent = bt })
+	Kit.Pill("249 R$", Color3.fromRGB(60, 30, 0), {
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -10, 0.5, 0),
+		TextSize = 16,
+		Size = UDim2.fromOffset(0, 32),
+		TextColor3 = T.Gold,
+		Parent = banner,
+	})
+	Kit.Shine(banner, 1.8)
+
+	local tabScroll = Kit.Scroll({
+		Position = UDim2.fromOffset(0, 60),
+		Size = UDim2.new(1, 0, 0, 50),
+		ScrollingDirection = Enum.ScrollingDirection.X,
+		AutomaticCanvasSize = Enum.AutomaticSize.X,
+		ScrollBarThickness = 3,
 		Parent = body,
 	})
-	New("UITextSizeConstraint", { MaxTextSize = 18, Parent = banner })
-	local tabs = New("Frame", {
-		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(0, 50),
-		Size = UDim2.new(1, 0, 0, 44),
-		Parent = body,
-	}, { Kit.List(6, true) })
-	for i, name in { "Passes", "Boosts", "Coins", "Pearls", "Crates", "Pass+" } do
-		Kit.Button(name, T.PanelLight, function()
-			currentTab = name
-			render()
-		end, { Size = UDim2.fromOffset(92, 40), LayoutOrder = i, TextSize = 14, Parent = tabs })
-	end
-	content = Kit.Scroll({ Position = UDim2.fromOffset(0, 100), Size = UDim2.new(1, 0, 1, -100), Parent = body })
-	Kit.List(8).Parent = content
+	local _, paint = Kit.Tabs(tabScroll, TABS, currentTab, function(id)
+		currentTab = id
+		render()
+	end, { Size = UDim2.new(0, 0, 0, 44), AutomaticSize = Enum.AutomaticSize.X, TabWidth = 118 })
+	paintTabs = paint
+	content = Kit.Scroll({ Position = UDim2.fromOffset(0, 114), Size = UDim2.new(1, 0, 1, -114), Parent = body })
+	New("UIGridLayout", {
+		CellSize = UDim2.new(1 / 3, -8, 0, 214),
+		CellPadding = UDim2.fromOffset(8, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Parent = content,
+	})
+	New("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 6), Parent = content })
 end
 
 function ShopController.OpenTab(tab: string)

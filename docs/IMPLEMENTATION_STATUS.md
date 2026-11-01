@@ -92,13 +92,16 @@ Requirements and multipliers follow the plan, plus a talent tree with 4 talents.
 - HUD from §18.1, built mobile-first with buttons of at least 48 px.
 - Screens: Shop, Bag & Dock Manager, Upgrades, Codex, Quests & Tide Pass, Resurface, Leaderboards, Players, Trade, Settings, plus the reveal card, death, robbed and offline popups.
 - Rarity is shown with icons as well as colours, so it works for colour-blind players.
+- **Visual overhaul, Phase 1** ([`UI_OVERHAUL_PLAN.md`](UI_OVERHAUL_PLAN.md)): every relic has a live 3D render (`RelicView`) on collectible cards (`RelicCard`). The Bag & Dock screen is a card grid with a detail panel, and the Codex is a 3D grid with silhouettes for undiscovered relics. The reveal is full-screen with rays and a spinning model. The HUD has currency pills, menu tiles and a responsive scale, the Shop is a tile grid, and Upgrades has progress bars and a 3D suit helmet. Window chrome adds a backdrop and header badges.
+- Icons are emoji in gradient badges (`client/UI/Icons.luau`). Put uploaded `rbxassetid://` ids in `Icons.Images` and they replace the emoji with no code changes.
+- 🟡 Quests, Tide Pass, Rebirth, Leaderboards and Trade use the new Kit styling, but not yet their Phase 2 layouts.
 - 📋 Localization and final UI art. The UI is built in code with plain Instances, not Fusion, so it has no dependencies.
 
 ## Section 19 · Art and audio 🟡
 - Depth-based lighting (fog, colour correction, bloom, atmosphere).
-- Graybox relic models get mutation materials and lights.
+- Procedural low-poly relic models (`shared/RelicArt`): 60 recognisable models across 51 archetypes, with mutation materials and lights. The dock stands, the thief's carried relic and every UI render share them. `tools/relic_art_check` builds all of them with Lune's Roblox API in CI. Preview: [`docs/images/relic_art_preview.png`](images/relic_art_preview.png).
 - Adaptive music system: `AudioController` holds empty asset IDs. Fill them with licensed audio.
-- 📋 All final art, animation, music, icon and thumbnails.
+- 📋 Final modelled art, animation, music, icon and thumbnails. To swap in a real mesh, change `RelicArt.Build` only.
 
 ## Section 20 · Architecture ✅
 - Service/controller pattern with Init/Start. Remotes named by intent, and the client never sends values.

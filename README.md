@@ -4,6 +4,9 @@ A co-op deep-sea salvage game for Roblox: dive through five depth zones, salvage
 
 - Design: [`ABYSS_SALVAGE_MASTER_PLAN.md`](ABYSS_SALVAGE_MASTER_PLAN.md)
 - What's built vs. what's left: [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md)
+- UI & visual overhaul: [`docs/UI_OVERHAUL_PLAN.md`](docs/UI_OVERHAUL_PLAN.md)
+
+![Relic art preview](docs/images/relic_art_preview.png)
 
 The game runs from this repo alone. The graybox world (ocean, zones, plaza, 16 docks) is generated at runtime, so you don't need a place file.
 
@@ -33,8 +36,8 @@ Admin chat commands (the place owner is always an admin):
 | Folder | Maps to | Contents |
 |---|---|---|
 | `src/server/` | ServerScriptService | `init.server.luau` boot script and 24 `Services/` |
-| `src/client/` | StarterPlayerScripts | `init.client.luau` boot script, `Controllers/`, `UI/Kit` |
-| `src/shared/` | ReplicatedStorage.Shared | `Config/` (all tuning), `Net`, `LootRoll`, `Formulas`, utilities |
+| `src/client/` | StarterPlayerScripts | `init.client.luau` boot script, `Controllers/`, `UI/` (`Kit`, `Icons`, `RelicView`, `RelicCard`) |
+| `src/shared/` | ReplicatedStorage.Shared | `Config/` (all tuning), `Net`, `LootRoll`, `Formulas`, `RelicArt` (procedural relic models), utilities |
 | `tests/` | — | Lune unit tests (`lune run tests/run`) |
 | `tools/` | — | Economy simulator (`lune run tools/economy_sim`) |
 
@@ -45,6 +48,7 @@ All tuning numbers are in `src/shared/Config/`. Values marked `[live]` in `Econo
 ```bash
 selene src
 lune run tests/run
+lune run tools/relic_art_check
 lune run tools/economy_sim
 rojo build -o AbyssSalvage.rbxl
 ```

@@ -17,6 +17,7 @@ local Upgrades = H.require("src/shared/Config/Upgrades")
 local Economy = H.require("src/shared/Config/Economy")
 local Passes = H.require("src/shared/Config/Passes")
 local Products = H.require("src/shared/Config/Products")
+local RelicArt = H.require("src/shared/RelicArt")
 
 describe("WeightedRandom", function()
 	test("100k rolls match configured weights within ±0.5%", function()
@@ -197,6 +198,38 @@ describe("Formulas", function()
 		local relic = { id = "R021", size = 1.2, mutations = { "Gilded" } }
 		near(Formulas.RelicCPS(relic), 55 * 1.2 * 2, 1e-9, "CPS")
 		expect(Formulas.SellPrice(relic) == math.floor(55 * 1.2 * 2 * 60))
+	end)
+end)
+
+describe("RelicArt (UI overhaul)", function()
+	test("every relic has art with an existing recipe and a main colour", function()
+		for _, def in Relics.List do
+			local art = RelicArt.Map[def.Id]
+			expect(art ~= nil, `no art for {def.Id}`)
+			expect(type(RelicArt.Recipes[art[1]]) == "function", `{def.Id}: unknown archetype '{tostring(art[1])}'`)
+			expect(type(art.main) == "table", `{def.Id}: missing main colour`)
+		end
+	end)
+	test("no art entries for relics that don't exist", function()
+		for id in RelicArt.Map do
+			expect(Relics.ById[id] ~= nil, `art for unknown relic {id}`)
+		end
+	end)
+	test("fallback shapes cover every Shape used in the catalogue", function()
+		for _, def in Relics.List do
+			expect(type(RelicArt.Recipes[def.Shape]) == "function", `no fallback recipe for shape {def.Shape}`)
+		end
+	end)
+	test("at least 40 distinct archetypes are used", function()
+		local used = {}
+		local n = 0
+		for _, art in RelicArt.Map do
+			if not used[art[1]] then
+				used[art[1]] = true
+				n += 1
+			end
+		end
+		expect(n >= 40, `only {n} archetypes`)
 	end)
 end)
 

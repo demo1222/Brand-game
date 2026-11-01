@@ -21,6 +21,9 @@ jobs:
       - name: Unit tests (Lune)
         run: lune run tests/run
 
+      - name: Relic art build check (Lune + Roblox API)
+        run: lune run tools/relic_art_check
+
       - name: Build place (Rojo)
         run: rojo build default.project.json -o AbyssSalvage.rbxl
 

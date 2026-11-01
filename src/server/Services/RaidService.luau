@@ -104,12 +104,18 @@ local function attachCarryVisual(raider: Player, relic)
 	local def = Relics.ById[relic.id]
 	local model = Build.RelicModel(def, Rarities[relic.rarity].Color, relic.mutations, Mutations.ById, relic.size)
 	model.Name = "CarriedRelic"
-	model.Anchored = false
-	model.Massless = true
-	model.CFrame = torso.CFrame * CFrame.new(0, 0.5, 1.6)
-	local weld = Instance.new("WeldConstraint")
-	weld.Part0, weld.Part1 = torso, model
-	weld.Parent = model
+	model:PivotTo(torso.CFrame * CFrame.new(0, 0.5, 1.6))
+	local root = model.PrimaryPart :: BasePart
+	for _, part in model:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.Anchored = false
+			part.Massless = true
+			part.CanCollide = false
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0, weld.Part1 = if part == root then torso else root, part
+			weld.Parent = part
+		end
+	end
 	model.Parent = char
 	local hl = Instance.new("Highlight")
 	hl.Name = "ThiefHighlight"
@@ -287,7 +293,11 @@ local function trySteal(raider: Player, dock, slot: number)
 	local stand = dock.Stands[slot]
 	local m = stand:FindFirstChild("RelicModel")
 	if m then
-		m.Transparency = 0.85
+		for _, part in m:GetDescendants() do
+			if part:IsA("BasePart") and part.Name ~= "Root" then
+				part.Transparency = math.max(part.Transparency, 0.85)
+			end
+		end
 	end
 	Net.CarryChanged:FireClient(raider, { Relic = relic.id, Owner = owner.DisplayName })
 	Net.Intruder:FireClient(owner, { Name = raider.DisplayName, UserId = raider.UserId, Stealing = Relics.ById[relic.id].Name })

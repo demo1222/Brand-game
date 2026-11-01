@@ -16,6 +16,9 @@ local Zones = require(Shared.Config.Zones)
 local Quests = require(Shared.Config.Quests)
 local Economy = require(Shared.Config.Economy)
 local Kit = require(script.Parent.Parent.UI.Kit)
+local Icons = require(script.Parent.Parent.UI.Icons)
+local RelicView = require(script.Parent.Parent.UI.RelicView)
+local RelicCard = require(script.Parent.Parent.UI.RelicCard)
 
 local New, T = Kit.New, Kit.Theme
 local player = Players.LocalPlayer
@@ -40,21 +43,21 @@ local function relicLine(relic): string
 end
 
 local function row(parent: Instance, order: number, height: number?)
-	return New("Frame", {
-		BackgroundColor3 = T.PanelLight,
+	return Kit.Card({
 		Size = UDim2.new(1, -8, 0, height or 56),
 		LayoutOrder = order,
 		Parent = parent,
-	}, { Kit.Corner(8) })
+	})
 end
 
 local function header(parent: Instance, order: number, text: string)
-	return Kit.Label({ Text = text, Font = T.Bold, TextSize = 17, TextColor3 = T.Accent, LayoutOrder = order, Size = UDim2.new(1, -8, 0, 26), Parent = parent })
+	return Kit.Header(parent, order, text)
 end
 
 local function scrollBody(body: Frame, top: number?)
 	local scroll = Kit.Scroll({ Position = UDim2.fromOffset(0, top or 0), Size = UDim2.new(1, 0, 1, -(top or 0)), Parent = body })
 	Kit.List(6).Parent = scroll
+	New("UIPadding", { PaddingTop = UDim.new(0, 2), PaddingLeft = UDim.new(0, 2), Parent = scroll })
 	return scroll
 end
 
@@ -68,117 +71,335 @@ local function firstFreeStand(): number?
 	return nil
 end
 
+local function coinText(n: number): string
+	return `{Icons.Get("Coins")} {NumberFormat.short(n)}`
+end
+
 ------------------------------------------------------------------------------------------
--- Bag / Dock Manager
+-- Bag / Dock Manager: card grid + detail panel
 ------------------------------------------------------------------------------------------
-local bagScroll
-local function renderBag()
-	Kit.Clear(bagScroll)
-	local order = 0
-	local function o()
-		order += 1
-		return order
+local bag = {
+	tab = nil :: string?,
+	sort = "Value",
+	selected = nil :: string?,
+	sig = "",
+}
+local bagRefs = {}
+
+local function bagItems(tab: string)
+	local items = {}
+	if tab == "Bag" then
+		for _, relic in S.Get("Bag") or {} do
+			table.insert(items, { relic = relic, where = "Bag", key = "B:" .. relic.uid })
+		end
+	elseif tab == "Storage" then
+		for _, relic in S.Get("Storage") or {} do
+			table.insert(items, { relic = relic, where = "Storage", key = "S:" .. relic.uid })
+		end
+	else
+		for slot, relic in S.Get("Stands") or {} do
+			table.insert(items, { relic = relic, where = "Stands", slot = slot, key = "D:" .. slot })
+		end
+		for slot, relic in S.Get("Vault") or {} do
+			table.insert(items, { relic = relic, where = "Vault", slot = slot, key = "V:" .. slot })
+		end
 	end
-	local mult = S.Derived("CoinMult") or 1
-	local function relicRow(relic, where: string)
-		local r = row(bagScroll, o(), 60)
-		local rarity = Rarities[relic.rarity]
-		Kit.Label({
-			Text = `{rarity.Icon} {relicLine(relic)}{relic.locked and " 🔒" or ""}`,
-			TextColor3 = if relic.rarity == "Secret" then Color3.new(1, 1, 1) else rarity.Color,
-			Font = T.Bold,
-			Position = UDim2.fromOffset(10, 4),
-			Size = UDim2.new(1, -370, 0, 26),
-			Parent = r,
-		})
-		Kit.Label({
-			Text = `{relic.rarity} · {relic.size}x · +{NumberFormat.short(Formulas.RelicCPS(relic) * mult)}/s`,
-			TextColor3 = T.Muted,
-			TextSize = 13,
-			Position = UDim2.fromOffset(10, 30),
-			Size = UDim2.new(1, -370, 0, 22),
-			Parent = r,
-		})
-		local buttons = New("Frame", {
-			BackgroundTransparency = 1,
-			AnchorPoint = Vector2.new(1, 0.5),
-			Position = UDim2.new(1, -6, 0.5, 0),
-			Size = UDim2.fromOffset(360, 48),
-			Parent = r,
-		}, { Kit.List(4, true, Enum.HorizontalAlignment.Right) })
-		if where == "Stands" or where == "Vault" then
-			Kit.Button("Take", T.PanelLight, function()
-				Net.RequestPickupRelic:FireServer(tonumber(relic._slot), where == "Vault")
-			end, { Size = UDim2.fromOffset(70, 44), Parent = buttons })
+	table.sort(items, function(a, b)
+		if bag.sort == "Rarity" then
+			local ta, tb = Rarities.TierOf(a.relic.rarity), Rarities.TierOf(b.relic.rarity)
+			if ta ~= tb then
+				return ta > tb
+			end
+		end
+		local ca, cb = Formulas.RelicCPS(a.relic), Formulas.RelicCPS(b.relic)
+		if ca ~= cb then
+			return ca > cb
+		end
+		return a.key < b.key
+	end)
+	return items
+end
+
+local function bagSignature(items, mult: number): string
+	local parts = { bag.tab or "", bag.sort, bag.selected or "", tostring(mult), tostring(S.Derived("VaultCount") or 0) }
+	for _, it in items do
+		table.insert(parts, `{it.key}:{it.relic.locked and 1 or 0}:{table.concat(it.relic.mutations or {}, ",")}`)
+	end
+	return table.concat(parts, "|")
+end
+
+local function placeInVault(relic)
+	local vault = S.Get("Vault") or {}
+	for i = 1, S.Derived("VaultCount") or 0 do
+		if not vault[tostring(i)] then
+			Net.RequestPlaceRelic:FireServer(relic.uid, i, true)
 			return
 		end
-		if table.find(relic.mutations, "Barnacled") then
-			Kit.Button("Clean", Color3.fromRGB(150, 130, 100), function()
-				Net.RequestCleanBarnacle:FireServer(relic.uid)
-			end, { Size = UDim2.fromOffset(64, 44), TextSize = 13, Parent = buttons })
-		end
-		Kit.Button(relic.locked and "Unlock" or "Lock", T.PanelLight, function()
-			Net.RequestToggleLock:FireServer(relic.uid)
-		end, { Size = UDim2.fromOffset(64, 44), TextSize = 13, Parent = buttons })
-		if not relic.locked then
-			Kit.Button(`Sell {NumberFormat.short(Formulas.SellPrice(relic, mult))}`, T.Bad, function()
-				Net.RequestSell:FireServer(relic.uid)
-			end, { Size = UDim2.fromOffset(84, 44), TextSize = 13, Parent = buttons })
-		end
-		Kit.Button("Display", T.Good, function()
-			local slot = firstFreeStand()
-			if slot then
-				Net.RequestPlaceRelic:FireServer(relic.uid, slot, false)
-			else
-				controllers.UIController.Toast("All stands are full! Upgrade Display Slots.", "error")
-				if not S.Owns("ExtraSlots") then
-					controllers.OfferController.Show("ExtraSlots")
-				end
-			end
-		end, { Size = UDim2.fromOffset(70, 44), TextSize = 13, Parent = buttons })
-		if (S.Derived("VaultCount") or 0) > 0 then
-			Kit.Button("Vault", T.Gold, function()
-				local vault = S.Get("Vault") or {}
-				for i = 1, S.Derived("VaultCount") do
-					if not vault[tostring(i)] then
-						Net.RequestPlaceRelic:FireServer(relic.uid, i, true)
-						return
-					end
-				end
-				controllers.UIController.Toast("Vault slots are full.", "error")
-			end, { Size = UDim2.fromOffset(60, 44), TextSize = 13, TextColor3 = Color3.fromRGB(40, 25, 0), Parent = buttons })
+	end
+	controllers.UIController.Toast("Vault slots are full.", "error")
+end
+
+local function renderDetail(item, mult: number)
+	local panel = bagRefs.detail
+	Kit.Clear(panel)
+	if not item then
+		Kit.Label({
+			Text = "Tap a relic to inspect it",
+			TextColor3 = T.Muted,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Font = T.Bold,
+			Size = UDim2.new(1, 0, 0, 60),
+			LayoutOrder = 1,
+			Parent = panel,
+		})
+		return
+	end
+	local relic = item.relic
+	local def = Relics.ById[relic.id]
+	local rarity = Rarities[relic.rarity]
+	local rColor = Kit.RarityColor(relic.rarity, Rarities)
+	local bg, seq = RelicCard.RarityBackground(relic.rarity)
+
+	local stage = New("Frame", {
+		BackgroundColor3 = bg,
+		Size = UDim2.new(1, 0, 0, 170),
+		LayoutOrder = 1,
+		Parent = panel,
+	}, { Kit.Corner(14), New("UIGradient", { Rotation = 90, Color = seq }), Kit.Stroke(rColor, 2, 0.05) })
+	Kit.Glow(stage, rColor, 170)
+	RelicView.new({ Relic = relic, Spin = 35, ZIndex = 2, Size = UDim2.new(1, -10, 1, -10), Position = UDim2.fromOffset(5, 5), Parent = stage })
+	if rarity.Tier >= 5 then
+		Kit.Shine(stage, 2.5)
+	end
+
+	Kit.Title({
+		Text = (if relic.size >= 1.35 then "HUGE " else "") .. def.Name,
+		TextSize = 19,
+		TextColor3 = Kit.Lighten(rColor, 0.2),
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.new(1, 0, 0, 24),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 2,
+		Parent = panel,
+	})
+	local pills = New("Frame", {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 22),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 3,
+		Parent = panel,
+	})
+	local pl = Kit.List(4, true, Enum.HorizontalAlignment.Center)
+	pl.Wraps = true
+	pl.Parent = pills
+	Kit.Pill(`{rarity.Icon} {relic.rarity}`, rColor, { LayoutOrder = 1, Parent = pills })
+	for i, m in relic.mutations do
+		local md = Mutations.ById[m]
+		if md then
+			Kit.Pill(`{m} x{md.Mult}`, md.Color, { LayoutOrder = 1 + i, Parent = pills })
 		end
 	end
 
-	local bag = S.Get("Bag") or {}
-	header(bagScroll, o(), `DIVE BAG {#bag}/{S.Derived("BagSize") or 3} — lost if you die! Swim home to secure it.`)
-	for _, relic in bag do
-		relicRow(relic, "Bag")
+	local stats = Kit.Card({ Size = UDim2.new(1, 0, 0, 62), LayoutOrder = 4, Parent = panel }, { Kit.Padding(6), Kit.List(2) })
+	local cps = Formulas.RelicCPS(relic) * mult
+	for i, line in {
+		`{Icons.Get("Income")} +{NumberFormat.short(cps)} Coins/s on display`,
+		`{Icons.Get("Sell")} Sells for {NumberFormat.short(Formulas.SellPrice(relic, mult))}`,
+		`📏 Size {relic.size}x · Zone {def.Zone}`,
+	} do
+		Kit.Label({ Text = line, TextSize = 13, Font = T.Bold, Size = UDim2.new(1, 0, 0, 16), LayoutOrder = i, TextWrapped = false, Parent = stats })
 	end
-	local storage = S.Get("Storage") or {}
-	local tools = row(bagScroll, o(), 52)
-	tools.BackgroundTransparency = 1
-	Kit.Label({ Text = `STORAGE ({#storage})`, Font = T.Bold, TextColor3 = T.Accent, Size = UDim2.new(0.5, 0, 1, 0), Parent = tools })
-	Kit.Button("Sell all Commons", T.Bad, function()
-		Net.RequestSellCommons:FireServer()
-	end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, 0, 0.5, 0), Size = UDim2.fromOffset(160, 44), Parent = tools })
-	table.sort(storage, function(a, b)
-		return Formulas.RelicCPS(a) > Formulas.RelicCPS(b)
+	Kit.Label({
+		Text = `"{def.Lore}"`,
+		TextColor3 = T.Muted,
+		TextSize = 13,
+		Font = Enum.Font.GothamMedium,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.new(1, 0, 0, 18),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 5,
+		Parent = panel,
+	})
+
+	local actions = New("Frame", {
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 48),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 6,
+		Parent = panel,
+	})
+	local grid = Kit.Grid(Vector2.new(104, 44), 6)
+	grid.Parent = actions
+	local function act(text: string, color: Color3, fn)
+		Kit.Button(text, color, fn, { TextSize = 14, Parent = actions })
+	end
+	if item.where == "Stands" or item.where == "Vault" then
+		act(`{Icons.Get("Take")} Take`, T.PanelLight, function()
+			bag.selected = nil
+			Net.RequestPickupRelic:FireServer(tonumber(item.slot), item.where == "Vault")
+		end)
+		return
+	end
+	act(`{Icons.Get("Display")} Display`, T.Good, function()
+		local slot = firstFreeStand()
+		if slot then
+			bag.selected = nil
+			Net.RequestPlaceRelic:FireServer(relic.uid, slot, false)
+		else
+			controllers.UIController.Toast("All stands are full! Upgrade Display Slots.", "error")
+			if not S.Owns("ExtraSlots") then
+				controllers.OfferController.Show("ExtraSlots")
+			end
+		end
 	end)
-	for _, relic in storage do
-		relicRow(relic, "Storage")
+	if (S.Derived("VaultCount") or 0) > 0 then
+		act(`{Icons.Get("Vault")} Vault`, T.Gold, function()
+			bag.selected = nil
+			placeInVault(relic)
+		end)
 	end
-	header(bagScroll, o(), `ON DISPLAY · +{NumberFormat.short(S.Get("IncomePerSecond") or 0)}/s`)
-	for slot, relic in S.Get("Stands") or {} do
-		local copy = table.clone(relic)
-		copy._slot = slot
-		relicRow(copy, "Stands")
+	act(if relic.locked then "🔓 Unlock" else `{Icons.Get("Lock")} Lock`, T.PanelLight, function()
+		Net.RequestToggleLock:FireServer(relic.uid)
+	end)
+	if not relic.locked then
+		act(`{Icons.Get("Sell")} Sell`, T.Bad, function()
+			bag.selected = nil
+			Net.RequestSell:FireServer(relic.uid)
+		end)
 	end
-	for slot, relic in S.Get("Vault") or {} do
-		local copy = table.clone(relic)
-		copy._slot = slot
-		relicRow(copy, "Vault")
+	if table.find(relic.mutations, "Barnacled") then
+		act(`{Icons.Get("Clean")} Clean`, Color3.fromRGB(150, 130, 100), function()
+			Net.RequestCleanBarnacle:FireServer(relic.uid)
+		end)
 	end
+end
+
+local function renderBag()
+	local bagList = S.Get("Bag") or {}
+	if not bag.tab then
+		bag.tab = if #bagList > 0 then "Bag" else "Storage"
+	end
+	local items = bagItems(bag.tab)
+	local mult = S.Derived("CoinMult") or 1
+	local sig = bagSignature(items, mult)
+	-- Tab captions change with counts even when the visible list doesn't
+	local storageN = #(S.Get("Storage") or {})
+	local displayN = 0
+	for _ in S.Get("Stands") or {} do
+		displayN += 1
+	end
+	for _ in S.Get("Vault") or {} do
+		displayN += 1
+	end
+	bagRefs.tabCaption.Bag.Text = `{Icons.Get("Bag")} Bag {#bagList}/{S.Derived("BagSize") or 3}`
+	bagRefs.tabCaption.Storage.Text = `📦 Storage {storageN}`
+	bagRefs.tabCaption.Display.Text = `{Icons.Get("Display")} Dock {displayN}`
+	bagRefs.paintTabs(bag.tab)
+	bagRefs.sortButton.Text = `⇅ {bag.sort}`
+	bagRefs.sellCommons.Visible = bag.tab == "Storage"
+	bagRefs.hint.Text = if bag.tab == "Bag"
+		then "⚠ Bag relics are lost if you die. Swim home to secure them!"
+		elseif bag.tab == "Display" then `{Icons.Get("Income")} Your dock earns +{NumberFormat.short(S.Get("IncomePerSecond") or 0)}/s`
+		else "Display your best relics to earn Coins while you dive."
+	bagRefs.hint.TextColor3 = if bag.tab == "Bag" then T.Gold else T.Muted
+	if sig == bag.sig then
+		return
+	end
+	bag.sig = sig
+
+	Kit.Clear(bagRefs.grid)
+	local selectedItem = nil
+	for i, it in items do
+		if it.key == bag.selected then
+			selectedItem = it
+		end
+		RelicCard.new({
+			Relic = it.relic,
+			Subtitle = `+{NumberFormat.short(Formulas.RelicCPS(it.relic) * mult)}/s`,
+			Selected = it.key == bag.selected,
+			LayoutOrder = i,
+			OnClick = function()
+				bag.selected = if bag.selected == it.key then nil else it.key
+				bag.sig = ""
+				renderBag()
+			end,
+			Parent = bagRefs.grid,
+		})
+	end
+	if #items == 0 then
+		Kit.Label({
+			Text = if bag.tab == "Bag" then "Your dive bag is empty.\nDive and salvage glinting relics!"
+				elseif bag.tab == "Storage" then "No relics in storage yet."
+				else "Nothing on display. Pick a relic in Storage and tap Display.",
+			TextColor3 = T.Muted,
+			Font = T.Bold,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Size = UDim2.fromOffset(300, 60),
+			Parent = bagRefs.grid,
+		})
+	end
+	if bag.selected and not selectedItem then
+		bag.selected = nil
+	end
+	renderDetail(selectedItem, mult)
+end
+
+local function buildBag(body: Frame)
+	bagRefs.tabCaption = {}
+	local tabsFrame, paint = Kit.Tabs(body, {
+		{ id = "Bag", text = "Bag", color = Color3.fromRGB(60, 160, 255) },
+		{ id = "Storage", text = "Storage", color = T.Accent },
+		{ id = "Display", text = "Dock", color = T.Gold },
+	}, "Storage", function(id)
+		bag.tab = id
+		bag.selected = nil
+		bag.sig = ""
+		renderBag()
+	end, { Size = UDim2.new(1, -250, 0, 44) })
+	bagRefs.paintTabs = paint
+	for _, b in tabsFrame:GetChildren() do
+		if b:IsA("TextButton") then
+			b.TextSize = 13
+		end
+	end
+	local order = {}
+	for _, b in tabsFrame:GetChildren() do
+		if b:IsA("TextButton") then
+			order[b.LayoutOrder] = b
+		end
+	end
+	bagRefs.tabCaption.Bag, bagRefs.tabCaption.Storage, bagRefs.tabCaption.Display = order[1], order[2], order[3]
+
+	bagRefs.sortButton = Kit.Button("⇅ Value", T.PanelLight, function()
+		bag.sort = if bag.sort == "Value" then "Rarity" else "Value"
+		bag.sig = ""
+		renderBag()
+	end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -128, 0, 0), Size = UDim2.fromOffset(110, 44), TextSize = 14, Parent = body })
+	bagRefs.sellCommons = Kit.Button(`{Icons.Get("Sell")} Commons`, T.Bad, function()
+		Net.RequestSellCommons:FireServer()
+	end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 0), Size = UDim2.fromOffset(122, 44), TextSize = 14, Parent = body })
+	bagRefs.hint = Kit.Label({
+		Text = "",
+		TextSize = 13,
+		Font = T.Bold,
+		Position = UDim2.fromOffset(4, 48),
+		Size = UDim2.new(1, -250, 0, 18),
+		TextWrapped = false,
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		Parent = body,
+	})
+	bagRefs.grid = Kit.Scroll({ Position = UDim2.fromOffset(0, 70), Size = UDim2.new(1, -246, 1, -70), Parent = body })
+	Kit.Grid(Vector2.new(108, 136), 8).Parent = bagRefs.grid
+	New("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), Parent = bagRefs.grid })
+	local detailCard = Kit.Card({
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 50),
+		Size = UDim2.new(0, 236, 1, -50),
+		BackgroundColor3 = T.PanelDark,
+		Parent = body,
+	})
+	bagRefs.detail = Kit.Scroll({ Size = UDim2.new(1, -12, 1, -12), Position = UDim2.fromOffset(6, 6), Parent = detailCard })
+	Kit.List(6, false, Enum.HorizontalAlignment.Center).Parent = bagRefs.detail
 end
 
 ------------------------------------------------------------------------------------------
@@ -188,106 +409,190 @@ local upScroll
 local function renderUpgrades()
 	Kit.Clear(upScroll)
 	local order = 0
+	local function o()
+		order += 1
+		return order
+	end
 	local levels = S.Get("Upgrades") or {}
 	local coins = S.Get("Coins") or 0
 	local suitIndex = S.Get("Suit") or 1
+	local suit = Upgrades.Suits[suitIndex]
 	local nextSuit = Upgrades.Suits[suitIndex + 1]
-	order += 1
-	local sr = row(upScroll, order, 64)
-	Kit.Label({
-		Text = `Suit: {Upgrades.Suits[suitIndex].Name} (safe to zone {suitIndex}: {Zones.List[math.min(suitIndex, 5)].Name})`,
-		Font = T.Bold,
-		Position = UDim2.fromOffset(10, 6),
-		Size = UDim2.new(1, -170, 0, 24),
+
+	-- Suit card with a 3D helmet in the suit's colour
+	local sr = row(upScroll, o(), 120)
+	local stage = New("Frame", {
+		BackgroundColor3 = Kit.Darken(suit.Color, 0.6),
+		Position = UDim2.fromOffset(8, 8),
+		Size = UDim2.fromOffset(104, 104),
 		Parent = sr,
-	})
+	}, { Kit.Corner(14), Kit.Sheen(0.5), Kit.Stroke(suit.Color, 2, 0.05) })
+	Kit.Glow(stage, suit.Color, 100)
+	RelicView.Archetype("helmet", { main = suit.Color, accent = Color3.fromRGB(255, 196, 64) }, { Spin = 30, ZIndex = 2, Parent = stage })
+	Kit.Title({ Text = suit.Name, TextSize = 22, Position = UDim2.fromOffset(124, 8), Size = UDim2.new(1, -290, 0, 26), TextWrapped = false, Parent = sr })
 	Kit.Label({
-		Text = if nextSuit then `Next: {nextSuit.Name}{nextSuit.ComingSoon and " (coming soon)" or ""}` else "Max suit!",
+		Text = `Safe down to: {Zones.List[math.min(suitIndex, #Zones.List)].Name}`,
 		TextColor3 = T.Muted,
 		TextSize = 14,
-		Position = UDim2.fromOffset(10, 32),
-		Size = UDim2.new(1, -170, 0, 22),
+		Position = UDim2.fromOffset(124, 36),
+		Size = UDim2.new(1, -290, 0, 18),
 		Parent = sr,
 	})
-	if nextSuit then
-		Kit.Button(NumberFormat.short(nextSuit.Cost), if coins >= nextSuit.Cost then T.Good else T.PanelLight, function()
-			Net.RequestBuySuit:FireServer()
-		end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(140, 48), Parent = sr })
-	end
-	for _, track in Upgrades.Tracks do
-		order += 1
-		local lvl = levels[track.Id] or 0
-		local r = row(upScroll, order, 58)
-		Kit.Label({ Text = `{track.Name}  Lv {lvl}/{track.Max}`, Font = T.Bold, Position = UDim2.fromOffset(10, 4), Size = UDim2.new(1, -170, 0, 24), Parent = r })
-		Kit.Label({ Text = track.Desc, TextColor3 = T.Muted, TextSize = 14, Position = UDim2.fromOffset(10, 30), Size = UDim2.new(1, -170, 0, 22), Parent = r })
-		if lvl >= track.Max then
-			Kit.Label({ Text = "MAX", Font = T.Bold, TextColor3 = T.Gold, AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -20, 0.5, 0), Size = UDim2.fromOffset(80, 30), Parent = r })
-		else
-			local cost = Upgrades.Cost(track.Id, lvl)
-			Kit.Button(NumberFormat.short(cost), if coins >= cost then T.Good else T.PanelLight, function()
-				Net.RequestUpgrade:FireServer(track.Id)
-			end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(140, 46), Parent = r })
+	local pips = New("Frame", { BackgroundTransparency = 1, Position = UDim2.fromOffset(124, 62), Size = UDim2.new(1, -290, 0, 44), Parent = sr }, { Kit.List(6, true) })
+	for i, zone in Zones.List do
+		local ok = i <= suitIndex
+		local badge = Kit.IconBadge(Icons.Get(zone.Id), if ok then Kit.Lighten(zone.FogColor, 0.3) else T.PanelDark, 38, { LayoutOrder = i, Parent = pips })
+		if not ok then
+			badge.BackgroundTransparency = 0.4
+			badge:FindFirstChildOfClass("TextLabel").TextTransparency = 0.6
 		end
 	end
-	order += 1
-	local g = row(upScroll, order, 58)
-	Kit.Label({ Text = "Laser Gate: blocks raids on your dock", Position = UDim2.fromOffset(10, 0), Size = UDim2.new(1, -170, 1, 0), Parent = g })
-	Kit.Button("Activate", T.Bad, function()
+	if nextSuit then
+		local affordable = coins >= nextSuit.Cost and not nextSuit.ComingSoon
+		Kit.Label({
+			Text = `Next: {nextSuit.Name}{nextSuit.ComingSoon and " (soon)" or ""}`,
+			TextColor3 = T.Muted,
+			TextSize = 13,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -10, 0, 14),
+			Size = UDim2.fromOffset(150, 34),
+			Parent = sr,
+		})
+		Kit.Button(coinText(nextSuit.Cost), if affordable then T.Good else T.PanelLight, function()
+			Net.RequestBuySuit:FireServer()
+		end, { AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -10, 0, 54), Size = UDim2.fromOffset(150, 52), TextSize = 18, Parent = sr })
+	else
+		Kit.Pill("MAX SUIT", T.Gold, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -14, 0.5, 0), TextSize = 16, Size = UDim2.fromOffset(0, 32), Parent = sr })
+	end
+
+	Kit.Header(upScroll, o(), "UPGRADES")
+	for _, track in Upgrades.Tracks do
+		local lvl = levels[track.Id] or 0
+		local r = row(upScroll, o(), 74)
+		Kit.IconBadge(Icons.Track(track.Id), T.AccentDeep, 54, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Parent = r })
+		Kit.Title({ Text = track.Name, TextSize = 18, Position = UDim2.fromOffset(74, 6), Size = UDim2.new(1, -250, 0, 22), TextWrapped = false, Parent = r })
+		Kit.Pill(`Lv {lvl}/{track.Max}`, if lvl >= track.Max then T.Gold else T.Accent, { Position = UDim2.new(1, -236, 0, 8), Parent = r })
+		Kit.Label({ Text = track.Desc, TextColor3 = T.Muted, TextSize = 13, Position = UDim2.fromOffset(74, 30), Size = UDim2.new(1, -250, 0, 16), TextTruncate = Enum.TextTruncate.AtEnd, TextWrapped = false, Parent = r })
+		local _, setBar = Kit.Bar({ Position = UDim2.fromOffset(74, 52), Size = UDim2.new(1, -250, 0, 10), Color = if lvl >= track.Max then T.Gold else T.Accent, Parent = r })
+		setBar(lvl / track.Max)
+		if lvl >= track.Max then
+			Kit.Pill("MAX", T.Gold, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -40, 0.5, 0), TextSize = 16, Size = UDim2.fromOffset(0, 32), Parent = r })
+		else
+			local cost = Upgrades.Cost(track.Id, lvl)
+			Kit.Button(coinText(cost), if coins >= cost then T.Good else T.PanelLight, function()
+				Net.RequestUpgrade:FireServer(track.Id)
+			end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(140, 50), Parent = r })
+		end
+	end
+	local g = row(upScroll, o(), 64)
+	Kit.IconBadge(Icons.Get("Gate"), T.Bad, 46, { AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 14, 0.5, 0), Parent = g })
+	Kit.Title({ Text = "Laser Gate", TextSize = 18, Position = UDim2.fromOffset(74, 8), Size = UDim2.new(1, -230, 0, 22), Parent = g })
+	Kit.Label({ Text = "Blocks raids on your dock for a while", TextColor3 = T.Muted, TextSize = 13, Position = UDim2.fromOffset(74, 32), Size = UDim2.new(1, -230, 0, 18), Parent = g })
+	Kit.Button("⚡ Activate", T.Bad, function()
 		Net.ActivateGate:FireServer()
-	end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -8, 0.5, 0), Size = UDim2.fromOffset(140, 46), Parent = g })
+	end, { AnchorPoint = Vector2.new(1, 0.5), Position = UDim2.new(1, -10, 0.5, 0), Size = UDim2.fromOffset(140, 48), Parent = g })
 end
 
 ------------------------------------------------------------------------------------------
--- Codex
+-- Codex: zone tabs + 3D card grid (silhouettes for undiscovered relics)
 ------------------------------------------------------------------------------------------
-local codexScroll, codexTitle
+local codexScroll, codexTitle, codexSetBar, codexPaintTabs
+local codexSig = ""
 local function renderCodex()
-	Kit.Clear(codexScroll)
 	local codex = S.Get("Codex") or {}
 	local total, found = 0, 0
+	local defs = {}
 	for _, def in Relics.List do
 		if def.Zone == codexZone then
 			total += 1
-			local entry = codex[def.Id]
-			if entry then
+			if codex[def.Id] then
 				found += 1
 			end
-			local rarity = Rarities[def.Rarity]
-			local cell = New("Frame", {
-				BackgroundColor3 = if entry then T.PanelLight else Color3.fromRGB(15, 20, 30),
-				Size = UDim2.fromOffset(150, 90),
-				Parent = codexScroll,
-			}, { Kit.Corner(8), Kit.Padding(6) })
-			if entry then
-				Kit.Stroke(rarity.Color, 1.5).Parent = cell
-				local muts = 0
-				for _ in entry do
-					muts += 1
-				end
-				Kit.Label({ Text = def.Name, Font = T.Bold, TextSize = 14, TextColor3 = rarity.Color, Size = UDim2.new(1, 0, 0, 34), Parent = cell })
-				Kit.Label({
-					Text = `{def.Rarity}\nVariants: {muts}/{#Mutations.List + 1}`,
-					TextSize = 12,
-					TextColor3 = T.Muted,
-					Position = UDim2.fromOffset(0, 36),
-					Size = UDim2.new(1, 0, 0, 34),
-					Parent = cell,
-				})
-			else
-				Kit.Label({ Text = "???", Font = T.Bold, TextSize = 26, TextXAlignment = Enum.TextXAlignment.Center, Size = UDim2.fromScale(1, 0.6), Parent = cell })
-				Kit.Label({
-					Text = def.Rarity,
-					TextSize = 12,
-					TextColor3 = T.Muted,
-					TextXAlignment = Enum.TextXAlignment.Center,
-					Position = UDim2.fromScale(0, 0.6),
-					Size = UDim2.fromScale(1, 0.4),
-					Parent = cell,
-				})
-			end
+			table.insert(defs, def)
 		end
 	end
-	codexTitle.Text = `{Zones.List[codexZone].Name}: {found}/{total} ({math.floor(found / math.max(total, 1) * 100)}%) · 100% = +5% luck in this zone`
+	table.sort(defs, function(a, b)
+		local ta, tb = Rarities.TierOf(a.Rarity), Rarities.TierOf(b.Rarity)
+		if ta ~= tb then
+			return ta < tb
+		end
+		return a.Id < b.Id
+	end)
+	local zone = Zones.List[codexZone]
+	local pct = math.floor(found / math.max(total, 1) * 100)
+	codexTitle.Text = `{Icons.Get(zone.Id)} {zone.Name}: {found}/{total} found · 100% = +5% luck here`
+	codexSetBar(found / math.max(total, 1), if pct >= 100 then T.Gold else Kit.Lighten(zone.FogColor, 0.35), `{pct}%`)
+	codexPaintTabs(tostring(codexZone))
+
+	local parts = { tostring(codexZone) }
+	for _, def in defs do
+		local entry = codex[def.Id]
+		local n = 0
+		if entry then
+			for _ in entry do
+				n += 1
+			end
+		end
+		table.insert(parts, `{def.Id}:{entry and n or -1}`)
+	end
+	local sig = table.concat(parts, "|")
+	if sig == codexSig then
+		return
+	end
+	codexSig = sig
+
+	Kit.Clear(codexScroll)
+	for i, def in defs do
+		local entry = codex[def.Id]
+		local variants = 0
+		if entry then
+			for _ in entry do
+				variants += 1
+			end
+		end
+		RelicCard.new({
+			Def = def,
+			Discovered = entry ~= nil,
+			Subtitle = if entry then `Variants {variants}/{#Mutations.List + 1}` else def.Rarity,
+			LayoutOrder = i,
+			OnClick = function()
+				if entry then
+					controllers.UIController.Toast(`{def.Name}: "{def.Lore}"`, "info")
+				else
+					controllers.UIController.Toast(`Undiscovered {def.Rarity} relic. Search {zone.Name}!`, "info")
+				end
+			end,
+			Parent = codexScroll,
+		})
+	end
+end
+
+local function buildCodex(body: Frame)
+	local items = {}
+	for i, zone in Zones.List do
+		table.insert(items, { id = tostring(i), text = zone.Name, icon = Icons.Get(zone.Id), color = Kit.Lighten(zone.FogColor, 0.3) })
+	end
+	local tabScroll = Kit.Scroll({
+		Size = UDim2.new(1, 0, 0, 50),
+		ScrollingDirection = Enum.ScrollingDirection.X,
+		AutomaticCanvasSize = Enum.AutomaticSize.X,
+		ScrollBarThickness = 3,
+		Parent = body,
+	})
+	local tabs
+	tabs, codexPaintTabs = Kit.Tabs(tabScroll, items, tostring(codexZone), function(id)
+		codexZone = tonumber(id) or 1
+		codexSig = ""
+		renderCodex()
+	end, { Size = UDim2.new(0, 0, 0, 44), AutomaticSize = Enum.AutomaticSize.X, TabWidth = 150 })
+	tabs.Name = "ZoneTabs"
+	codexTitle = Kit.Label({ Text = "", Font = T.Bold, TextSize = 14, Position = UDim2.fromOffset(2, 54), Size = UDim2.new(1, -150, 0, 22), TextWrapped = false, TextTruncate = Enum.TextTruncate.AtEnd, Parent = body })
+	local _, setBar = Kit.Bar({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, -4, 0, 56), Size = UDim2.fromOffset(140, 18), TextSize = 12, Parent = body })
+	codexSetBar = setBar
+	codexScroll = Kit.Scroll({ Position = UDim2.fromOffset(0, 82), Size = UDim2.new(1, 0, 1, -82), Parent = body })
+	Kit.Grid(Vector2.new(112, 140), 8).Parent = codexScroll
+	New("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), Parent = codexScroll })
 end
 
 ------------------------------------------------------------------------------------------
@@ -624,24 +929,11 @@ end
 ------------------------------------------------------------------------------------------
 function MenuController.Start()
 	local UI = controllers.UIController
-	UI.RegisterWindow("Bag", "Bag & Dock", function(body)
-		bagScroll = scrollBody(body)
-	end, renderBag)
+	UI.RegisterWindow("Bag", "Bag & Dock", buildBag, renderBag)
 	UI.RegisterWindow("Upgrades", "Upgrades", function(body)
 		upScroll = scrollBody(body)
 	end, renderUpgrades)
-	UI.RegisterWindow("Codex", "Codex", function(body)
-		local tabs = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 44), Parent = body }, { Kit.List(6, true) })
-		for i, zone in Zones.List do
-			Kit.Button(zone.Name, T.PanelLight, function()
-				codexZone = i
-				renderCodex()
-			end, { Size = UDim2.fromOffset(130, 40), TextSize = 13, LayoutOrder = i, Parent = tabs })
-		end
-		codexTitle = Kit.Label({ Text = "", Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 0, 24), Parent = body })
-		codexScroll = Kit.Scroll({ Position = UDim2.fromOffset(0, 76), Size = UDim2.new(1, 0, 1, -76), Parent = body })
-		New("UIGridLayout", { CellSize = UDim2.fromOffset(150, 90), CellPadding = UDim2.fromOffset(6, 6), Parent = codexScroll })
-	end, renderCodex)
+	UI.RegisterWindow("Codex", "Codex", buildCodex, renderCodex)
 	UI.RegisterWindow("Quests", "Quests & Tide Pass", function(body)
 		questScroll = scrollBody(body)
 	end, renderQuests)

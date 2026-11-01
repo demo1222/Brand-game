@@ -61,6 +61,8 @@ Harness.Random = Random
 local cache = {}
 local nodeMeta = {}
 
+-- The tree is scanned eagerly: Lune's fs calls yield, and yielding inside a metamethod
+-- (__index) is not allowed ("attempt to yield across metamethod/C-call boundary").
 local function makeNode(path: string, parent)
 	return setmetatable({ __path = path, __parent = parent }, nodeMeta)
 end
@@ -69,20 +71,33 @@ nodeMeta.__index = function(self, key)
 	if key == "Parent" then
 		return rawget(self, "__parent")
 	end
-	local path = rawget(self, "__path")
-	local dir = path:gsub("%.luau$", "")
-	local child = dir .. "/" .. key
-	if fs.isDir(child) then
-		local n = makeNode(child, self)
-		rawset(self, key, n)
-		return n
-	elseif fs.isFile(child .. ".luau") then
-		local n = makeNode(child .. ".luau", self)
-		rawset(self, key, n)
-		return n
-	end
-	error(`No child '{key}' under {path}`)
+	error(`No child '{key}' under {rawget(self, "__path")}`)
 end
+
+local function scan(node)
+	local path = rawget(node, "__path")
+	local dir = path:gsub("%.luau$", "")
+	if not fs.isDir(dir) then
+		return
+	end
+	for _, name in fs.readDir(dir) do
+		local child = dir .. "/" .. name
+		if fs.isDir(child) then
+			local n = makeNode(child, node)
+			rawset(node, name, n)
+			scan(n)
+		elseif name:match("%.luau$") then
+			local key = name:gsub("%.luau$", "")
+			if rawget(node, key) == nil then
+				local n = makeNode(child, node)
+				rawset(node, key, n)
+				scan(n) -- a "Foo.luau" may sit next to a "Foo/" folder
+			end
+		end
+	end
+end
+
+local roots = {}
 
 local function load(node)
 	local path = rawget(node, "__path")
@@ -108,7 +123,12 @@ end
 -- Harness.require("src/shared/LootRoll")
 function Harness.require(relPath: string)
 	local parts = string.split(relPath, "/")
-	local node = makeNode(parts[1], nil)
+	local node = roots[parts[1]]
+	if not node then
+		node = makeNode(parts[1], nil)
+		scan(node)
+		roots[parts[1]] = node
+	end
 	for i = 2, #parts do
 		node = node[parts[i]]
 	end

@@ -1,5 +1,8 @@
 -- Small helpers for building graybox geometry and GUI on the server.
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RelicArt = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("RelicArt"))
+
 local Build = {}
 
 function Build.Part(props): BasePart
@@ -72,53 +75,16 @@ function Build.Prompt(parent: Instance, action: string, object: string, hold: nu
 	return pp
 end
 
--- Builds a simple relic display model from its config row (graybox art)
-function Build.RelicModel(def, rarityColor: Color3, mutations: { string }?, mutationDefs, size: number?)
-	local scale = 1.4 * (size or 1)
-	local shape = def.Shape
-	local p = Instance.new("Part")
-	p.Name = def.Id
-	p.Anchored = true
-	p.CanCollide = false
-	p.CanQuery = false
-	p.Material = Enum.Material.SmoothPlastic
-	p.Color = rarityColor
-	if shape == "Ball" then
-		p.Shape = Enum.PartType.Ball
-		p.Size = Vector3.one * scale
-	elseif shape == "Cylinder" then
-		p.Shape = Enum.PartType.Cylinder
-		p.Size = Vector3.new(scale * 1.2, scale, scale)
-	elseif shape == "Wedge" then
-		p:Destroy()
-		p = Instance.new("WedgePart")
-		p.Name = def.Id
-		p.Anchored = true
-		p.CanCollide = false
-		p.CanQuery = false
-		p.Color = rarityColor
-		p.Size = Vector3.new(scale * 0.6, scale, scale * 1.2)
-	else
-		p.Size = Vector3.new(scale, scale * 0.8, scale)
-	end
-	local tierGlow = rarityColor
-	if mutations and #mutations > 0 then
-		local m = mutationDefs[mutations[1]]
-		if m then
-			p.Color = m.Color
-			local mat = Enum.Material[m.Material]
-			if mat then
-				p.Material = mat
-			end
-			tierGlow = m.Color
-		end
-	end
-	local light = Instance.new("PointLight")
-	light.Color = tierGlow
-	light.Range = 8
-	light.Brightness = 1.5
-	light.Parent = p
-	return p
+-- Builds a relic display model (shared/RelicArt): the same procedural model the UI shows.
+-- Returns a Model whose PrimaryPart ("Root") sits at the model's centre.
+function Build.RelicModel(def, rarityColor: Color3, mutations: { string }?, mutationDefs, size: number?): Model
+	return RelicArt.Build(def, {
+		mutations = mutations,
+		mutationDefs = mutationDefs,
+		size = size or 1,
+		targetSize = 2.2,
+		rarityColor = rarityColor,
+	})
 end
 
 return Build

@@ -105,7 +105,7 @@ local function renderStand(stand: BasePart, relic, visible: boolean, mult: numbe
 		local def = Relics.ById[relic.id]
 		local model = Build.RelicModel(def, Rarities[relic.rarity].Color, relic.mutations, Mutations.ById, relic.size)
 		model.Name = "RelicModel"
-		model.CFrame = CFrame.new(stand.Position + Vector3.new(0, 2.8, 0))
+		model:PivotTo(CFrame.new(stand.Position + Vector3.new(0, 2.8, 0)) * stand.CFrame.Rotation)
 		model.Parent = stand
 		local mut = if #relic.mutations > 0 then table.concat(relic.mutations, " ") .. " " else ""
 		info.Label.Text = `{mut}{def.Name}\n+{NumberFormat.short(Formulas.RelicCPS(relic) * mult)}/s`
