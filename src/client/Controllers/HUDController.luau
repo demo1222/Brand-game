@@ -499,7 +499,7 @@ local function build()
 	)
 	refs.downButton = roundAction(
 		actions,
-		"down",
+		Icons.Get("Down"),
 		"",
 		Color3.fromRGB(70, 92, 124),
 		56,

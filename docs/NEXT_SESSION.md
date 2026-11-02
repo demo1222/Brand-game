@@ -161,9 +161,14 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
   a gold medal). Up uses the Up mapping. Lock, Vault, VaultLock, Alert, error and Up reuse
   uploaded files. Sonar, Track_Sonar, Flare, Flares5, Clean, BarnacleClean and Track_Board map
   to four new files (`target`, `fireball`, `trash_bin`, `wood_planks`), which need uploading and
-  an ID in `Icons.Images`. Still drawn, no close match: Down, Depth, Oxygen, DoubleOxygen,
-  Track_Oxygen, Display, Track_Display, Drone, Radio, Death, Huge, RenameDock, SkipPity, and the
-  zones Reef, Kelp, Wrecks, Abyss, Trench.
+  an ID in `Icons.Images`. Still drawn, no close match: Depth, Display, Track_Display, Drone,
+  Radio, Death, Huge, RenameDock, SkipPity, and the zones Reef, Kelp, Wrecks, Abyss, Trench.
+- **UI round 2, part A3 (generated icons):** `docs/images/icons/generated/` holds three
+  Canva-generated icons, background removed: `down_arrow.png` (Down), `oxygen_tank.png`
+  (Oxygen, DoubleOxygen, Track_Oxygen) and `sonar.png` (Sonar, Track_Sonar, replacing the
+  `target` pick). The Down button now uses `Icons.Get("Down")`. Still to generate: depth_gauge,
+  display_stand, drone, radio, skull, huge_star, signpost, fast_forward, coral, seaweed,
+  shipwreck, deep_abyss, ocean_trench. Canva's quota ran out mid-batch.
 
 ## Still to do (priority order)
 
