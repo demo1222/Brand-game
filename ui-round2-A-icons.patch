@@ -1,0 +1,101 @@
+diff --git a/docs/NEXT_SESSION.md b/docs/NEXT_SESSION.md
+index e0a8ede..d093992 100644
+--- a/docs/NEXT_SESSION.md
++++ b/docs/NEXT_SESSION.md
+@@ -150,6 +150,12 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
+     readout, a chunky ON/OFF switch, and controls shown as key caps. `settingRow` takes a
+     `reserve` width (the Diver window passes 112).
+   - New drawn icons: `arrow`, `music`, `keyboard`.
++- **UI round 2, part A (icons):** `Icons.Assets` maps 58 of the 89 `Icons.Names` keys to the
++  147-icon set (`docs/images/Stylized_Game_Essentials_147_Icons.zip`, folder `All_Icons`). The
++  other 31 keep the drawn fallback. `Icons.Images` is still empty, so nothing changes in game
++  until the owner uploads the PNGs and pastes the IDs. The full table is in `docs/icon_map.md`.
++  Judgement calls to confirm: Pearls, Tokens, Diver, Shop, Bag. At 16 px, Coins and Tokens look
++  alike and Boost and GateRecharge look alike. Use 24 px or more in tabs.
+ 
+ ## Still to do (priority order)
+ 
+@@ -173,7 +179,7 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
+ 5. **Translations:** use Roblox auto-translation; keep strings in code short and plain.
+ 6. **Drag-and-drop** relics onto dock stands (master plan §18.2); today it's "Display on dock".
+ 7. **Art pass** (needs the owner's uploads):
+-   - an icon set into `Icons.Images`
++   - the icon set into `Icons.Images` (mapping is in `Icons.Assets`; owner pastes the IDs)
+    - relic meshes (change only `RelicArt.Build`)
+    - audio IDs into `AudioController.SOUND_IDS` (includes `Coins`)
+ 8. **Pre-existing selene warnings** (unused variables) in DataService, DiveService,
+diff --git a/src/client/UI/Icons.luau b/src/client/UI/Icons.luau
+index 64fcd10..dc11a4c 100644
+--- a/src/client/UI/Icons.luau
++++ b/src/client/UI/Icons.luau
+@@ -110,6 +110,70 @@ Icons.Names = {
+ 	info = "info",
+ }
+ 
++-- New icon set (Stylized Game Essentials 147). Each entry is the PNG to upload in Studio
++-- (Decal/Image). Paste the rbxassetid into Icons.Images under the same key to switch it on.
++-- Keys without a file keep the drawn UI/Icon fallback.
++Icons.Assets = {
++	Coins = "gold_coin.png",
++	Pearls = "blue_diamond.png",
++	Tokens = "premium_token.png",
++	Income = "upgrade_arrow.png",
++	Shop = "storefront.png",
++	Bag = "inventory_menu.png",
++	Upgrades = "upgrade_arrow.png",
++	Codex = "skill_book.png",
++	Quests = "quest_scroll.png",
++	Rebirth = "rebirth_symbol.png",
++	Leaderboards = "leaderboard_podium.png",
++	Players = "friends.png",
++	Settings = "settings_gear.png",
++	Trade = "trade_arrows.png",
++	Diver = "helmet.png",
++	Surface = "home.png",
++	Boost = "speed_boost.png",
++	Event = "event_ticket.png",
++	Sell = "stack_of_coins.png",
++	Take = "collect_hand.png",
++	Close = "close_button.png",
++	Check = "claim_checkmark.png",
++	Offline = "clock.png",
++	VIP = "vip_crown.png",
++	LuckySonar = "luck_clover.png",
++	ExtraSlots = "equipment_slot.png",
++	BigBag = "money_bag.png",
++	InstantSurface = "home.png",
++	SpeedFins = "speed_boot.png",
++	AutoCollect = "magnet_boost.png",
++	MutationScan = "magic_wand.png",
++	DeepDiverBundle = "helmet.png",
++	CollectorBundle = "crystal_chest.png",
++	PassPlus = "reward_star.png",
++	Premium = "premium_pass.png",
++	StarterPack = "wrapped_gift.png",
++	LuckPotion = "luck_potion.png",
++	MutationPotion = "mystery_potion.png",
++	ServerLuck = "luck_boost.png",
++	OxygenRefill = "stamina_potion.png",
++	TierSkip = "level_up.png",
++	Revive = "healing_cross.png",
++	GateRecharge = "energy_bolt.png",
++	TidePassPremium = "premium_pass.png",
++	CrateSingle = "wooden_chest.png",
++	CrateTriple = "gold_chest.png",
++	Track_Fins = "speed_boot.png",
++	Track_Bag = "money_bag.png",
++	Track_Salvage = "wrench.png",
++	Track_Offline = "hourglass.png",
++	Track_Gate = "locked_gate.png",
++	Track_Crab = "defense_shield.png",
++	Track_Alarm = "notification_bell.png",
++	Gate = "locked_gate.png",
++	reward = "reward_star.png",
++	coins = "stack_of_coins.png",
++	upgrade = "upgrade_arrow.png",
++	info = "information_symbol.png",
++}
++
+ -- Icon to draw for a key: an uploaded image id if one exists, else a drawn icon name
+ function Icons.Get(key: string): string
+ 	return Icons.Images[key] or Icons.Names[key] or "info"

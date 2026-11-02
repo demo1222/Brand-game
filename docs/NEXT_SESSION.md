@@ -150,6 +150,12 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
     readout, a chunky ON/OFF switch, and controls shown as key caps. `settingRow` takes a
     `reserve` width (the Diver window passes 112).
   - New drawn icons: `arrow`, `music`, `keyboard`.
+- **UI round 2, part A (icons):** `Icons.Assets` maps 58 of the 89 `Icons.Names` keys to the
+  147-icon set (`docs/images/Stylized_Game_Essentials_147_Icons.zip`, folder `All_Icons`). The
+  other 31 keep the drawn fallback. `Icons.Images` is still empty, so nothing changes in game
+  until the owner uploads the PNGs and pastes the IDs. The full table is in `docs/icon_map.md`.
+  Judgement calls to confirm: Pearls, Tokens, Diver, Shop, Bag. At 16 px, Coins and Tokens look
+  alike and Boost and GateRecharge look alike. Use 24 px or more in tabs.
 
 ## Still to do (priority order)
 
@@ -173,7 +179,7 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
 5. **Translations:** use Roblox auto-translation; keep strings in code short and plain.
 6. **Drag-and-drop** relics onto dock stands (master plan §18.2); today it's "Display on dock".
 7. **Art pass** (needs the owner's uploads):
-   - an icon set into `Icons.Images`
+   - the icon set into `Icons.Images` (mapping is in `Icons.Assets`; owner pastes the IDs)
    - relic meshes (change only `RelicArt.Build`)
    - audio IDs into `AudioController.SOUND_IDS` (includes `Coins`)
 8. **Pre-existing selene warnings** (unused variables) in DataService, DiveService,
