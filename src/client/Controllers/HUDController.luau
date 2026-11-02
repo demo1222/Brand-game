@@ -81,41 +81,56 @@ local RAIL_ITEMS = {
 }
 
 local RAIL_COLORS = Icons.Colors -- shared with the window title bands
-local RAIL_CELL = Vector2.new(60, 62) -- button 60×58 + 4 px lip
+local RAIL_CELL = Vector2.new(68, 82) -- medal 58 + label row; no raised button lip
 
--- Chunky game tile: dark face with a coloured icon (gold face for SHOP), pressable lip
+-- Icon-first rail: a big icon in a round medal with a colour ring, and a short label under it.
+-- The medal is the button. SHOP keeps a gold medal so it stays the one to notice.
 local function railButton(parent: Instance, key: string, label: string, order: number)
 	local isShop = key == "Shop"
 	local accent = RAIL_COLORS[key] or T.Accent
-	local container, face = Kit.GameButton(if isShop then T.Gold else T.PanelLight, Vector2.new(60, 58), {
+	local tile = New("TextButton", {
 		Name = key,
+		Text = "",
+		AutoButtonColor = false,
+		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(RAIL_CELL.X, RAIL_CELL.Y),
 		LayoutOrder = order,
 		Parent = parent,
 	})
-	Icon.new(Icons.Get(key), 26, if isShop then T.DarkText else accent, {
-		Weight = 2.6,
+	local medal = New("Frame", {
+		Name = "Medal",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 8),
-		ZIndex = 3,
-		Parent = face,
+		Position = UDim2.new(0.5, 0, 0, 0),
+		Size = UDim2.fromOffset(58, 58),
+		BackgroundColor3 = if isShop then T.Gold else Kit.Darken(accent, 0.55),
+		ZIndex = 2,
+		Parent = tile,
+	}, { New("UICorner", { CornerRadius = UDim.new(0.5, 0) }), Kit.Stroke(if isShop then T.Outline else accent, 3, 0) })
+	Icon.new(Icons.Get(key), 44, if isShop then T.DarkText else accent, {
+		Weight = 2.6,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		ZIndex = 4,
+		Parent = medal,
 	})
-	Kit.Label({
+	Kit.Title({
 		Text = label,
 		Font = T.Bold,
-		TextSize = 10,
-		TextColor3 = if isShop then T.DarkText else T.Text,
+		TextSize = 12,
+		TextColor3 = if isShop then T.Gold else T.Text,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -5),
-		Size = UDim2.new(1, 0, 0, 12),
+		Position = UDim2.new(0.5, 0, 1, 0),
+		Size = UDim2.new(1, 4, 0, 16),
 		TextWrapped = false,
 		ZIndex = 3,
-		Parent = face,
+		Parent = tile,
 	})
-	face.Activated:Connect(function()
+	tile.Activated:Connect(function()
+		bump(medal)
 		controllers.UIController.Toggle(key)
 	end)
-	return face
+	return tile
 end
 
 -- Round game button: solid colour, white chunky icon, pressable lip
@@ -457,12 +472,20 @@ local function build()
 		end
 	)
 	refs.flareText = flareText
-	roundAction(actions, Icons.Get("Surface"), "HOME · R", Color3.fromRGB(143, 180, 255), 60, UDim2.new(1, -150, 1, -160), function()
-		Net.RequestInstantSurface:FireServer()
-	end)
+	roundAction(
+		actions,
+		Icons.Get("Surface"),
+		"HOME · R",
+		Color3.fromRGB(143, 180, 255),
+		60,
+		UDim2.new(1, -150, 1, -160),
+		function()
+			Net.RequestInstantSurface:FireServer()
+		end
+	)
 	refs.upButton = roundAction(
 		actions,
-		"up",
+		Icons.Get("Up"),
 		"",
 		Color3.fromRGB(70, 92, 124),
 		56,

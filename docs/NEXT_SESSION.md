@@ -152,10 +152,18 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
   - New drawn icons: `arrow`, `music`, `keyboard`.
 - **UI round 2, part A (icons):** `Icons.Assets` maps 58 of the 89 `Icons.Names` keys to the
   147-icon set (`docs/images/Stylized_Game_Essentials_147_Icons.zip`, folder `All_Icons`). The
-  other 31 keep the drawn fallback. `Icons.Images` is still empty, so nothing changes in game
-  until the owner uploads the PNGs and pastes the IDs. The full table is in `docs/icon_map.md`.
-  Judgement calls to confirm: Pearls, Tokens, Diver, Shop, Bag. At 16 px, Coins and Tokens look
-  alike and Boost and GateRecharge look alike. Use 24 px or more in tabs.
+  other 31 keep the drawn fallback. The owner has uploaded the set and pasted the IDs into
+  `Icons.Images` (58 keys, 48 files). The full table is in `docs/icon_map.md`. Judgement calls
+  to confirm: Pearls, Tokens, Diver, Shop, Bag. At 16 px, Coins and Tokens look alike and Boost
+  and GateRecharge look alike.
+- **UI round 2, part A2 (rail and fallbacks):** the HUD rail is icon-first: a 58 px round medal
+  with a colour ring, a 44 px icon and a short label under it (no raised button face; SHOP keeps
+  a gold medal). Up uses the Up mapping. Lock, Vault, VaultLock, Alert, error and Up reuse
+  uploaded files. Sonar, Track_Sonar, Flare, Flares5, Clean, BarnacleClean and Track_Board map
+  to four new files (`target`, `fireball`, `trash_bin`, `wood_planks`), which need uploading and
+  an ID in `Icons.Images`. Still drawn, no close match: Down, Depth, Oxygen, DoubleOxygen,
+  Track_Oxygen, Display, Track_Display, Drone, Radio, Death, Huge, RenameDock, SkipPity, and the
+  zones Reef, Kelp, Wrecks, Abyss, Trench.
 
 ## Still to do (priority order)
 

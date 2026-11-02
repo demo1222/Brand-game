@@ -65,6 +65,13 @@ Icons.Images = {
 	coins = "rbxassetid://111731423038857",
 	upgrade = "rbxassetid://132195310374616",
 	info = "rbxassetid://89453560194597",
+	-- drawn fallbacks that now reuse an uploaded file (same IDs as the keys above)
+	Lock = "rbxassetid://74396665267697",
+	Vault = "rbxassetid://74396665267697",
+	VaultLock = "rbxassetid://74396665267697",
+	Alert = "rbxassetid://130978661751413",
+	error = "rbxassetid://130978661751413",
+	Up = "rbxassetid://132195310374616",
 }
 
 Icons.Names = {
@@ -229,6 +236,20 @@ Icons.Assets = {
 	coins = "stack_of_coins.png",
 	upgrade = "upgrade_arrow.png",
 	info = "information_symbol.png",
+	-- drawn fallbacks mapped to the closest icon in the set (new uploads marked in the report)
+	Lock = "locked_gate.png",
+	Vault = "locked_gate.png",
+	VaultLock = "locked_gate.png",
+	Alert = "notification_bell.png",
+	error = "notification_bell.png",
+	Up = "upgrade_arrow.png",
+	Sonar = "target.png", -- new upload
+	Track_Sonar = "target.png", -- new upload
+	Flare = "fireball.png", -- new upload
+	Flares5 = "fireball.png", -- new upload
+	Clean = "trash_bin.png", -- new upload
+	BarnacleClean = "trash_bin.png", -- new upload
+	Track_Board = "wood_planks.png", -- new upload
 }
 
 -- Icon to draw for a key: an uploaded image id if one exists, else a drawn icon name
