@@ -1,0 +1,137 @@
+diff --git a/docs/NEXT_SESSION.md b/docs/NEXT_SESSION.md
+index c860dc1..2166a88 100644
+--- a/docs/NEXT_SESSION.md
++++ b/docs/NEXT_SESSION.md
+@@ -193,6 +193,10 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
+   now 8 s, so the deepest board reaches its depth. Checked with a numeric run of the dive
+   formulas for levels 0 to 10 (3 start heights, 2 swim speeds): every dive enters the water and
+   reaches its depth. Not run in Studio.
++- **UI round 2, part C2 (board card):** the Diving Board card has two effect rows, inside
++  the existing 164 px card: "Launch 34 → 37 studs" and "Dive depth 20m → 35m". The plunge and the
++  launch keep their per-level steps from `Upgrades.Dive`. Not checked in Studio: the label
++  widths and truncation on phones.
+ 
+ ## Still to do (priority order)
+ 
+diff --git a/src/client/Controllers/MenuController.luau b/src/client/Controllers/MenuController.luau
+index d3df3db..f12e07d 100644
+--- a/src/client/Controllers/MenuController.luau
++++ b/src/client/Controllers/MenuController.luau
+@@ -585,14 +585,6 @@ local function trackPreview(id: string, lvl: number): (string, string, string)
+ 	elseif id == "Salvage" then
+ 		local t = D("SalvageSeconds") or B.SalvageSeconds
+ 		return "Salvage time", `{num(t)}s`, `{num(t * (1 - B.SalvagePerLevel))}s`
+-	elseif id == "Board" then
+-		-- the jump (studs/s up) and the plunge depth (m) both rise with each level
+-		local dive = Upgrades.Dive
+-		local d = D("DiveBoardDepth") or B.BoardDepth
+-		local launch = D("DiveLaunch") or dive.Launch
+-		return "Launch and dive",
+-			`{num(launch)} studs, {num(d)}m`,
+-			`{num(launch + dive.LaunchPerLevel)} studs, {num(d + B.BoardDepthPerLevel)}m`
+ 	elseif id == "Display" then
+ 		local n = D("StandCount") or B.Stands
+ 		return "Display stands", num(n), num(n + 1)
+@@ -613,6 +605,22 @@ local function trackPreview(id: string, lvl: number): (string, string, string)
+ 	return "Level", tostring(lvl), tostring(lvl + 1)
+ end
+ 
++-- Effect rows as {label, now, next}. The Diving Board has two rows: its launch and its plunge.
++local function effectRows(id: string, lvl: number): { { string } }
++	if id == "Board" then
++		local B = Upgrades.Base
++		local dive = Upgrades.Dive
++		local depth = S.Derived("DiveBoardDepth") or B.BoardDepth
++		local launch = S.Derived("DiveLaunch") or dive.Launch
++		return {
++			{ "Launch", num(launch), `{num(launch + dive.LaunchPerLevel)} studs` },
++			{ "Dive depth", `{num(depth)}m`, `{num(depth + B.BoardDepthPerLevel)}m` },
++		}
++	end
++	local label, now, nxt = trackPreview(id, lvl)
++	return { { label, now, nxt } }
++end
++
+ local function upgradeCard(parent: Instance, track, lvl: number, coins: number, order: number)
+ 	local maxed = lvl >= track.Max
+ 	local cost = if maxed then 0 else Upgrades.Cost(track.Id, lvl)
+@@ -666,40 +674,51 @@ local function upgradeCard(parent: Instance, track, lvl: number, coins: number,
+ 	})
+ 	setBar(lvl / track.Max)
+ 
+-	-- Effect line: "Dive time  60s -> 66s"
+-	local label, now, nxt = trackPreview(track.Id, lvl)
++	-- Effect rows: "Dive time  60s -> 66s". The Diving Board shows two rows (launch and depth).
++	local rows = effectRows(track.Id, lvl)
++	local rowH = if #rows > 1 then 20 else 26
+ 	local effect = New("Frame", {
+ 		BackgroundColor3 = T.PanelDark,
+ 		Position = UDim2.fromOffset(10, 68),
+-		Size = UDim2.new(1, -20, 0, 26),
++		Size = UDim2.new(1, -20, 0, rowH * #rows),
+ 		ZIndex = 3,
+ 		Parent = face,
+ 	}, { Kit.Corner(8), New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }) })
+-	Kit.Label({
+-		Text = label,
+-		Font = T.Bold,
+-		TextSize = 13,
+-		TextColor3 = T.Muted,
+-		Size = UDim2.fromScale(0.5, 1),
+-		TextWrapped = false,
+-		TextTruncate = Enum.TextTruncate.AtEnd,
+-		ZIndex = 4,
+-		Parent = effect,
+-	})
+-	Kit.Label({
+-		Text = if maxed then now else `{now}  <font color="#7BE3A0">→ {nxt}</font>`,
+-		RichText = true,
+-		Font = T.Bold,
+-		TextSize = 14,
+-		TextXAlignment = Enum.TextXAlignment.Right,
+-		AnchorPoint = Vector2.new(1, 0),
+-		Position = UDim2.fromScale(1, 0),
+-		Size = UDim2.fromScale(0.62, 1),
+-		TextWrapped = false,
+-		TextTruncate = Enum.TextTruncate.AtEnd,
+-		ZIndex = 4,
+-		Parent = effect,
+-	})
++	for i, row in rows do
++		local line = New("Frame", {
++			BackgroundTransparency = 1,
++			Position = UDim2.fromOffset(0, (i - 1) * rowH),
++			Size = UDim2.new(1, 0, 0, rowH),
++			ZIndex = 4,
++			Parent = effect,
++		})
++		Kit.Label({
++			Text = row[1],
++			Font = T.Bold,
++			TextSize = 13,
++			TextColor3 = T.Muted,
++			Size = UDim2.fromScale(0.5, 1),
++			TextWrapped = false,
++			TextTruncate = Enum.TextTruncate.AtEnd,
++			ZIndex = 4,
++			Parent = line,
++		})
++		local now, nxt = row[2], row[3]
++		Kit.Label({
++			Text = if maxed then now else `{now}  <font color="#7BE3A0">→ {nxt}</font>`,
++			RichText = true,
++			Font = T.Bold,
++			TextSize = 14,
++			TextXAlignment = Enum.TextXAlignment.Right,
++			AnchorPoint = Vector2.new(1, 0),
++			Position = UDim2.fromScale(1, 0),
++			Size = UDim2.fromScale(0.62, 1),
++			TextWrapped = false,
++			TextTruncate = Enum.TextTruncate.AtEnd,
++			ZIndex = 4,
++			Parent = line,
++		})
++	end
+ 
+ 	-- Price plate: green when you can afford it, gold MAX when done
+ 	Kit.PricePlate(

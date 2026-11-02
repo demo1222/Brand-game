@@ -1,0 +1,220 @@
+diff --git a/docs/NEXT_SESSION.md b/docs/NEXT_SESSION.md
+index a125a4d..c860dc1 100644
+--- a/docs/NEXT_SESSION.md
++++ b/docs/NEXT_SESSION.md
+@@ -184,6 +184,15 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
+   R6 gets arms and legs only: no waist, and the neck axes are not verified on R6. Splash: a
+   surface ripple now plays when you break the surface going up (`splash(pos, 12, 0.35)`). Not
+   checked in Studio: every item above, and the cost at 20 swimmers (not measured).
++- **UI round 2, part C (diving board):** the jump is one config block, `Upgrades.Dive`:
++  Launch 34 studs/s, Out 20 studs/s, Gravity 85, and +3 launch and +3 out per Board level. Level
++  10 is Launch 64 and Out 50. The plunge depth is unchanged (20 m + 15 m per level, to 170 m). The
++  skin steps every 2 levels: Plank, Varnish, Brass (level 4), Copper, Gold (level 8), Pearl. The
++  card reads "Launch and dive: 34 studs, 20m to 37 studs, 35m". The owner's example
++  ("Launch 34 to 40 studs, dive 65 m to 80 m") needs a two-line effect row. The glide timeout is
++  now 8 s, so the deepest board reaches its depth. Checked with a numeric run of the dive
++  formulas for levels 0 to 10 (3 start heights, 2 swim speeds): every dive enters the water and
++  reaches its depth. Not run in Studio.
+ 
+ ## Still to do (priority order)
+ 
+diff --git a/src/client/Controllers/MenuController.luau b/src/client/Controllers/MenuController.luau
+index afa87f0..d3df3db 100644
+--- a/src/client/Controllers/MenuController.luau
++++ b/src/client/Controllers/MenuController.luau
+@@ -586,8 +586,13 @@ local function trackPreview(id: string, lvl: number): (string, string, string)
+ 		local t = D("SalvageSeconds") or B.SalvageSeconds
+ 		return "Salvage time", `{num(t)}s`, `{num(t * (1 - B.SalvagePerLevel))}s`
+ 	elseif id == "Board" then
++		-- the jump (studs/s up) and the plunge depth (m) both rise with each level
++		local dive = Upgrades.Dive
+ 		local d = D("DiveBoardDepth") or B.BoardDepth
+-		return "Board plunge", `{num(d)}m`, `{num(d + B.BoardDepthPerLevel)}m`
++		local launch = D("DiveLaunch") or dive.Launch
++		return "Launch and dive",
++			`{num(launch)} studs, {num(d)}m`,
++			`{num(launch + dive.LaunchPerLevel)} studs, {num(d + B.BoardDepthPerLevel)}m`
+ 	elseif id == "Display" then
+ 		local n = D("StandCount") or B.Stands
+ 		return "Display stands", num(n), num(n + 1)
+@@ -742,6 +747,8 @@ local function renderUpgrades()
+ 			"SonarRange",
+ 			"SalvageSeconds",
+ 			"DiveBoardDepth",
++			"DiveLaunch",
++			"DiveOut",
+ 			"StandCount",
+ 			"OfflineRate",
+ 		}
+diff --git a/src/client/Controllers/SwimController.luau b/src/client/Controllers/SwimController.luau
+index 6bd8279..f177a36 100644
+--- a/src/client/Controllers/SwimController.luau
++++ b/src/client/Controllers/SwimController.luau
+@@ -41,14 +41,14 @@ type Dive = {
+ 	dir: Vector3,
+ 	right: Vector3,
+ 	v0: Vector3,
++	gravity: number,
+ 	depth: number,
+ 	entrySpeed: number,
+ 	entryT: number,
+ }
+ local dive: Dive? = nil
+-local DIVE_GRAVITY = 85
+-local DIVE_LAUNCH = Vector3.new(0, 34, 0) -- plus 20 studs/s out to sea
+-local DIVE_OUT = 20
++-- Launch, out-distance and gravity live in Upgrades.Dive. The Board upgrade raises launch and
++-- out per level, and the character's DiveLaunch / DiveOut attributes carry the owner's values.
+ 
+ SwimController.Depth = 0
+ 
+@@ -106,12 +106,15 @@ local function setup(char: Model)
+ 			if board and board:GetAttribute("DiveBoard") and not dive and linVel and align then
+ 				local look = board.CFrame.LookVector
+ 				local dir = Vector3.new(look.X, 0, look.Z).Unit
++				local launch = char:GetAttribute("DiveLaunch") or Upgrades.Dive.Launch
++				local out = char:GetAttribute("DiveOut") or Upgrades.Dive.Out
+ 				dive = {
+ 					phase = "air",
+ 					t0 = os.clock(),
+ 					dir = dir,
+ 					right = dir:Cross(Vector3.yAxis).Unit,
+-					v0 = dir * DIVE_OUT + DIVE_LAUNCH,
++					v0 = dir * out + Vector3.new(0, launch, 0),
++					gravity = Upgrades.Dive.Gravity,
+ 					depth = math.max(char:GetAttribute("DiveBoardDepth") or 20, 8),
+ 					entrySpeed = 0,
+ 					entryT = 0,
+@@ -180,7 +183,7 @@ local function step(dt: number)
+ 		local head: Vector3
+ 		if d.phase == "air" then
+ 			local t = now - d.t0
+-			local v = d.v0 + Vector3.new(0, -DIVE_GRAVITY * t, 0)
++			local v = d.v0 + Vector3.new(0, -d.gravity * t, 0)
+ 			-- the head swings from upright to leading along the arc, and tips toward straight
+ 			-- down while falling, so the entry is near-vertical like a real dive
+ 			local fall = math.clamp(-v.Y / 40, 0, 1)
+@@ -210,7 +213,7 @@ local function step(dt: number)
+ 			local swimSpeed = char:GetAttribute("SwimSpeed") or Upgrades.Base.SwimSpeed
+ 			local speed = d.entrySpeed + (swimSpeed * 1.3 - d.entrySpeed) * ease
+ 			velocity = velocity:Lerp(head * speed, math.clamp(dt * 10, 0, 1))
+-			if progress >= 1 or now - d.entryT > 5 then
++			if progress >= 1 or now - d.entryT > 8 then -- 8 s: the deepest board (level 10) needs up to about 5 s at base swim speed
+ 				dive = nil
+ 				align.Responsiveness = 12
+ 				-- normal swimming takes over next frame with this velocity (no jolt)
+diff --git a/src/server/Services/DockService.luau b/src/server/Services/DockService.luau
+index 2432087..77dd95a 100644
+--- a/src/server/Services/DockService.luau
++++ b/src/server/Services/DockService.luau
+@@ -142,11 +142,11 @@ function DockService.RefreshDock(player: Player)
+ 		renderStand(stand, data.Vault[tostring(i)], i <= vaultCount, mult, true)
+ 	end
+ 	dock.GatePrompt.Enabled = (data.Upgrades.Gate or 0) > 0
+-	-- Diving board skin follows the owner's Diving Board level: wood → brass → gold
+-	local boardLvl = data.Upgrades.Board or 0
++	-- Diving board skin follows the owner's Diving Board level (Upgrades.Dive.Skins)
+ 	if dock.Board then
+-		dock.Board.Color = if boardLvl >= 8 then Color3.fromRGB(245, 192, 74) elseif boardLvl >= 4 then Color3.fromRGB(200, 150, 80) else Color3.fromRGB(120, 92, 64)
+-		dock.Board.Material = if boardLvl >= 4 then Enum.Material.Metal else Enum.Material.WoodPlanks
++		local skin = Formulas.BoardSkin(data.Upgrades.Board or 0)
++		dock.Board.Color = skin.Color
++		dock.Board.Material = Enum.Material[skin.Material]
+ 	end
+ 	local name = if data.DockName ~= "" then data.DockName else `{player.DisplayName}'s Dock`
+ 	local vip = if services.MonetizationService.Owns(player, "VIP") then "[VIP] " else ""
+diff --git a/src/server/Services/UpgradeService.luau b/src/server/Services/UpgradeService.luau
+index 2232f10..2fced47 100644
+--- a/src/server/Services/UpgradeService.luau
++++ b/src/server/Services/UpgradeService.luau
+@@ -32,6 +32,8 @@ function UpgradeService.Derived(player: Player)
+ 		MaxOxygen = Formulas.MaxOxygen(data, passes),
+ 		SwimSpeed = Formulas.SwimSpeed(data, passes),
+ 		DiveBoardDepth = Formulas.DiveBoardDepth(data),
++		DiveLaunch = Formulas.DiveLaunch(data),
++		DiveOut = Formulas.DiveOut(data),
+ 		BagSize = Formulas.BagSize(data, passes),
+ 		StandCount = Formulas.StandCount(data, passes),
+ 		VaultCount = Formulas.VaultCount(data, passes),
+@@ -60,6 +62,8 @@ function UpgradeService.PushDerived(player: Player)
+ 		char:SetAttribute("SwimSpeed", d.SwimSpeed)
+ 		char:SetAttribute("SalvageSeconds", d.SalvageSeconds)
+ 		char:SetAttribute("DiveBoardDepth", d.DiveBoardDepth)
++		char:SetAttribute("DiveLaunch", d.DiveLaunch)
++		char:SetAttribute("DiveOut", d.DiveOut)
+ 	end
+ end
+ 
+diff --git a/src/shared/Config/Upgrades.luau b/src/shared/Config/Upgrades.luau
+index 43dc23f..2fb73e8 100644
+--- a/src/shared/Config/Upgrades.luau
++++ b/src/shared/Config/Upgrades.luau
+@@ -13,7 +13,7 @@ local Upgrades = {
+ 		{ Id = "Gate", Name = "Laser Gate", Max = 5, Base = 2000, Growth = 2, Desc = "Unlock / +10s gate duration" },
+ 		{ Id = "Crab", Name = "Guard Crab", Max = 5, Base = 2000, Growth = 2, Desc = "Slows intruders (6% per level)" },
+ 		{ Id = "Alarm", Name = "Alarm Range", Max = 5, Base = 2000, Growth = 2, Desc = "+10 studs alert range" },
+-		{ Id = "Board", Name = "Diving Board", Max = 10, Base = 300, Growth = 1.7, Desc = "+15m launch depth off your dock's board" },
++		{ Id = "Board", Name = "Diving Board", Max = 10, Base = 300, Growth = 1.7, Desc = "Higher jump, +15m plunge off your dock's board" },
+ 	},
+ 	ById = {},
+ 
+@@ -27,6 +27,31 @@ local Upgrades = {
+ 	},
+ 	SuitIndex = {},
+ 
++	-- Diving board jump (SwimController). Every Board level adds to the jump, and the plunge
++	-- depth still comes from Base.BoardDepth (+BoardDepthPerLevel).
++	--   Launch:  upward speed off the board, in studs/s. Height gained = Launch^2 / (2 * Gravity).
++	--   Out:     horizontal speed out to sea, in studs/s. Out-distance = Out x time in the air.
++	--   Gravity: studs/s^2 during the arc.
++	-- Level 0 is the original jump: Launch 34, Out 20. Level 10 is Launch 64 and Out 50.
++	-- The skin steps every SkinEvery levels through Skins (level 0-1 Plank, 2-3 Varnish,
++	-- 4-5 Brass, 6-7 Copper, 8-9 Gold, 10 Pearl).
++	Dive = {
++		Gravity = 85,
++		Launch = 34,
++		LaunchPerLevel = 3,
++		Out = 20,
++		OutPerLevel = 3,
++		SkinEvery = 2,
++		Skins = {
++			{ Name = "Plank", Color = Color3.fromRGB(120, 92, 64), Material = "WoodPlanks" },
++			{ Name = "Varnish", Color = Color3.fromRGB(165, 118, 70), Material = "WoodPlanks" },
++			{ Name = "Brass", Color = Color3.fromRGB(200, 150, 80), Material = "Metal" },
++			{ Name = "Copper", Color = Color3.fromRGB(205, 128, 84), Material = "Metal" },
++			{ Name = "Gold", Color = Color3.fromRGB(245, 192, 74), Material = "Metal" },
++			{ Name = "Pearl", Color = Color3.fromRGB(236, 238, 246), Material = "Marble" },
++		},
++	},
++
+ 	-- Base stats before upgrades/passes
+ 	Base = {
+ 		OxygenSeconds = 60,
+diff --git a/src/shared/Formulas.luau b/src/shared/Formulas.luau
+index f43387c..d4aa7d1 100644
+--- a/src/shared/Formulas.luau
++++ b/src/shared/Formulas.luau
+@@ -32,6 +32,23 @@ function Formulas.DiveBoardDepth(data): number
+ 	return B.BoardDepth + lvl(data, "Board") * B.BoardDepthPerLevel
+ end
+ 
++-- Launch: upward speed off the board, studs/s (Upgrades.Dive)
++function Formulas.DiveLaunch(data): number
++	return Upgrades.Dive.Launch + lvl(data, "Board") * Upgrades.Dive.LaunchPerLevel
++end
++
++-- Out: horizontal speed out to sea, studs/s (Upgrades.Dive)
++function Formulas.DiveOut(data): number
++	return Upgrades.Dive.Out + lvl(data, "Board") * Upgrades.Dive.OutPerLevel
++end
++
++-- The board skin for a Board level (Upgrades.Dive.Skins, one step every SkinEvery levels)
++function Formulas.BoardSkin(level: number)
++	local dive = Upgrades.Dive
++	local i = math.min(math.floor(level / dive.SkinEvery) + 1, #dive.Skins)
++	return dive.Skins[i]
++end
++
+ function Formulas.SwimSpeed(data, passes): number
+ 	local s = B.SwimSpeed * (1 + lvl(data, "Fins") * B.FinsPerLevel)
+ 	if passes and passes.SpeedFins then

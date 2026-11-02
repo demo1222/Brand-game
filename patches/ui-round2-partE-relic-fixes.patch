@@ -1,0 +1,206 @@
+diff --git a/docs/NEXT_SESSION.md b/docs/NEXT_SESSION.md
+index 2166a88..33db00b 100644
+--- a/docs/NEXT_SESSION.md
++++ b/docs/NEXT_SESSION.md
+@@ -197,6 +197,14 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
+   the existing 164 px card: "Launch 34 → 37 studs" and "Dive depth 20m → 35m". The plunge and the
+   launch keep their per-level steps from `Upgrades.Dive`. Not checked in Studio: the label
+   widths and truncation on phones.
++- **UI round 2, part E (relic fixes):** nine relics reworked in `shared/RelicArt`:
++  R003 snorkel (thicker, banded), R013 Reef Idol (new seated idol, `reefidol`), R027 cannonball
++  (iron band, rust patch), R036 figurehead (bigger head, eyes on the face), R039 pebble (glowing
++  vein), R045 totem (three-spike crown), R052 tooth (rounded root), R057 Vent Idol (new basalt
++  idol, `ventidol`), R059 gauntlet (shorter wrist, proportioned fingers). Checked by reading only
++  (the block structure). Not rendered: three.js and Lune were not available. Render the sheet
++  and run `lune run tools/relic_art_check` before the owner judges them. The mesh hook and
++  export spec are still proposals.
+ 
+ ## Still to do (priority order)
+ 
+diff --git a/src/shared/RelicArt.luau b/src/shared/RelicArt.luau
+index 68ce744..6e54f90 100644
+--- a/src/shared/RelicArt.luau
++++ b/src/shared/RelicArt.luau
+@@ -49,7 +49,7 @@ RelicArt.Map = {
+ 	R010 = { kind = "clam", main = rgb(250, 190, 200), accent = rgb(255, 250, 240), glow = rgb(255, 245, 225) },
+ 	R011 = { kind = "mask", main = rgb(250, 210, 60), accent = rgb(40, 40, 48) },
+ 	R012 = { kind = "comb", main = rgb(245, 238, 220), accent = rgb(110, 220, 210), mat = "Marble" },
+-	R013 = { kind = "idol", main = rgb(90, 200, 170), accent = rgb(255, 200, 80), glow = rgb(120, 255, 230), mat = "Slate" },
++	R013 = { kind = "reefidol", main = rgb(90, 200, 170), accent = rgb(255, 200, 80), glow = rgb(120, 255, 230), mat = "Slate" },
+ 	-- Zone 2 · Kelp Twilight
+ 	R014 = { kind = "lantern", main = rgb(70, 90, 60), accent = rgb(110, 140, 80), glow = rgb(90, 255, 120), mat = "Metal" },
+ 	R015 = { kind = "key", main = rgb(232, 222, 196), accent = rgb(190, 175, 150) },
+@@ -84,7 +84,7 @@ RelicArt.Map = {
+ 	R037 = { kind = "cutlass", main = rgb(185, 190, 200), accent = rgb(80, 30, 110), glow = rgb(190, 70, 255), mat = "Metal" },
+ 	R038 = { kind = "bell", main = rgb(255, 190, 70), accent = rgb(120, 220, 210), mat = "Foil", big = true },
+ 	-- Zone 4 · The Abyss
+-	R039 = { kind = "pebble", main = rgb(130, 255, 220), accent = rgb(60, 140, 130), mat = "Neon" },
++	R039 = { kind = "pebble", main = rgb(130, 255, 220), accent = rgb(60, 140, 130), glow = rgb(200, 255, 240), mat = "Neon" },
+ 	R040 = { kind = "lure", main = rgb(70, 60, 80), accent = rgb(120, 90, 110), glow = rgb(255, 245, 140) },
+ 	R041 = { kind = "lantern", main = rgb(30, 40, 60), accent = rgb(255, 196, 64), glow = rgb(80, 220, 255), mat = "Metal" },
+ 	R042 = { kind = "pearl", main = rgb(20, 20, 30), accent = rgb(90, 80, 110), glow = rgb(170, 120, 255) },
+@@ -109,7 +109,7 @@ RelicArt.Map = {
+ 	R054 = { kind = "tablet", main = rgb(120, 115, 105), accent = rgb(80, 75, 70), glow = rgb(90, 220, 255), mat = "Slate" },
+ 	R055 = { kind = "diamond", main = rgb(200, 240, 255), accent = rgb(255, 255, 255), mat = "Glass", trans = 0.15 },
+ 	R056 = { kind = "tooth", main = rgb(170, 230, 120), accent = rgb(40, 70, 30), glow = rgb(150, 255, 60), fang = true },
+-	R057 = { kind = "idol", main = rgb(150, 35, 30), accent = rgb(60, 20, 20), glow = rgb(255, 80, 30), mat = "Basalt" },
++	R057 = { kind = "ventidol", main = rgb(150, 35, 30), accent = rgb(60, 20, 20), glow = rgb(255, 80, 30), mat = "Basalt" },
+ 	R058 = {
+ 		kind = "crown",
+ 		main = rgb(255, 196, 64),
+@@ -226,10 +226,13 @@ R.bottle = function(B, P)
+ end
+ 
+ R.snorkel = function(B)
+-	B.cylY(2.8, 0.38, cf(0, 0.3, 0), "main")
+-	B.ball(0.38, cf(0, -1.1, 0), "main")
+-	B.cyl(0.85, 0.38, cf(0.42, -1.1, 0), "main")
+-	B.box(0.3, 0.6, 0.7, cf(0.95, -1.1, 0), "accent")
++	B.cylY(2.8, 0.48, cf(0, 0.3, 0), "main")
++	B.cylY(0.16, 0.54, cf(0, 1.0, 0), "accent")
++	B.cylY(0.16, 0.54, cf(0, 0.2, 0), "accent")
++	B.cylY(0.16, 0.54, cf(0, -0.6, 0), "accent")
++	B.ball(0.48, cf(0, -1.1, 0), "main")
++	B.cyl(0.85, 0.42, cf(0.42, -1.1, 0), "main")
++	B.ball(0.5, cf(0.95, -1.1, 0), "dark")
+ 	B.box(0.5, 0.35, 0.5, cf(0, 1.8, 0), "accent")
+ 	B.box(0.08, 0.7, 0.42, cf(0.02, 0.6, 0.02, 0, 0, 25), "dark")
+ end
+@@ -330,17 +333,33 @@ R.comb = function(B)
+ 	end
+ end
+ 
+-R.idol = function(B)
+-	B.box(1.6, 0.4, 1.2, cf(0, -1.7, 0), "accent")
+-	B.box(1.3, 1.8, 0.95, cf(0, -0.6, 0), "main")
+-	B.box(1.7, 1.2, 1.15, cf(0, 0.85, 0), "main")
+-	B.box(1.9, 0.25, 1.25, cf(0, 1.55, 0), "accent")
+-	B.ball(0.32, cf(-0.38, 1.0, 0.55), "glow")
+-	B.ball(0.32, cf(0.38, 1.0, 0.55), "glow")
+-	B.box(0.8, 0.18, 0.1, cf(0, 0.5, 0.58), "dark")
+-	B.box(0.35, 1.0, 0.4, cf(-0.85, -0.4, 0, 0, 0, 12), "main")
+-	B.box(0.35, 1.0, 0.4, cf(0.85, -0.4, 0, 0, 0, -12), "main")
+-	B.ball(0.4, cf(0, -0.5, 0.45), "accent")
++R.reefidol = function(B)
++	B.box(1.8, 0.35, 1.4, cf(0, -1.6, 0), "accent")
++	B.ellip(1.5, 1.8, 1.15, cf(0, -0.55, 0), "main")
++	B.ball(1.25, cf(0, 0.95, 0), "main")
++	B.box(0.5, 0.12, 0.1, cf(0, 0.6, 0.6), "dark")
++	B.ball(0.24, cf(-0.22, 1.08, 0.55), "glow")
++	B.ball(0.24, cf(0.22, 1.08, 0.55), "glow")
++	B.spike(0.36, 1.0, 0.9, cf(0, 1.85, 0), "accent")
++	B.spike(0.3, 0.8, 0.7, cf(-0.5, 1.45, 0, 0, 0, 30), "accent")
++	B.spike(0.3, 0.8, 0.7, cf(0.5, 1.45, 0, 0, 0, -30), "accent")
++	B.ellip(0.5, 1.2, 0.5, cf(-1.0, -0.45, 0, 0, 0, 18), "main")
++	B.ellip(0.5, 1.2, 0.5, cf(1.0, -0.45, 0, 0, 0, -18), "main")
++	B.ball(0.3, cf(0, -0.5, 0.55), "glow")
++end
++
++-- Vent Idol: a basalt idol with a lava mouth and cracks (was a box stack)
++R.ventidol = function(B)
++	B.box(1.9, 0.4, 1.5, cf(0, -1.8, 0), "accent")
++	B.ellip(1.6, 2.0, 1.2, cf(0, -0.7, 0), "main")
++	B.ellip(1.25, 1.2, 1.0, cf(0, 0.9, 0), "main")
++	B.box(0.9, 0.26, 0.12, cf(0, 0.62, 0.44), "glow")
++	B.ball(0.26, cf(-0.28, 1.05, 0.42), "glow")
++	B.ball(0.26, cf(0.28, 1.05, 0.42), "glow")
++	B.spike(0.3, 1.0, 0.7, cf(-0.5, 1.7, 0, 0, 0, 25), "accent")
++	B.spike(0.3, 1.0, 0.7, cf(0.5, 1.7, 0, 0, 0, -25), "accent")
++	B.spike(0.36, 1.1, 0.8, cf(0, 1.75, 0), "main")
++	B.box(0.08, 1.2, 0.06, cf(0.35, -0.5, 0.47, 0, 0, 14), "glow")
+ end
+ 
+ R.lantern = function(B, P)
+@@ -509,11 +528,13 @@ end
+ 
+ R.cannonball = function(B)
+ 	B.ball(2.4, cf(), "main")
++	B.ring(1.2, 0.14, 16, cf(), "accent")
+ 	B.cylY(0.25, 0.45, cf(0, 1.15, 0), "dark")
+ 	B.ring(0.32, 0.12, 8, cf(0, 1.3, 0, 90, 0, 0), "accent")
+ 	B.ball(0.9, cf(-1.2, -0.85, -0.6), "main")
+ 	B.ball(0.9, cf(1.25, -0.9, -0.4), "main")
+ 	B.ellip(0.4, 0.25, 0.1, cf(-0.45, 0.5, 1.12, 0, 0, 30), "white", nil, 0.6)
++	B.ellip(0.7, 0.5, 0.08, cf(0.55, -0.45, 1.05, 0, 0, -25), "accent")
+ end
+ 
+ R.porthole = function(B)
+@@ -603,11 +624,11 @@ end
+ R.figurehead = function(B)
+ 	B.box(0.55, 3.2, 0.55, cf(-0.6, 0.0, -0.4, 0, 0, -18), "wood")
+ 	B.ellip(1.4, 1.8, 1.0, cf(0, -0.55, 0), "accent")
+-	B.ball(1.0, cf(0.05, 0.75, 0.05), "main")
+-	B.ellip(1.1, 1.3, 0.8, cf(-0.15, 0.7, -0.25), "gold")
++	B.ball(1.3, cf(0.05, 0.85, 0.05), "main")
++	B.ellip(1.4, 1.6, 0.9, cf(-0.1, 0.8, -0.25), "gold")
+ 	B.ellip(0.35, 1.1, 0.3, cf(0.75, -0.35, 0.1, 0, 0, 30), "main")
+-	B.ball(0.12, cf(-0.15, 0.85, 0.5), "black")
+-	B.ball(0.12, cf(0.22, 0.85, 0.5), "black")
++	B.ball(0.16, cf(-0.3, 0.95, 0.6), "black")
++	B.ball(0.16, cf(0.42, 0.95, 0.6), "black")
+ 	B.cylY(0.25, 1.5, cf(0, -1.5, 0), "gold")
+ end
+ 
+@@ -623,9 +644,9 @@ R.cutlass = function(B, P)
+ end
+ 
+ R.pebble = function(B)
+-	B.ellip(1.9, 1.25, 1.55, cf(0, 0.1, 0, 0, 0, 10), "main")
+-	B.ellip(0.9, 0.6, 0.8, cf(-1.1, -0.45, 0.3), "main")
+-	B.ellip(0.7, 0.5, 0.6, cf(1.05, -0.5, 0.2), "accent")
++	B.ellip(2.1, 1.5, 1.7, cf(0, 0.1, 0, 0, 0, 10), "main")
++	B.box(0.14, 1.3, 0.8, cf(0.25, 0.2, 0.8, 0, 0, 30), "glow")
++	B.ellip(0.95, 0.65, 0.85, cf(-1.2, -0.45, 0.25), "accent")
+ end
+ 
+ R.lure = function(B)
+@@ -682,7 +703,9 @@ R.totem = function(B)
+ 	end
+ 	B.spike(0.3, 1.0, 1.0, cf(-1.05, 1.0, 0, 0, 0, 55), "accent")
+ 	B.spike(0.3, 1.0, 1.0, cf(1.05, 1.0, 0, 0, 0, -55), "accent")
+-	B.spike(0.6, 0.6, 1.2, cf(0, 2.0, 0), "main")
++	B.spike(0.36, 1.2, 0.8, cf(0, 2.0, 0), "accent")
++	B.spike(0.3, 0.8, 0.5, cf(-0.5, 1.75, 0, 0, 0, 22), "main")
++	B.spike(0.3, 0.8, 0.5, cf(0.5, 1.75, 0, 0, 0, -22), "main")
+ end
+ 
+ R.squid = function(B)
+@@ -785,8 +808,8 @@ R.tooth = function(B, P)
+ 		B.box(1.0, 0.25, 0.5, cf(0, 0.38, 0), "accent")
+ 	else
+ 		B.spike(0.7, 3.2, 1.25, cf(0, -0.25, 0, 0, 0, 175), "main")
+-		B.box(1.25, 0.8, 0.7, cf(0, 1.55, 0), "accent")
+-		B.box(1.0, 0.6, 0.6, cf(0, 2.05, 0), "accent")
++		B.ellip(1.35, 1.0, 0.9, cf(0, 1.5, 0), "accent")
++		B.ellip(1.0, 0.7, 0.8, cf(0, 2.0, 0), "accent")
+ 		B.box(0.08, 1.4, 0.72, cf(0.15, -0.2, 0, 0, 0, 10), "glow")
+ 	end
+ end
+@@ -820,17 +843,18 @@ R.diamond = function(B, P)
+ end
+ 
+ R.gauntlet = function(B)
+-	B.cylY(1.6, 1.3, cf(0, -1.0, 0), "main")
+-	B.cylY(0.3, 1.45, cf(0, -1.75, 0), "accent")
+-	B.cylY(0.2, 1.4, cf(0, -0.3, 0), "accent")
+-	B.box(1.5, 1.05, 0.85, cf(0, 0.4, 0), "main")
++	B.cylY(0.9, 1.3, cf(0, -0.9, 0), "main")
++	B.cylY(0.22, 1.5, cf(0, -1.4, 0), "accent")
++	B.cylY(0.2, 1.4, cf(0, -0.42, 0), "accent")
++	B.box(1.6, 0.95, 0.9, cf(0, 0.1, 0), "main")
+ 	for i = 0, 3 do
+-		B.box(0.3, 0.95, 0.38, cf(-0.53 + i * 0.355, 1.35, 0.05, 0, 0, -6 + i * 4), "main")
+-		B.box(0.32, 0.18, 0.4, cf(-0.53 + i * 0.355, 0.95, 0.06), "accent")
++		local x = -0.6 + i * 0.4
++		B.box(0.32, 1.1, 0.4, cf(x, 1.05, 0.04, 0, 0, -4 + i * 2.5), "main")
++		B.box(0.36, 0.18, 0.46, cf(x, 0.6, 0.08), "accent")
+ 	end
+-	B.box(0.35, 0.8, 0.4, cf(-0.9, 0.55, 0.15, 0, 0, 40), "main")
+-	B.ball(0.35, cf(0, 0.4, 0.42), "glow")
+-	B.box(0.08, 1.0, 0.05, cf(0, -1.0, 0.66), "glow")
++	B.box(0.38, 0.85, 0.4, cf(-0.95, 0.35, 0.15, 0, 0, 38), "main")
++	B.ball(0.35, cf(0, 0.1, 0.5), "glow")
++	B.box(0.08, 1.0, 0.05, cf(0, -0.9, 0.66), "glow")
+ end
+ 
+ R.heart = function(B)

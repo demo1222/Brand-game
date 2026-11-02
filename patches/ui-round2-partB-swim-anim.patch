@@ -1,0 +1,488 @@
+diff --git a/docs/NEXT_SESSION.md b/docs/NEXT_SESSION.md
+index aba8bc4..a125a4d 100644
+--- a/docs/NEXT_SESSION.md
++++ b/docs/NEXT_SESSION.md
+@@ -177,6 +177,13 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
+   in `docs/images/icons/generated/temp/` are not used and can be deleted. At 16 px, Coins and
+   Tokens look alike, Codex, Leaderboards and Rebirth lose detail, and some keys share one file
+   (Lock, Vault, Gate and Track_Gate use `locked_gate`). Check 24 px as the minimum in tabs.
++- **UI round 2, part B (swim animation, `SwimAnimController`):** the freestyle now has a pull
++  and a recovery per arm, with an elbow bend in the pull. The torso rolls about its spine (the
++  Waist Y axis), and the pulling shoulder drops. The head turns to breathe on every second stroke,
++  held for 0.4 s. The kick shares the stroke phase (6-beat). Pose tables are built once per rig.
++  R6 gets arms and legs only: no waist, and the neck axes are not verified on R6. Splash: a
++  surface ripple now plays when you break the surface going up (`splash(pos, 12, 0.35)`). Not
++  checked in Studio: every item above, and the cost at 20 swimmers (not measured).
+ 
+ ## Still to do (priority order)
+ 
+diff --git a/src/client/Controllers/SwimAnimController.luau b/src/client/Controllers/SwimAnimController.luau
+index 3dffab2..4a2200c 100644
+--- a/src/client/Controllers/SwimAnimController.luau
++++ b/src/client/Controllers/SwimAnimController.luau
+@@ -1,13 +1,20 @@
+ -- SwimAnimController (UI/Visual Overhaul Plan, Phase 4): procedural swim animation.
+ -- Every client animates EVERY character that is underwater (the swim pose and body pitch
+ -- come from SwimController's AlignOrientation, which replicates through physics). Limb motion
+--- is written to Motor6D.Transform after the Animator runs (RunService.Stepped), so it needs no
+--- uploaded animation assets and works for R15 and R6 rigs.
+---   Moving: freestyle arm strokes + flutter kick, faster with speed.
++-- is written to Motor6D.Transform in RunService.Stepped, so it needs no uploaded animation
++-- assets and works for R15 and R6 rigs.
++--   Moving: freestyle. Each arm has a pull (the hand sweeps in under the chest, elbow bent
++--           mid-pull) and a high recovery. The torso rolls about its spine toward the pulling
++--           arm. The head turns to breathe every second stroke. The legs do a 6-beat kick.
+ --   Idle:   treading water: sculling arms, slow egg-beater legs.
+---   Diving: streamlined (arms locked overhead, legs together, small dolphin kick), shown in the
+---           air when the body is tilted off a diving board, and underwater while plunging
+---           steeply. Read from the body's tilt and speed, so every client sees it.
++--   Diving: streamlined (arms overhead, legs together, small dolphin kick), shown in the air when
++--           the body is tilted off a diving board, and underwater while plunging steeply. Read
++--           from the body's tilt and speed, so every client sees it.
++--   R6:     arms and legs only. R6 has no Waist, and its Neck axes are not verified, so there is
++--           no roll and no breath turn on R6.
++-- Pose tables are built once per rig (names, idle, moving, dive). Each frame only overwrites
++-- their entries, so no table is allocated in the loop. CFrame values are still made each frame
++-- because the angles change every frame.
+ 
+ local Players = game:GetService("Players")
+ local RunService = game:GetService("RunService")
+@@ -19,15 +26,27 @@ local World = require(Shared.Config.World)
+ local SwimAnimController = {}
+ local SURFACE = World.WaterSurfaceY
+ local rad = math.rad
++local TAU = math.pi * 2
++local A = CFrame.Angles
++local IDENTITY = CFrame.new()
++local ARMS_OVERHEAD = A(math.pi, 0, 0)
++local BREATH_HOLD = 0.4 -- seconds the head stays turned to breathe
++local BREATH_TURN = rad(50)
+ 
+ type Rig = {
+ 	r15: boolean,
++	names: { string },
+ 	joints: { [string]: Motor6D },
+-	phase: number,
+-	blend: number,
+-	stream: number,
+-	posed: boolean,
++	idlePose: { [string]: CFrame },
++	movePose: { [string]: CFrame },
++	divePose: { [string]: CFrame },
++	phase: number, -- stroke phase, 0..TAU. Left arm strokes once per turn, right arm half a turn later
++	blend: number, -- 0 treading, 1 full freestyle
++	dive: number, -- 0 normal, 1 streamlined
+ 	swimming: boolean,
++	posed: boolean, -- true while any pose is written to the joints
++	breath: number, -- seconds into a breath turn, or -1 when not breathing
++	breathSide: number, -- +1 or -1
+ 	bubbles: ParticleEmitter?,
+ }
+ local rigs: { [Model]: Rig } = setmetatable({}, { __mode = "k" }) :: any
+@@ -44,15 +63,36 @@ local R15_JOINTS = {
+ 	Waist = "UpperTorso",
+ 	Neck = "Head",
+ }
+-local R6_JOINTS = { "Left Shoulder", "Right Shoulder", "Left Hip", "Right Hip", "Neck" }
++local R15_NAMES = {
++	"LeftShoulder",
++	"RightShoulder",
++	"LeftElbow",
++	"RightElbow",
++	"LeftHip",
++	"RightHip",
++	"LeftKnee",
++	"RightKnee",
++	"Waist",
++	"Neck",
++}
++local R6_NAMES = { "Right Shoulder", "Left Shoulder", "Right Hip", "Left Hip" }
++
++local function newPose(names: { string }): { [string]: CFrame }
++	local pose = {}
++	for _, name in names do
++		pose[name] = IDENTITY
++	end
++	return pose
++end
+ 
+ local function buildRig(char: Model): Rig?
+ 	local hum = char:FindFirstChildOfClass("Humanoid")
+ 	if not hum then
+ 		return nil
+ 	end
+-	local joints = {}
+ 	local r15 = hum.RigType == Enum.HumanoidRigType.R15
++	local names = if r15 then R15_NAMES else R6_NAMES
++	local joints = {}
+ 	if r15 then
+ 		for joint, partName in R15_JOINTS do
+ 			local part = char:FindFirstChild(partName)
+@@ -63,7 +103,7 @@ local function buildRig(char: Model): Rig?
+ 		end
+ 	else
+ 		local torso = char:FindFirstChild("Torso")
+-		for _, name in R6_JOINTS do
++		for _, name in R6_NAMES do
+ 			local m = torso and torso:FindFirstChild(name)
+ 			if m and m:IsA("Motor6D") then
+ 				joints[name] = m
+@@ -95,93 +135,171 @@ local function buildRig(char: Model): Rig?
+ 	end
+ 	return {
+ 		r15 = r15,
++		names = names,
+ 		joints = joints,
+-		phase = math.random() * 6,
++		idlePose = newPose(names),
++		movePose = newPose(names),
++		divePose = newPose(names),
++		phase = math.random() * TAU,
+ 		blend = 0,
+-		stream = 0,
+-		posed = false,
++		dive = 0,
+ 		swimming = false,
++		posed = false,
++		breath = -1,
++		breathSide = 1,
+ 		bubbles = bubbles,
+ 	}
+ end
+ 
+--- Each pose function returns { joint = {idleCFrame, movingCFrame} }. The two are blended
+--- with CFrame:Lerp, which stays continuous through the full arm windmill (a plain
+--- angle * blend would jump as the stroke angle wraps).
+-local function apply(rig: Rig, pose, move: number, stream, streamAmount: number)
+-	for name, pair in pose do
+-		local m = rig.joints[name]
+-		if m then
+-			local cf = pair[1]:Lerp(pair[2], move)
+-			local st = stream[name]
+-			m.Transform = if st and streamAmount > 0.001 then cf:Lerp(st, streamAmount) else cf
+-		end
+-	end
++local function lerp(a: number, b: number, t: number): number
++	return a + (b - a) * t
+ end
+ 
+-local A = CFrame.Angles
++local function smooth(x: number): number
++	return x * x * (3 - 2 * x)
++end
++
++-- One arm's stroke shape. u runs 0..1 through one cycle, and 0 is the reach at the front.
++--   Pull (u 0..0.5): the hand sweeps from the front, under the chest, back to the hip. The elbow
++--                    bends most in the middle of the pull.
++--   Recovery (u 0.5..1): the arm comes out high with the elbow bent, then reaches forward again.
++-- Returns swing (shoulder X, positive is forward), side (shoulder Z, positive is inward for the
++-- left arm) and the elbow bend. Every end point matches the next segment, so the motion has no
++-- jumps at the wrap.
++local function strokeArm(u: number): (number, number, number)
++	if u < 0.5 then
++		local k = u * 2
++		local e = smooth(k)
++		return lerp(rad(75), rad(-40), e), lerp(rad(-25), rad(5), e), rad(25 + 75 * math.sin(k * math.pi))
++	end
++	local k = (u - 0.5) * 2
++	local e = smooth(k)
++	return lerp(rad(-40), rad(75), e), lerp(rad(5), rad(-25), e), rad(25 + 65 * math.sin(k * math.pi))
++end
+ 
++-- Fills rig.idlePose and rig.movePose for R15. Shares the stroke phase with the kick.
+ local function poseR15(rig: Rig, t: number)
++	local idle, move = rig.idlePose, rig.movePose
+ 	local p = rig.phase
+ 	local scull = math.sin(t * 3) * rad(25)
+-	local kick = math.sin(p * 3) * rad(28)
+ 	local tread = math.sin(t * 2.5)
+-	return {
+-		-- freestyle: each arm windmills a full circle, half a turn apart; idle arms scull
+-		LeftShoulder = { A(rad(40) + scull, 0, rad(-60)), A(p, 0, rad(-10)) },
+-		RightShoulder = { A(rad(40) - scull, 0, rad(60)), A(p + math.pi, 0, rad(10)) },
+-		LeftElbow = { A(rad(40), 0, 0), A(rad(25), 0, 0) },
+-		RightElbow = { A(rad(40), 0, 0), A(rad(25), 0, 0) },
+-		-- flutter kick when moving, slow egg-beater when idle
+-		LeftHip = { A(tread * rad(18) + rad(10), 0, 0), A(kick, 0, 0) },
+-		RightHip = { A(-tread * rad(18) + rad(10), 0, 0), A(-kick, 0, 0) },
+-		LeftKnee = { A(-(rad(35) + math.max(0, tread) * rad(20)), 0, 0), A(rad(-12), 0, 0) },
+-		RightKnee = { A(-(rad(35) + math.max(0, -tread) * rad(20)), 0, 0), A(rad(-12), 0, 0) },
+-		-- body roll with the stroke; head looks forward when horizontal
+-		Waist = { CFrame.new(), A(0, math.sin(p) * rad(14), 0) },
+-		Neck = { CFrame.new(), A(rad(35), 0, 0) },
+-	}
+-end
+ 
+--- Streamlined dive: arms overhead, legs together with a small dolphin kick
+-local function streamR15(t: number)
+-	local kick = math.sin(t * 9) * rad(10)
+-	return {
+-		LeftShoulder = A(math.pi, 0, 0),
+-		RightShoulder = A(math.pi, 0, 0),
+-		LeftElbow = CFrame.new(),
+-		RightElbow = CFrame.new(),
+-		LeftHip = A(kick, 0, 0),
+-		RightHip = A(kick, 0, 0),
+-		LeftKnee = A(-math.max(0, kick), 0, 0),
+-		RightKnee = A(-math.max(0, kick), 0, 0),
+-		Waist = CFrame.new(),
+-		Neck = CFrame.new(),
+-	}
++	-- idle: sculling arms, slow egg-beater legs, head up
++	idle.LeftShoulder = A(rad(40) + scull, 0, rad(-60))
++	idle.RightShoulder = A(rad(40) - scull, 0, rad(60))
++	idle.LeftElbow = A(rad(40), 0, 0)
++	idle.RightElbow = A(rad(40), 0, 0)
++	idle.LeftHip = A(tread * rad(18) + rad(10), 0, 0)
++	idle.RightHip = A(-tread * rad(18) + rad(10), 0, 0)
++	idle.LeftKnee = A(-(rad(35) + math.max(0, tread) * rad(20)), 0, 0)
++	idle.RightKnee = A(-(rad(35) + math.max(0, -tread) * rad(20)), 0, 0)
++	idle.Waist = IDENTITY
++	idle.Neck = IDENTITY
++
++	-- moving: freestyle strokes. The right arm is half a turn behind the left.
++	local uL = p / TAU
++	local uR = uL + 0.5
++	if uR >= 1 then
++		uR -= 1
++	end
++	local swingL, sideL, bendL = strokeArm(uL)
++	local swingR, sideR, bendR = strokeArm(uR)
++	move.LeftShoulder = A(swingL, 0, sideL)
++	move.RightShoulder = A(swingR, 0, -sideR) -- mirrored: the right arm's Z is flipped
++	move.LeftElbow = A(bendL, 0, 0)
++	move.RightElbow = A(bendR, 0, 0)
++
++	-- 6-beat flutter kick: three kicks per leg per full turn of the stroke phase
++	local kick = math.sin(p * 3) * rad(28)
++	move.LeftHip = A(kick, 0, 0)
++	move.RightHip = A(-kick, 0, 0)
++	move.LeftKnee = A(rad(-12), 0, 0)
++	move.RightKnee = A(rad(-12), 0, 0)
++
++	-- Roll about the spine. The Waist's Y axis is the body's long axis (head to toe). The body
++	-- is pitched face down, so Y points along the swim direction. The pulling shoulder drops:
++	-- the left arm pulls while sin(p) > 0, so the roll is -sin(p). Positive Y would drop the
++	-- right shoulder instead.
++	move.Waist = A(0, -math.sin(p) * rad(14), 0)
++
++	-- head lifted; during a breath it turns to the breathing side
++	local turn = 0
++	if rig.breath >= 0 then
++		turn = rig.breathSide * BREATH_TURN * math.sin(math.clamp(rig.breath / BREATH_HOLD, 0, 1) * math.pi)
++	end
++	move.Neck = A(rad(35), turn, 0)
+ end
+ 
+-local function streamR6(t: number)
++-- Streamlined dive, filled into rig.divePose: arms overhead, legs together, small dolphin kick
++local function poseDiveR15(rig: Rig, t: number)
++	local pose = rig.divePose
+ 	local kick = math.sin(t * 9) * rad(10)
+-	return {
+-		["Right Shoulder"] = A(0, 0, math.pi),
+-		["Left Shoulder"] = A(0, 0, -math.pi),
+-		["Right Hip"] = A(0, 0, kick),
+-		["Left Hip"] = A(0, 0, -kick),
+-	}
++	local legs = A(kick, 0, 0)
++	local knees = A(-math.max(0, kick), 0, 0)
++	pose.LeftShoulder = ARMS_OVERHEAD
++	pose.RightShoulder = ARMS_OVERHEAD
++	pose.LeftElbow = IDENTITY
++	pose.RightElbow = IDENTITY
++	pose.LeftHip = legs
++	pose.RightHip = legs
++	pose.LeftKnee = knees
++	pose.RightKnee = knees
++	pose.Waist = IDENTITY
++	pose.Neck = IDENTITY
+ end
+ 
+-local function poseR6(rig: Rig, t: number)
++-- R6: arms and legs only (see the header). Joint Z is the sagittal swing axis on R6. The left
++-- side is mirrored, so the same angle swings the two limbs in opposite world directions.
++local function poseR6Move(rig: Rig, t: number)
++	local idle, move = rig.idlePose, rig.movePose
+ 	local p = rig.phase
+-	-- R6 joints swing about their own Z axis; left/right are mirrored
+ 	local wave = math.sin(t * 3) * rad(20)
+-	local kick = math.sin(p * 3) * rad(28)
+ 	local tread = math.sin(t * 2.5) * rad(18)
+-	return {
+-		["Right Shoulder"] = { A(0, 0, rad(60) + wave), A(0, 0, p) },
+-		["Left Shoulder"] = { A(0, 0, -(rad(60) - wave)), A(0, 0, -(p + math.pi)) },
+-		["Right Hip"] = { A(0, 0, tread), A(0, 0, kick) },
+-		["Left Hip"] = { A(0, 0, tread), A(0, 0, kick) },
+-	}
++	local kick = math.sin(p * 3) * rad(28)
++	idle["Right Shoulder"] = A(0, 0, rad(60) + wave)
++	idle["Left Shoulder"] = A(0, 0, -(rad(60) - wave))
++	idle["Right Hip"] = A(0, 0, tread)
++	idle["Left Hip"] = A(0, 0, tread)
++	move["Right Shoulder"] = A(0, 0, p)
++	move["Left Shoulder"] = A(0, 0, -(p + math.pi))
++	move["Right Hip"] = A(0, 0, kick)
++	move["Left Hip"] = A(0, 0, kick)
++end
++
++local function poseR6Dive(rig: Rig, t: number)
++	local dive = rig.divePose
++	local kick = math.sin(t * 9) * rad(10)
++	dive["Right Shoulder"] = A(0, 0, math.pi)
++	dive["Left Shoulder"] = A(0, 0, -math.pi)
++	dive["Right Hip"] = A(0, 0, kick)
++	dive["Left Hip"] = A(0, 0, -kick)
++end
++
++-- Writes Motor6D.Transform from the cached poses: idle to moving by blend, then to dive by dive
++local function apply(rig: Rig)
++	local idle, move, dive = rig.idlePose, rig.movePose, rig.divePose
++	local blend, diveAmt = rig.blend, rig.dive
++	for _, name in rig.names do
++		local m = rig.joints[name]
++		if m then
++			local cf = if blend > 0.001 then idle[name]:Lerp(move[name], blend) else idle[name]
++			if diveAmt > 0.001 then
++				cf = cf:Lerp(dive[name], diveAmt)
++			end
++			m.Transform = cf
++		end
++	end
++end
++
++-- In the air, only the dive pose is shown
++local function applyDive(rig: Rig)
++	local dive = rig.divePose
++	for _, name in rig.names do
++		local m = rig.joints[name]
++		if m then
++			m.Transform = IDENTITY:Lerp(dive[name], rig.dive)
++		end
++	end
+ end
+ 
+ local function step(dt: number)
+@@ -213,41 +331,68 @@ local function step(dt: number)
+ 		-- plunge underwater
+ 		local vel = hrp.AssemblyLinearVelocity
+ 		local tilted = hrp.CFrame.UpVector.Y < 0.85
+-		local streamTarget = if swimming
++		local diveTarget = if swimming
+ 			then math.clamp((-vel.Y - 18) / 14, 0, 1)
+ 			elseif tilted and depth > -40 then 1
+ 			else 0
+-		rig.stream += (streamTarget - rig.stream) * math.clamp(dt * 10, 0, 1)
+-		if not swimming and rig.stream < 0.02 then
++		rig.dive += (diveTarget - rig.dive) * math.clamp(dt * 10, 0, 1)
++		if not swimming and rig.dive < 0.02 then
+ 			if rig.posed then
+ 				rig.posed = false
+-				rig.stream = 0
++				rig.dive = 0
++				rig.breath = -1
+ 				for _, m in rig.joints do
+-					m.Transform = CFrame.new()
++					m.Transform = IDENTITY
+ 				end
+ 			end
+ 			continue
+ 		end
+ 		rig.posed = true
+-		local stream = if rig.r15 then streamR15(t) else streamR6(t)
++
+ 		if not swimming then
+-			-- in the air: only the dive pose
+-			for name, cf in stream do
+-				local m = rig.joints[name]
+-				if m then
+-					m.Transform = CFrame.new():Lerp(cf, rig.stream)
+-				end
++			-- in the air: only the dive pose (a board dive)
++			if rig.r15 then
++				poseDiveR15(rig, t)
++			else
++				poseR6Dive(rig, t)
+ 			end
++			applyDive(rig)
+ 			continue
+ 		end
++
+ 		local speed = vel.Magnitude
+ 		local target = math.clamp((speed - 2) / 22, 0, 1)
+ 		rig.blend += (target - rig.blend) * math.clamp(dt * 4, 0, 1)
+-		rig.phase = (rig.phase + dt * (2.2 + rig.blend * 4.5)) % (math.pi * 2)
++		local before = rig.phase
++		rig.phase = (rig.phase + dt * (2.2 + rig.blend * 4.5)) % TAU
++		if rig.r15 and rig.phase < before and rig.blend > 0.5 then
++			-- a turn of the phase is one stroke of each arm, so this breathes on every second
++			-- stroke. The side alternates each breath.
++			rig.breath = 0
++			rig.breathSide = -rig.breathSide
++		end
++		if rig.breath >= 0 then
++			rig.breath += dt
++			if rig.breath > BREATH_HOLD then
++				rig.breath = -1
++			end
++		end
+ 		if rig.bubbles then
+ 			rig.bubbles.Rate = 2 + rig.blend * 6
+ 		end
+-		apply(rig, if rig.r15 then poseR15(rig, t) else poseR6(rig, t), rig.blend, stream, rig.stream)
++		if rig.r15 then
++			poseR15(rig, t)
++		else
++			poseR6Move(rig, t)
++		end
++		if rig.dive > 0.001 then
++			if rig.r15 then
++				poseDiveR15(rig, t)
++			else
++				poseR6Dive(rig, t)
++			end
++		end
++		apply(rig)
+ 	end
+ end
+ 
+diff --git a/src/client/Controllers/SwimController.luau b/src/client/Controllers/SwimController.luau
+index e844da7..6bd8279 100644
+--- a/src/client/Controllers/SwimController.luau
++++ b/src/client/Controllers/SwimController.luau
+@@ -125,8 +125,10 @@ local function setup(char: Model)
+ 	end
+ end
+ 
+--- Local splash where you enter the water
+-local function splash(pos: Vector3, count: number?)
++-- Local splash where you enter the water. scale < 1 makes a small, low ripple (used when you
++-- break the surface going up).
++local function splash(pos: Vector3, count: number?, scale: number?)
++	local s = scale or 1
+ 	local p = Instance.new("Part")
+ 	p.Anchored = true
+ 	p.CanCollide = false
+@@ -139,9 +141,9 @@ local function splash(pos: Vector3, count: number?)
+ 	local pe = Instance.new("ParticleEmitter")
+ 	pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+ 	pe.Color = ColorSequence.new(Color3.fromRGB(220, 245, 255))
+-	pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.8), NumberSequenceKeypoint.new(1, 0.1) })
++	pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.8 * s), NumberSequenceKeypoint.new(1, 0.1 * s) })
+ 	pe.Lifetime = NumberRange.new(0.6, 1.2)
+-	pe.Speed = NumberRange.new(14, 24)
++	pe.Speed = NumberRange.new(14 * s, 24 * s)
+ 	pe.SpreadAngle = Vector2.new(35, 35)
+ 	pe.Acceleration = Vector3.new(0, -40, 0)
+ 	pe.EmissionDirection = Enum.NormalId.Top
+@@ -236,6 +238,10 @@ local function step(dt: number)
+ 			splash(hrp.Position)
+ 		end
+ 		if not swimming then
++			-- breaking the surface on the way up: a small ripple (no splash used to happen here)
++			if velocity.Y > 2 then
++				splash(hrp.Position, 12, 0.35)
++			end
+ 			-- pop out of the water so you can climb onto a dock
+ 			hrp.AssemblyLinearVelocity = Vector3.new(velocity.X, math.max(velocity.Y, 0) + 62, velocity.Z)
+ 		end
