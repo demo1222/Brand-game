@@ -412,7 +412,7 @@ local function build()
 	Kit.Round().Parent = refs.o2Cap
 	refs.o2Stroke = refs.o2Cap:FindFirstChildOfClass("UIStroke")
 	refs.o2Icon = Icon.new(
-		"oxygen",
+		Icons.Get("Oxygen"),
 		26,
 		T.Accent,
 		{ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Parent = refs.o2Cap }
@@ -457,7 +457,7 @@ local function build()
 	end, function()
 		S.SetBoost(false)
 	end)
-	roundAction(actions, "sonar", "SONAR · Q", T.Accent, 72, UDim2.new(1, -176, 1, -78), function()
+	roundAction(actions, Icons.Get("Sonar"), "SONAR · Q", T.Accent, 72, UDim2.new(1, -176, 1, -78), function()
 		controllers.SonarController.Ping()
 	end)
 	local _, flareText = roundAction(

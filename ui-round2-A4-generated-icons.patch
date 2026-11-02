@@ -1,0 +1,94 @@
+diff --git a/docs/icon_map.md b/docs/icon_map.md
+index 89a5571..fb6b0a7 100644
+--- a/docs/icon_map.md
++++ b/docs/icon_map.md
+@@ -15,14 +15,14 @@
+ | Settings | settings | settings_gear.png | asset (upload) |
+ | Trade | trade | trade_arrows.png | asset (upload) |
+ | Diver | diver | helmet.png | asset (upload) |
+-| Sonar | sonar | - | fallback (no close match) |
++| Sonar | sonar | sonar.png | asset (upload) |
+ | Flare | flare | - | fallback (no close match) |
+ | Surface | home | home.png | asset (upload) |
+ | Up | up | - | fallback (no close match) |
+-| Down | down | - | fallback (no close match) |
++| Down | down | down_arrow.png | asset (upload) |
+ | Boost | boost | speed_boost.png | asset (upload) |
+-| Oxygen | oxygen | - | fallback (no close match) |
+-| Depth | down | - | fallback (no close match) |
++| Oxygen | oxygen | oxygen_tank.png | asset (upload) |
++| Depth | down | down_arrow.png | asset (upload) |
+ | Event | event | event_ticket.png | asset (upload) |
+ | Lock | lock | - | fallback (no close match) |
+ | Sell | coin | stack_of_coins.png | asset (upload) |
+@@ -37,7 +37,7 @@
+ | Offline | clock | clock.png | asset (upload) |
+ | Death | alert | - | fallback (no close match) |
+ | VIP | crown | vip_crown.png | asset (upload) |
+-| DoubleOxygen | oxygen | - | fallback (no close match) |
++| DoubleOxygen | oxygen | oxygen_tank.png | asset (upload) |
+ | Drone | drone | - | fallback (no close match) |
+ | LuckySonar | sonar | luck_clover.png | asset (upload) |
+ | VaultLock | lock | - | fallback (no close match) |
+@@ -67,17 +67,17 @@
+ | TidePassPremium | ticket | premium_pass.png | asset (upload) |
+ | CrateSingle | box | wooden_chest.png | asset (upload) |
+ | CrateTriple | box | gold_chest.png | asset (upload) |
+-| Track_Oxygen | oxygen | - | fallback (no close match) |
++| Track_Oxygen | oxygen | oxygen_tank.png | asset (upload) |
+ | Track_Fins | boost | speed_boot.png | asset (upload) |
+ | Track_Bag | bag | money_bag.png | asset (upload) |
+-| Track_Sonar | sonar | - | fallback (no close match) |
++| Track_Sonar | sonar | sonar.png | asset (upload) |
+ | Track_Salvage | wrench | wrench.png | asset (upload) |
+ | Track_Display | display | - | fallback (no close match) |
+ | Track_Offline | clock | hourglass.png | asset (upload) |
+ | Track_Gate | gate | locked_gate.png | asset (upload) |
+ | Track_Crab | shield | defense_shield.png | asset (upload) |
+ | Track_Alarm | bell | notification_bell.png | asset (upload) |
+-| Track_Board | down | - | fallback (no close match) |
++| Track_Board | down | down_arrow.png | asset (upload) |
+ | Gate | gate | locked_gate.png | asset (upload) |
+ | Reef | fish | - | fallback (no close match) |
+ | Kelp | kelp | - | fallback (no close match) |
+diff --git a/src/client/Controllers/HUDController.luau b/src/client/Controllers/HUDController.luau
+index 8336006..4aa3f9f 100644
+--- a/src/client/Controllers/HUDController.luau
++++ b/src/client/Controllers/HUDController.luau
+@@ -412,7 +412,7 @@ local function build()
+ 	Kit.Round().Parent = refs.o2Cap
+ 	refs.o2Stroke = refs.o2Cap:FindFirstChildOfClass("UIStroke")
+ 	refs.o2Icon = Icon.new(
+-		"oxygen",
++		Icons.Get("Oxygen"),
+ 		26,
+ 		T.Accent,
+ 		{ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), Parent = refs.o2Cap }
+@@ -457,7 +457,7 @@ local function build()
+ 	end, function()
+ 		S.SetBoost(false)
+ 	end)
+-	roundAction(actions, "sonar", "SONAR · Q", T.Accent, 72, UDim2.new(1, -176, 1, -78), function()
++	roundAction(actions, Icons.Get("Sonar"), "SONAR · Q", T.Accent, 72, UDim2.new(1, -176, 1, -78), function()
+ 		controllers.SonarController.Ping()
+ 	end)
+ 	local _, flareText = roundAction(
+diff --git a/src/client/UI/Icons.luau b/src/client/UI/Icons.luau
+index 2d08952..12b7b0a 100644
+--- a/src/client/UI/Icons.luau
++++ b/src/client/UI/Icons.luau
+@@ -72,6 +72,14 @@ Icons.Images = {
+ 	Alert = "rbxassetid://130978661751413",
+ 	error = "rbxassetid://130978661751413",
+ 	Up = "rbxassetid://132195310374616",
++	Sonar = "rbxassetid://135784552253221",
++	Track_Sonar = "rbxassetid://135784552253221",
++	Oxygen = "rbxassetid://91867121545247",
++	DoubleOxygen = "rbxassetid://91867121545247",
++	Track_Oxygen = "rbxassetid://91867121545247",
++	Down = "rbxassetid://102370487423456",
++	Depth = "rbxassetid://102370487423456",
++	Track_Board = "rbxassetid://102370487423456",
+ }
+ 
+ Icons.Names = {

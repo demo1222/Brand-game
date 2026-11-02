@@ -72,6 +72,14 @@ Icons.Images = {
 	Alert = "rbxassetid://130978661751413",
 	error = "rbxassetid://130978661751413",
 	Up = "rbxassetid://132195310374616",
+	Sonar = "rbxassetid://135784552253221",
+	Track_Sonar = "rbxassetid://135784552253221",
+	Oxygen = "rbxassetid://91867121545247",
+	DoubleOxygen = "rbxassetid://91867121545247",
+	Track_Oxygen = "rbxassetid://91867121545247",
+	Down = "rbxassetid://102370487423456",
+	Depth = "rbxassetid://102370487423456",
+	Track_Board = "rbxassetid://102370487423456",
 }
 
 Icons.Names = {
