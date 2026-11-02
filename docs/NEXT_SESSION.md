@@ -161,14 +161,15 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
   a gold medal). Up uses the Up mapping. Lock, Vault, VaultLock, Alert, error and Up reuse
   uploaded files. Sonar, Track_Sonar, Flare, Flares5, Clean, BarnacleClean and Track_Board map
   to four new files (`target`, `fireball`, `trash_bin`, `wood_planks`), which need uploading and
-  an ID in `Icons.Images`. Still drawn, no close match: Depth, Display, Track_Display, Drone,
-  Radio, Death, Huge, RenameDock, SkipPity, and the zones Reef, Kelp, Wrecks, Abyss, Trench.
-- **UI round 2, part A3 (generated icons):** `docs/images/icons/generated/` holds three
-  Canva-generated icons, background removed: `down_arrow.png` (Down), `oxygen_tank.png`
-  (Oxygen, DoubleOxygen, Track_Oxygen) and `sonar.png` (Sonar, Track_Sonar, replacing the
-  `target` pick). The Down button now uses `Icons.Get("Down")`. Still to generate: depth_gauge,
-  display_stand, drone, radio, skull, huge_star, signpost, fast_forward, coral, seaweed,
-  shipwreck, deep_abyss, ocean_trench. Canva's quota ran out mid-batch.
+  an ID in `Icons.Images`.
+- **UI round 2, part A3 (generated icons):** all 15 new icons live in `docs/images/icons/generated/`
+  as 512 px PNGs with the background removed. They are mapped in `Icons.Assets`: down_arrow
+  (Down), oxygen_tank (Oxygen, DoubleOxygen, Track_Oxygen), sonar (Sonar, Track_Sonar),
+  depth_gauge (Depth), display_stand (Display, Track_Display), drone, radio, skull (Death),
+  huge_star (Huge), signpost (RenameDock), fast_forward (SkipPity), coral (Reef), seaweed (Kelp),
+  shipwreck (Wrecks), deep_abyss (Abyss), ocean_trench (Trench). Each needs uploading in Studio
+  and an ID in `Icons.Images`. The Down button uses `Icons.Get("Down")`. The Depth key has no
+  drawn icon in the HUD yet, so depth_gauge shows once it is wired into the depth band.
 
 ## Still to do (priority order)
 
