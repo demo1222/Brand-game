@@ -16,29 +16,29 @@
 | Trade | trade | trade_arrows.png | asset (upload) |
 | Diver | diver | helmet.png | asset (upload) |
 | Sonar | sonar | sonar.png | asset (upload) |
-| Flare | flare | - | fallback (no close match) |
+| Flare | flare | fireball.png | asset (upload) |
 | Surface | home | home.png | asset (upload) |
 | Up | up | - | fallback (no close match) |
 | Down | down | down_arrow.png | asset (upload) |
 | Boost | boost | speed_boost.png | asset (upload) |
 | Oxygen | oxygen | oxygen_tank.png | asset (upload) |
-| Depth | down | down_arrow.png | asset (upload) |
+| Depth | down | depth_gauge.png | asset (upload) |
 | Event | event | event_ticket.png | asset (upload) |
 | Lock | lock | - | fallback (no close match) |
 | Sell | coin | stack_of_coins.png | asset (upload) |
-| Display | display | - | fallback (no close match) |
+| Display | display | display_stand.png | asset (upload) |
 | Vault | lock | - | fallback (no close match) |
-| Clean | sparkle | - | fallback (no close match) |
+| Clean | sparkle | trash_bin.png | asset (upload) |
 | Take | down | collect_hand.png | asset (upload) |
-| Huge | up | - | fallback (no close match) |
+| Huge | up | huge_star.png | asset (upload) |
 | Alert | alert | - | fallback (no close match) |
 | Close | close | close_button.png | asset (upload) |
 | Check | check | claim_checkmark.png | asset (upload) |
 | Offline | clock | clock.png | asset (upload) |
-| Death | alert | - | fallback (no close match) |
+| Death | alert | skull.png | asset (upload) |
 | VIP | crown | vip_crown.png | asset (upload) |
 | DoubleOxygen | oxygen | oxygen_tank.png | asset (upload) |
-| Drone | drone | - | fallback (no close match) |
+| Drone | drone | drone.png | asset (upload) |
 | LuckySonar | sonar | luck_clover.png | asset (upload) |
 | VaultLock | lock | - | fallback (no close match) |
 | ExtraSlots | display | equipment_slot.png | asset (upload) |
@@ -47,7 +47,7 @@
 | SpeedFins | boost | speed_boot.png | asset (upload) |
 | AutoCollect | magnet | magnet_boost.png | asset (upload) |
 | MutationScan | scan | magic_wand.png | asset (upload) |
-| Radio | radio | - | fallback (no close match) |
+| Radio | radio | radio.png | asset (upload) |
 | DeepDiverBundle | diver | helmet.png | asset (upload) |
 | CollectorBundle | box | crystal_chest.png | asset (upload) |
 | PassPlus | star | reward_star.png | asset (upload) |
@@ -56,14 +56,14 @@
 | LuckPotion | potion | luck_potion.png | asset (upload) |
 | MutationPotion | potion | mystery_potion.png | asset (upload) |
 | ServerLuck | star | luck_boost.png | asset (upload) |
-| Flares5 | flare | - | fallback (no close match) |
+| Flares5 | flare | fireball.png | asset (upload) |
 | OxygenRefill | oxygen | stamina_potion.png | asset (upload) |
-| SkipPity | sparkle | - | fallback (no close match) |
+| SkipPity | sparkle | fast_forward.png | asset (upload) |
 | TierSkip | upgrade | level_up.png | asset (upload) |
-| RenameDock | sign | - | fallback (no close match) |
+| RenameDock | sign | signpost.png | asset (upload) |
 | Revive | heart | healing_cross.png | asset (upload) |
 | GateRecharge | event | energy_bolt.png | asset (upload) |
-| BarnacleClean | sparkle | - | fallback (no close match) |
+| BarnacleClean | sparkle | trash_bin.png | asset (upload) |
 | TidePassPremium | ticket | premium_pass.png | asset (upload) |
 | CrateSingle | box | wooden_chest.png | asset (upload) |
 | CrateTriple | box | gold_chest.png | asset (upload) |
@@ -72,18 +72,18 @@
 | Track_Bag | bag | money_bag.png | asset (upload) |
 | Track_Sonar | sonar | sonar.png | asset (upload) |
 | Track_Salvage | wrench | wrench.png | asset (upload) |
-| Track_Display | display | - | fallback (no close match) |
+| Track_Display | display | display_stand.png | asset (upload) |
 | Track_Offline | clock | hourglass.png | asset (upload) |
 | Track_Gate | gate | locked_gate.png | asset (upload) |
 | Track_Crab | shield | defense_shield.png | asset (upload) |
 | Track_Alarm | bell | notification_bell.png | asset (upload) |
-| Track_Board | down | down_arrow.png | asset (upload) |
+| Track_Board | down | wood_planks.png | asset (upload) |
 | Gate | gate | locked_gate.png | asset (upload) |
-| Reef | fish | - | fallback (no close match) |
-| Kelp | kelp | - | fallback (no close match) |
-| Wrecks | anchor | - | fallback (no close match) |
-| Abyss | eye | - | fallback (no close match) |
-| Trench | vent | - | fallback (no close match) |
+| Reef | fish | coral.png | asset (upload) |
+| Kelp | kelp | seaweed.png | asset (upload) |
+| Wrecks | anchor | shipwreck.png | asset (upload) |
+| Abyss | eye | deep_abyss.png | asset (upload) |
+| Trench | vent | ocean_trench.png | asset (upload) |
 | error | alert | - | fallback (no close match) |
 | reward | gift | reward_star.png | asset (upload) |
 | coins | coin | stack_of_coins.png | asset (upload) |

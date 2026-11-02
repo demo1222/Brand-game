@@ -172,8 +172,7 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
   drawn icon in the HUD yet, so depth_gauge shows once it is wired into the depth band.
 - **UI round 2, part A (finished, mapping complete):** every one of the 89 `Icons.Names` keys
   now has an `Icons.Assets` file. The A3 mappings are now in the code too (they were only in
-  the doc). Still to upload and paste into `Icons.Images`: the 13 generated files above, plus
-  `fireball` (Flare, Flares5) and `trash_bin` (Clean, BarnacleClean). The raw Canva exports
+  the doc). All 15 generated icons, plus `fireball` (Flare, Flares5), `trash_bin` (Clean, BarnacleClean) and `wood_planks` (Track_Board), are uploaded and live in `Icons.Images`. The raw Canva exports
   in `docs/images/icons/generated/temp/` are not used and can be deleted. At 16 px, Coins and
   Tokens look alike, Codex, Leaderboards and Rebirth lose detail, and some keys share one file
   (Lock, Vault, Gate and Track_Gate use `locked_gate`). Check 24 px as the minimum in tabs.

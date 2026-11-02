@@ -462,7 +462,7 @@ local function build()
 	end)
 	local _, flareText = roundAction(
 		actions,
-		"flare",
+		Icons.Get("Flare"),
 		"FLARE 3",
 		Color3.fromRGB(245, 154, 90),
 		60,
