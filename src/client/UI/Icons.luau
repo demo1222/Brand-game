@@ -262,6 +262,21 @@ Icons.Assets = {
 	Clean = "trash_bin.png", -- new upload
 	BarnacleClean = "trash_bin.png", -- new upload
 	Track_Board = "wood_planks.png", -- new upload
+	-- generated in docs/images/icons/generated (Canva, background removed), new upload
+	Depth = "depth_gauge.png", -- Images already holds an ID for Depth; this file is the fallback
+	Display = "display_stand.png",
+	Track_Display = "display_stand.png",
+	Huge = "huge_star.png",
+	Death = "skull.png",
+	Drone = "drone.png",
+	Radio = "radio.png",
+	SkipPity = "fast_forward.png",
+	RenameDock = "signpost.png",
+	Reef = "coral.png",
+	Kelp = "seaweed.png",
+	Wrecks = "shipwreck.png",
+	Abyss = "deep_abyss.png",
+	Trench = "ocean_trench.png",
 }
 
 -- Icon to draw for a key: an uploaded image id if one exists, else a drawn icon name

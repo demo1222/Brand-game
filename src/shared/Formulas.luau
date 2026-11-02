@@ -32,6 +32,23 @@ function Formulas.DiveBoardDepth(data): number
 	return B.BoardDepth + lvl(data, "Board") * B.BoardDepthPerLevel
 end
 
+-- Launch: upward speed off the board, studs/s (Upgrades.Dive)
+function Formulas.DiveLaunch(data): number
+	return Upgrades.Dive.Launch + lvl(data, "Board") * Upgrades.Dive.LaunchPerLevel
+end
+
+-- Out: horizontal speed out to sea, studs/s (Upgrades.Dive)
+function Formulas.DiveOut(data): number
+	return Upgrades.Dive.Out + lvl(data, "Board") * Upgrades.Dive.OutPerLevel
+end
+
+-- The board skin for a Board level (Upgrades.Dive.Skins, one step every SkinEvery levels)
+function Formulas.BoardSkin(level: number)
+	local dive = Upgrades.Dive
+	local i = math.min(math.floor(level / dive.SkinEvery) + 1, #dive.Skins)
+	return dive.Skins[i]
+end
+
 function Formulas.SwimSpeed(data, passes): number
 	local s = B.SwimSpeed * (1 + lvl(data, "Fins") * B.FinsPerLevel)
 	if passes and passes.SpeedFins then

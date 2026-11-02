@@ -170,6 +170,41 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
   shipwreck (Wrecks), deep_abyss (Abyss), ocean_trench (Trench). Each needs uploading in Studio
   and an ID in `Icons.Images`. The Down button uses `Icons.Get("Down")`. The Depth key has no
   drawn icon in the HUD yet, so depth_gauge shows once it is wired into the depth band.
+- **UI round 2, part A (finished, mapping complete):** every one of the 89 `Icons.Names` keys
+  now has an `Icons.Assets` file. The A3 mappings are now in the code too (they were only in
+  the doc). Still to upload and paste into `Icons.Images`: the 13 generated files above, plus
+  `fireball` (Flare, Flares5) and `trash_bin` (Clean, BarnacleClean). The raw Canva exports
+  in `docs/images/icons/generated/temp/` are not used and can be deleted. At 16 px, Coins and
+  Tokens look alike, Codex, Leaderboards and Rebirth lose detail, and some keys share one file
+  (Lock, Vault, Gate and Track_Gate use `locked_gate`). Check 24 px as the minimum in tabs.
+- **UI round 2, part B (swim animation, `SwimAnimController`):** the freestyle now has a pull
+  and a recovery per arm, with an elbow bend in the pull. The torso rolls about its spine (the
+  Waist Y axis), and the pulling shoulder drops. The head turns to breathe on every second stroke,
+  held for 0.4 s. The kick shares the stroke phase (6-beat). Pose tables are built once per rig.
+  R6 gets arms and legs only: no waist, and the neck axes are not verified on R6. Splash: a
+  surface ripple now plays when you break the surface going up (`splash(pos, 12, 0.35)`). Not
+  checked in Studio: every item above, and the cost at 20 swimmers (not measured).
+- **UI round 2, part C (diving board):** the jump is one config block, `Upgrades.Dive`:
+  Launch 34 studs/s, Out 20 studs/s, Gravity 85, and +3 launch and +3 out per Board level. Level
+  10 is Launch 64 and Out 50. The plunge depth is unchanged (20 m + 15 m per level, to 170 m). The
+  skin steps every 2 levels: Plank, Varnish, Brass (level 4), Copper, Gold (level 8), Pearl. The
+  card reads "Launch and dive: 34 studs, 20m to 37 studs, 35m". The owner's example
+  ("Launch 34 to 40 studs, dive 65 m to 80 m") needs a two-line effect row. The glide timeout is
+  now 8 s, so the deepest board reaches its depth. Checked with a numeric run of the dive
+  formulas for levels 0 to 10 (3 start heights, 2 swim speeds): every dive enters the water and
+  reaches its depth. Not run in Studio.
+- **UI round 2, part C2 (board card):** the Diving Board card has two effect rows, inside
+  the existing 164 px card: "Launch 34 → 37 studs" and "Dive depth 20m → 35m". The plunge and the
+  launch keep their per-level steps from `Upgrades.Dive`. Not checked in Studio: the label
+  widths and truncation on phones.
+- **UI round 2, part E (relic fixes):** nine relics reworked in `shared/RelicArt`:
+  R003 snorkel (thicker, banded), R013 Reef Idol (new seated idol, `reefidol`), R027 cannonball
+  (iron band, rust patch), R036 figurehead (bigger head, eyes on the face), R039 pebble (glowing
+  vein), R045 totem (three-spike crown), R052 tooth (rounded root), R057 Vent Idol (new basalt
+  idol, `ventidol`), R059 gauntlet (shorter wrist, proportioned fingers). Checked by reading only
+  (the block structure). Not rendered: three.js and Lune were not available. Render the sheet
+  and run `lune run tools/relic_art_check` before the owner judges them. The mesh hook and
+  export spec are still proposals.
 
 ## Still to do (priority order)
 

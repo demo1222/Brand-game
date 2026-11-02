@@ -13,7 +13,7 @@ local Upgrades = {
 		{ Id = "Gate", Name = "Laser Gate", Max = 5, Base = 2000, Growth = 2, Desc = "Unlock / +10s gate duration" },
 		{ Id = "Crab", Name = "Guard Crab", Max = 5, Base = 2000, Growth = 2, Desc = "Slows intruders (6% per level)" },
 		{ Id = "Alarm", Name = "Alarm Range", Max = 5, Base = 2000, Growth = 2, Desc = "+10 studs alert range" },
-		{ Id = "Board", Name = "Diving Board", Max = 10, Base = 300, Growth = 1.7, Desc = "+15m launch depth off your dock's board" },
+		{ Id = "Board", Name = "Diving Board", Max = 10, Base = 300, Growth = 1.7, Desc = "Higher jump, +15m plunge off your dock's board" },
 	},
 	ById = {},
 
@@ -26,6 +26,31 @@ local Upgrades = {
 		{ Id = "Titan", Name = "Titan Suit", Cost = 600e6, Color = Color3.fromRGB(255, 200, 40), ComingSoon = true },
 	},
 	SuitIndex = {},
+
+	-- Diving board jump (SwimController). Every Board level adds to the jump, and the plunge
+	-- depth still comes from Base.BoardDepth (+BoardDepthPerLevel).
+	--   Launch:  upward speed off the board, in studs/s. Height gained = Launch^2 / (2 * Gravity).
+	--   Out:     horizontal speed out to sea, in studs/s. Out-distance = Out x time in the air.
+	--   Gravity: studs/s^2 during the arc.
+	-- Level 0 is the original jump: Launch 34, Out 20. Level 10 is Launch 64 and Out 50.
+	-- The skin steps every SkinEvery levels through Skins (level 0-1 Plank, 2-3 Varnish,
+	-- 4-5 Brass, 6-7 Copper, 8-9 Gold, 10 Pearl).
+	Dive = {
+		Gravity = 85,
+		Launch = 34,
+		LaunchPerLevel = 3,
+		Out = 20,
+		OutPerLevel = 3,
+		SkinEvery = 2,
+		Skins = {
+			{ Name = "Plank", Color = Color3.fromRGB(120, 92, 64), Material = "WoodPlanks" },
+			{ Name = "Varnish", Color = Color3.fromRGB(165, 118, 70), Material = "WoodPlanks" },
+			{ Name = "Brass", Color = Color3.fromRGB(200, 150, 80), Material = "Metal" },
+			{ Name = "Copper", Color = Color3.fromRGB(205, 128, 84), Material = "Metal" },
+			{ Name = "Gold", Color = Color3.fromRGB(245, 192, 74), Material = "Metal" },
+			{ Name = "Pearl", Color = Color3.fromRGB(236, 238, 246), Material = "Marble" },
+		},
+	},
 
 	-- Base stats before upgrades/passes
 	Base = {

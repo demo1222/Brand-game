@@ -41,14 +41,14 @@ type Dive = {
 	dir: Vector3,
 	right: Vector3,
 	v0: Vector3,
+	gravity: number,
 	depth: number,
 	entrySpeed: number,
 	entryT: number,
 }
 local dive: Dive? = nil
-local DIVE_GRAVITY = 85
-local DIVE_LAUNCH = Vector3.new(0, 34, 0) -- plus 20 studs/s out to sea
-local DIVE_OUT = 20
+-- Launch, out-distance and gravity live in Upgrades.Dive. The Board upgrade raises launch and
+-- out per level, and the character's DiveLaunch / DiveOut attributes carry the owner's values.
 
 SwimController.Depth = 0
 
@@ -106,12 +106,15 @@ local function setup(char: Model)
 			if board and board:GetAttribute("DiveBoard") and not dive and linVel and align then
 				local look = board.CFrame.LookVector
 				local dir = Vector3.new(look.X, 0, look.Z).Unit
+				local launch = char:GetAttribute("DiveLaunch") or Upgrades.Dive.Launch
+				local out = char:GetAttribute("DiveOut") or Upgrades.Dive.Out
 				dive = {
 					phase = "air",
 					t0 = os.clock(),
 					dir = dir,
 					right = dir:Cross(Vector3.yAxis).Unit,
-					v0 = dir * DIVE_OUT + DIVE_LAUNCH,
+					v0 = dir * out + Vector3.new(0, launch, 0),
+					gravity = Upgrades.Dive.Gravity,
 					depth = math.max(char:GetAttribute("DiveBoardDepth") or 20, 8),
 					entrySpeed = 0,
 					entryT = 0,
@@ -125,8 +128,10 @@ local function setup(char: Model)
 	end
 end
 
--- Local splash where you enter the water
-local function splash(pos: Vector3, count: number?)
+-- Local splash where you enter the water. scale < 1 makes a small, low ripple (used when you
+-- break the surface going up).
+local function splash(pos: Vector3, count: number?, scale: number?)
+	local s = scale or 1
 	local p = Instance.new("Part")
 	p.Anchored = true
 	p.CanCollide = false
@@ -139,9 +144,9 @@ local function splash(pos: Vector3, count: number?)
 	local pe = Instance.new("ParticleEmitter")
 	pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
 	pe.Color = ColorSequence.new(Color3.fromRGB(220, 245, 255))
-	pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.8), NumberSequenceKeypoint.new(1, 0.1) })
+	pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.8 * s), NumberSequenceKeypoint.new(1, 0.1 * s) })
 	pe.Lifetime = NumberRange.new(0.6, 1.2)
-	pe.Speed = NumberRange.new(14, 24)
+	pe.Speed = NumberRange.new(14 * s, 24 * s)
 	pe.SpreadAngle = Vector2.new(35, 35)
 	pe.Acceleration = Vector3.new(0, -40, 0)
 	pe.EmissionDirection = Enum.NormalId.Top
@@ -178,7 +183,7 @@ local function step(dt: number)
 		local head: Vector3
 		if d.phase == "air" then
 			local t = now - d.t0
-			local v = d.v0 + Vector3.new(0, -DIVE_GRAVITY * t, 0)
+			local v = d.v0 + Vector3.new(0, -d.gravity * t, 0)
 			-- the head swings from upright to leading along the arc, and tips toward straight
 			-- down while falling, so the entry is near-vertical like a real dive
 			local fall = math.clamp(-v.Y / 40, 0, 1)
@@ -208,7 +213,7 @@ local function step(dt: number)
 			local swimSpeed = char:GetAttribute("SwimSpeed") or Upgrades.Base.SwimSpeed
 			local speed = d.entrySpeed + (swimSpeed * 1.3 - d.entrySpeed) * ease
 			velocity = velocity:Lerp(head * speed, math.clamp(dt * 10, 0, 1))
-			if progress >= 1 or now - d.entryT > 5 then
+			if progress >= 1 or now - d.entryT > 8 then -- 8 s: the deepest board (level 10) needs up to about 5 s at base swim speed
 				dive = nil
 				align.Responsiveness = 12
 				-- normal swimming takes over next frame with this velocity (no jolt)
@@ -236,6 +241,10 @@ local function step(dt: number)
 			splash(hrp.Position)
 		end
 		if not swimming then
+			-- breaking the surface on the way up: a small ripple (no splash used to happen here)
+			if velocity.Y > 2 then
+				splash(hrp.Position, 12, 0.35)
+			end
 			-- pop out of the water so you can climb onto a dock
 			hrp.AssemblyLinearVelocity = Vector3.new(velocity.X, math.max(velocity.Y, 0) + 62, velocity.Z)
 		end

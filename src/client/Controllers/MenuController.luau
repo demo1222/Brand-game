@@ -585,9 +585,6 @@ local function trackPreview(id: string, lvl: number): (string, string, string)
 	elseif id == "Salvage" then
 		local t = D("SalvageSeconds") or B.SalvageSeconds
 		return "Salvage time", `{num(t)}s`, `{num(t * (1 - B.SalvagePerLevel))}s`
-	elseif id == "Board" then
-		local d = D("DiveBoardDepth") or B.BoardDepth
-		return "Board plunge", `{num(d)}m`, `{num(d + B.BoardDepthPerLevel)}m`
 	elseif id == "Display" then
 		local n = D("StandCount") or B.Stands
 		return "Display stands", num(n), num(n + 1)
@@ -606,6 +603,22 @@ local function trackPreview(id: string, lvl: number): (string, string, string)
 		return "Alarm range", `{2 + lvl * 10}`, `{2 + (lvl + 1) * 10} studs`
 	end
 	return "Level", tostring(lvl), tostring(lvl + 1)
+end
+
+-- Effect rows as {label, now, next}. The Diving Board has two rows: its launch and its plunge.
+local function effectRows(id: string, lvl: number): { { string } }
+	if id == "Board" then
+		local B = Upgrades.Base
+		local dive = Upgrades.Dive
+		local depth = S.Derived("DiveBoardDepth") or B.BoardDepth
+		local launch = S.Derived("DiveLaunch") or dive.Launch
+		return {
+			{ "Launch", num(launch), `{num(launch + dive.LaunchPerLevel)} studs` },
+			{ "Dive depth", `{num(depth)}m`, `{num(depth + B.BoardDepthPerLevel)}m` },
+		}
+	end
+	local label, now, nxt = trackPreview(id, lvl)
+	return { { label, now, nxt } }
 end
 
 local function upgradeCard(parent: Instance, track, lvl: number, coins: number, order: number)
@@ -661,40 +674,51 @@ local function upgradeCard(parent: Instance, track, lvl: number, coins: number, 
 	})
 	setBar(lvl / track.Max)
 
-	-- Effect line: "Dive time  60s -> 66s"
-	local label, now, nxt = trackPreview(track.Id, lvl)
+	-- Effect rows: "Dive time  60s -> 66s". The Diving Board shows two rows (launch and depth).
+	local rows = effectRows(track.Id, lvl)
+	local rowH = if #rows > 1 then 20 else 26
 	local effect = New("Frame", {
 		BackgroundColor3 = T.PanelDark,
 		Position = UDim2.fromOffset(10, 68),
-		Size = UDim2.new(1, -20, 0, 26),
+		Size = UDim2.new(1, -20, 0, rowH * #rows),
 		ZIndex = 3,
 		Parent = face,
 	}, { Kit.Corner(8), New("UIPadding", { PaddingLeft = UDim.new(0, 8), PaddingRight = UDim.new(0, 8) }) })
-	Kit.Label({
-		Text = label,
-		Font = T.Bold,
-		TextSize = 13,
-		TextColor3 = T.Muted,
-		Size = UDim2.fromScale(0.5, 1),
-		TextWrapped = false,
-		TextTruncate = Enum.TextTruncate.AtEnd,
-		ZIndex = 4,
-		Parent = effect,
-	})
-	Kit.Label({
-		Text = if maxed then now else `{now}  <font color="#7BE3A0">→ {nxt}</font>`,
-		RichText = true,
-		Font = T.Bold,
-		TextSize = 14,
-		TextXAlignment = Enum.TextXAlignment.Right,
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.fromScale(1, 0),
-		Size = UDim2.fromScale(0.62, 1),
-		TextWrapped = false,
-		TextTruncate = Enum.TextTruncate.AtEnd,
-		ZIndex = 4,
-		Parent = effect,
-	})
+	for i, row in rows do
+		local line = New("Frame", {
+			BackgroundTransparency = 1,
+			Position = UDim2.fromOffset(0, (i - 1) * rowH),
+			Size = UDim2.new(1, 0, 0, rowH),
+			ZIndex = 4,
+			Parent = effect,
+		})
+		Kit.Label({
+			Text = row[1],
+			Font = T.Bold,
+			TextSize = 13,
+			TextColor3 = T.Muted,
+			Size = UDim2.fromScale(0.5, 1),
+			TextWrapped = false,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			ZIndex = 4,
+			Parent = line,
+		})
+		local now, nxt = row[2], row[3]
+		Kit.Label({
+			Text = if maxed then now else `{now}  <font color="#7BE3A0">→ {nxt}</font>`,
+			RichText = true,
+			Font = T.Bold,
+			TextSize = 14,
+			TextXAlignment = Enum.TextXAlignment.Right,
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.fromScale(1, 0),
+			Size = UDim2.fromScale(0.62, 1),
+			TextWrapped = false,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			ZIndex = 4,
+			Parent = line,
+		})
+	end
 
 	-- Price plate: green when you can afford it, gold MAX when done
 	Kit.PricePlate(
@@ -742,6 +766,8 @@ local function renderUpgrades()
 			"SonarRange",
 			"SalvageSeconds",
 			"DiveBoardDepth",
+			"DiveLaunch",
+			"DiveOut",
 			"StandCount",
 			"OfflineRate",
 		}
