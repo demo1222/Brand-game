@@ -1,0 +1,145 @@
+diff --git a/src/client/Controllers/HUDController.luau b/src/client/Controllers/HUDController.luau
+index 245490b..ae1a4de 100644
+--- a/src/client/Controllers/HUDController.luau
++++ b/src/client/Controllers/HUDController.luau
+@@ -203,7 +203,7 @@ local function build()
+ 	local top = cluster("Currencies", Vector2.new(0, 0), UDim2.fromOffset(20, 16), UDim2.fromOffset(280, 110))
+ 	local coinCap = glass({ Size = UDim2.fromOffset(220, 52), Parent = top }, T.Gold, 0.5)
+ 	Kit.Round().Parent = coinCap
+-	refs.coinIcon = Icon.new("coin", 40, T.Gold, { Position = UDim2.fromOffset(6, 6), Parent = coinCap })
++	refs.coinIcon = Icon.new(Icons.Get("Coins"), 40, T.Gold, { Position = UDim2.fromOffset(6, 6), Parent = coinCap })
+ 	refs.coins = Kit.Title({
+ 		Text = "0",
+ 		TextSize = 24,
+@@ -226,7 +226,7 @@ local function build()
+ 	local pearlCap =
+ 		glass({ Position = UDim2.fromOffset(0, 60), Size = UDim2.fromOffset(150, 40), Parent = top }, T.Pearl, 0.55)
+ 	Kit.Round().Parent = pearlCap
+-	Icon.new("pearl", 30, T.Pearl, { Position = UDim2.fromOffset(5, 5), Parent = pearlCap })
++	Icon.new(Icons.Get("Pearls"), 30, T.Pearl, { Position = UDim2.fromOffset(5, 5), Parent = pearlCap })
+ 	refs.pearls = Kit.Title({
+ 		Text = "0",
+ 		TextSize = 19,
+@@ -437,7 +437,7 @@ local function build()
+ 	-- Action buttons (bottom-right)
+ 	local actions = cluster("Actions", Vector2.new(1, 1), UDim2.new(1, -24, 1, -24), UDim2.fromOffset(260, 210))
+ 	local S = controllers.SwimController
+-	roundAction(actions, "boost", "BOOST", T.Good, 88, UDim2.new(1, -88, 1, -88), function()
++	roundAction(actions, Icons.Get("Boost"), "BOOST", T.Good, 88, UDim2.new(1, -88, 1, -88), function()
+ 		S.SetBoost(true)
+ 	end, function()
+ 		S.SetBoost(false)
+@@ -457,7 +457,7 @@ local function build()
+ 		end
+ 	)
+ 	refs.flareText = flareText
+-	roundAction(actions, "home", "HOME · R", Color3.fromRGB(143, 180, 255), 60, UDim2.new(1, -150, 1, -160), function()
++	roundAction(actions, Icons.Get("Surface"), "HOME · R", Color3.fromRGB(143, 180, 255), 60, UDim2.new(1, -150, 1, -160), function()
+ 		Net.RequestInstantSurface:FireServer()
+ 	end)
+ 	refs.upButton = roundAction(
+diff --git a/src/client/UI/Icon.luau b/src/client/UI/Icon.luau
+index 21e9b14..bce323d 100644
+--- a/src/client/UI/Icon.luau
++++ b/src/client/UI/Icon.luau
+@@ -200,7 +200,7 @@ Icon.Specs = {
+ }
+ 
+ function Icon.Has(name: string?): boolean
+-	return name ~= nil and Icon.Specs[name] ~= nil
++	return name ~= nil and (Icon.Specs[name] ~= nil or string.sub(name, 1, 13) == "rbxassetid://")
+ end
+ 
+ local function frame(parent: Instance, z: number)
+@@ -227,6 +227,21 @@ function Icon.new(name: string, size: number, color: Color3, props): Frame
+ 		end
+ 	end
+ 	local z = holder.ZIndex + 1
++
++	if string.sub(name, 1, 13) == "rbxassetid://" then
++		local img = Instance.new("ImageLabel")
++		img.Name = "Image"
++		img.BackgroundTransparency = 1
++		img.Image = name
++		img.ScaleType = Enum.ScaleType.Fit
++		img.Size = UDim2.fromScale(1, 1)
++		img.Position = UDim2.fromScale(0.5, 0.5)
++		img.AnchorPoint = Vector2.new(0.5, 0.5)
++		img.ZIndex = z
++		img.Parent = holder
++		return holder
++	end
++
+ 	local k = size / 24
+ 	local t = math.max(1, weight * k)
+ 	for _, prim in Icon.Specs[name] or {} do
+diff --git a/src/client/UI/Icons.luau b/src/client/UI/Icons.luau
+index dc11a4c..28a0d37 100644
+--- a/src/client/UI/Icons.luau
++++ b/src/client/UI/Icons.luau
+@@ -7,7 +7,64 @@
+ local Icons = {}
+ 
+ Icons.Images = {
+-	-- e.g. Coins = "rbxassetid://1234567890",
++	Coins = "rbxassetid://123647815219439",
++	Pearls = "rbxassetid://116876038873005",
++	Tokens = "rbxassetid://81785715211820",
++	Income = "rbxassetid://132195310374616",
++	Shop = "rbxassetid://138447094925944",
++	Bag = "rbxassetid://109915477384817",
++	Upgrades = "rbxassetid://132195310374616",
++	Codex = "rbxassetid://117352761541784",
++	Quests = "rbxassetid://135982358299300",
++	Rebirth = "rbxassetid://122152167010136",
++	Leaderboards = "rbxassetid://125852389766549",
++	Players = "rbxassetid://121164669021535",
++	Settings = "rbxassetid://123019840126341",
++	Trade = "rbxassetid://127330292845945",
++	Diver = "rbxassetid://90961952774320",
++	Surface = "rbxassetid://123142086477282",
++	Boost = "rbxassetid://83073303398010",
++	Event = "rbxassetid://117407744719958",
++	Sell = "rbxassetid://111731423038857",
++	Take = "rbxassetid://117098340088835",
++	Close = "rbxassetid://108570397572772",
++	Check = "rbxassetid://87664558933928",
++	Offline = "rbxassetid://136494440748266",
++	VIP = "rbxassetid://110395315412543",
++	LuckySonar = "rbxassetid://77592086527601",
++	ExtraSlots = "rbxassetid://121964385798330",
++	BigBag = "rbxassetid://112325229043758",
++	InstantSurface = "rbxassetid://123142086477282",
++	SpeedFins = "rbxassetid://103034979948920",
++	AutoCollect = "rbxassetid://97792539620288",
++	MutationScan = "rbxassetid://108682083515808",
++	DeepDiverBundle = "rbxassetid://90961952774320",
++	CollectorBundle = "rbxassetid://74553671078937",
++	PassPlus = "rbxassetid://120949298255544",
++	Premium = "rbxassetid://104674586239639",
++	StarterPack = "rbxassetid://91910925303039",
++	LuckPotion = "rbxassetid://132467493447317",
++	MutationPotion = "rbxassetid://87996566246409",
++	ServerLuck = "rbxassetid://111536123340989",
++	OxygenRefill = "rbxassetid://75852992602063",
++	TierSkip = "rbxassetid://94955132178691",
++	Revive = "rbxassetid://123796637775234",
++	GateRecharge = "rbxassetid://104508470460341",
++	TidePassPremium = "rbxassetid://104674586239639",
++	CrateSingle = "rbxassetid://117639543567698",
++	CrateTriple = "rbxassetid://95786100205708",
++	Track_Fins = "rbxassetid://103034979948920",
++	Track_Bag = "rbxassetid://112325229043758",
++	Track_Salvage = "rbxassetid://100712342260045",
++	Track_Offline = "rbxassetid://94240516134395",
++	Track_Gate = "rbxassetid://74396665267697",
++	Track_Crab = "rbxassetid://133416690832494",
++	Track_Alarm = "rbxassetid://130978661751413",
++	Gate = "rbxassetid://74396665267697",
++	reward = "rbxassetid://120949298255544",
++	coins = "rbxassetid://111731423038857",
++	upgrade = "rbxassetid://132195310374616",
++	info = "rbxassetid://89453560194597",
+ }
+ 
+ Icons.Names = {

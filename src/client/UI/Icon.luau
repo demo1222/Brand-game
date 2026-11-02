@@ -200,7 +200,7 @@ Icon.Specs = {
 }
 
 function Icon.Has(name: string?): boolean
-	return name ~= nil and Icon.Specs[name] ~= nil
+	return name ~= nil and (Icon.Specs[name] ~= nil or string.sub(name, 1, 13) == "rbxassetid://")
 end
 
 local function frame(parent: Instance, z: number)
@@ -227,6 +227,21 @@ function Icon.new(name: string, size: number, color: Color3, props): Frame
 		end
 	end
 	local z = holder.ZIndex + 1
+
+	if string.sub(name, 1, 13) == "rbxassetid://" then
+		local img = Instance.new("ImageLabel")
+		img.Name = "Image"
+		img.BackgroundTransparency = 1
+		img.Image = name
+		img.ScaleType = Enum.ScaleType.Fit
+		img.Size = UDim2.fromScale(1, 1)
+		img.Position = UDim2.fromScale(0.5, 0.5)
+		img.AnchorPoint = Vector2.new(0.5, 0.5)
+		img.ZIndex = z
+		img.Parent = holder
+		return holder
+	end
+
 	local k = size / 24
 	local t = math.max(1, weight * k)
 	for _, prim in Icon.Specs[name] or {} do

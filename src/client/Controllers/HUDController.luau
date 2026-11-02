@@ -203,7 +203,7 @@ local function build()
 	local top = cluster("Currencies", Vector2.new(0, 0), UDim2.fromOffset(20, 16), UDim2.fromOffset(280, 110))
 	local coinCap = glass({ Size = UDim2.fromOffset(220, 52), Parent = top }, T.Gold, 0.5)
 	Kit.Round().Parent = coinCap
-	refs.coinIcon = Icon.new("coin", 40, T.Gold, { Position = UDim2.fromOffset(6, 6), Parent = coinCap })
+	refs.coinIcon = Icon.new(Icons.Get("Coins"), 40, T.Gold, { Position = UDim2.fromOffset(6, 6), Parent = coinCap })
 	refs.coins = Kit.Title({
 		Text = "0",
 		TextSize = 24,
@@ -226,7 +226,7 @@ local function build()
 	local pearlCap =
 		glass({ Position = UDim2.fromOffset(0, 60), Size = UDim2.fromOffset(150, 40), Parent = top }, T.Pearl, 0.55)
 	Kit.Round().Parent = pearlCap
-	Icon.new("pearl", 30, T.Pearl, { Position = UDim2.fromOffset(5, 5), Parent = pearlCap })
+	Icon.new(Icons.Get("Pearls"), 30, T.Pearl, { Position = UDim2.fromOffset(5, 5), Parent = pearlCap })
 	refs.pearls = Kit.Title({
 		Text = "0",
 		TextSize = 19,
@@ -437,7 +437,7 @@ local function build()
 	-- Action buttons (bottom-right)
 	local actions = cluster("Actions", Vector2.new(1, 1), UDim2.new(1, -24, 1, -24), UDim2.fromOffset(260, 210))
 	local S = controllers.SwimController
-	roundAction(actions, "boost", "BOOST", T.Good, 88, UDim2.new(1, -88, 1, -88), function()
+	roundAction(actions, Icons.Get("Boost"), "BOOST", T.Good, 88, UDim2.new(1, -88, 1, -88), function()
 		S.SetBoost(true)
 	end, function()
 		S.SetBoost(false)
@@ -457,7 +457,7 @@ local function build()
 		end
 	)
 	refs.flareText = flareText
-	roundAction(actions, "home", "HOME · R", Color3.fromRGB(143, 180, 255), 60, UDim2.new(1, -150, 1, -160), function()
+	roundAction(actions, Icons.Get("Surface"), "HOME · R", Color3.fromRGB(143, 180, 255), 60, UDim2.new(1, -150, 1, -160), function()
 		Net.RequestInstantSurface:FireServer()
 	end)
 	refs.upButton = roundAction(
