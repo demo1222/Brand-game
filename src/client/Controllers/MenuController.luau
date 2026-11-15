@@ -19,6 +19,7 @@ local Kit = require(script.Parent.Parent.UI.Kit)
 local Icons = require(script.Parent.Parent.UI.Icons)
 local RelicView = require(script.Parent.Parent.UI.RelicView)
 local RelicCard = require(script.Parent.Parent.UI.RelicCard)
+local RelicViewer = require(script.Parent.Parent.UI.RelicViewer)
 
 local New, T = Kit.New, Kit.Theme
 local player = Players.LocalPlayer
@@ -1036,6 +1037,119 @@ end
 ------------------------------------------------------------------------------------------
 local codexScroll, codexTitle, codexSetBar, codexPaintTabs
 local codexSig = ""
+local codexDetail: ScrollingFrame? = nil
+local codexSelected: string? = nil
+
+local function variantCount(entry): number
+	local n = 0
+	if entry then
+		for _ in entry do
+			n += 1
+		end
+	end
+	return n
+end
+
+-- Side panel: the selected relic, big and turning, with its facts and a View button that opens
+-- the full-screen viewer (RelicViewer). Undiscovered relics show a silhouette and a hint.
+local function renderCodexDetail()
+	local panel = codexDetail
+	if not panel then
+		return
+	end
+	Kit.Clear(panel)
+	local def = codexSelected and Relics.ById[codexSelected]
+	if not def then
+		local hint = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 170), LayoutOrder = 1, Parent = panel })
+		Kit.IconBadge("eye", T.Accent, 64, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 30), Parent = hint })
+		Kit.Title({
+			Text = "Tap a relic\nto inspect it",
+			TextSize = 18,
+			TextColor3 = T.Muted,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Position = UDim2.fromOffset(0, 104),
+			Size = UDim2.new(1, 0, 0, 48),
+			Parent = hint,
+		})
+		return
+	end
+	local codex = S.Get("Codex") or {}
+	local entry = codex[def.Id]
+	local found = entry ~= nil
+	local zone = Zones.List[def.Zone]
+	local rColor = Kit.RarityColor(def.Rarity, Rarities)
+	local bg, seq = RelicCard.RarityBackground(def.Rarity, not found)
+
+	-- 150 tall so the View button fits without scrolling on a typical window height
+	local stage = New("Frame", {
+		BackgroundColor3 = bg,
+		Size = UDim2.new(1, 0, 0, 150),
+		LayoutOrder = 1,
+		Parent = panel,
+	}, { Kit.Corner(14), New("UIGradient", { Rotation = 90, Color = seq }), Kit.Stroke(rColor, 2, 0.05) })
+	Kit.Glow(stage, rColor, 150)
+	RelicView.new({
+		Relic = { id = def.Id },
+		Spin = 35,
+		Silhouette = not found,
+		ZIndex = 2,
+		Size = UDim2.new(1, -10, 1, -10),
+		Position = UDim2.fromOffset(5, 5),
+		Parent = stage,
+	})
+	Kit.Title({
+		Text = if found then def.Name else "???",
+		TextSize = 19,
+		TextColor3 = Kit.Lighten(rColor, 0.2),
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.new(1, 0, 0, 24),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 2,
+		Parent = panel,
+	})
+	local pills = New("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 26), LayoutOrder = 3, Parent = panel })
+	Kit.List(4, true, Enum.HorizontalAlignment.Center).Parent = pills
+	Kit.Pill(string.upper(def.Rarity), rColor, { LayoutOrder = 1, Parent = pills })
+
+	local variants = variantCount(entry)
+	local stats = Kit.Card({ Size = UDim2.new(1, 0, 0, 62), LayoutOrder = 4, Parent = panel }, { Kit.Padding(6), Kit.List(2) })
+	for i, line in
+		{
+			if found then `Variants found {variants}/{#Mutations.List + 1}` else "Not found yet",
+			`+{NumberFormat.short(def.BaseCPS)} Coins/s base`,
+			`Found in {zone.Name}`,
+		}
+	do
+		Kit.Label({ Text = line, TextSize = 13, Font = T.Bold, Size = UDim2.new(1, 0, 0, 16), LayoutOrder = i, TextWrapped = false, Parent = stats })
+	end
+	Kit.Label({
+		Text = if found then `"{def.Lore}"` else `Search {zone.Name} to discover this {def.Rarity} relic.`,
+		TextColor3 = T.Muted,
+		TextSize = 13,
+		Font = Enum.Font.GothamMedium,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.new(1, 0, 0, 18),
+		AutomaticSize = Enum.AutomaticSize.Y,
+		LayoutOrder = 5,
+		Parent = panel,
+	})
+	if found then
+		Kit.Button("View", T.Accent, function()
+			RelicViewer.Open({
+				Id = def.Id,
+				Info = {
+					def.Rarity,
+					zone.Name,
+					`+{NumberFormat.short(def.BaseCPS)}/s base`,
+					`Variants {variants}/{#Mutations.List + 1}`,
+				},
+			})
+		end, { Size = UDim2.new(1, 0, 0, 46), TextSize = 16, Icon = "eye", LayoutOrder = 6, Parent = panel })
+	else
+		Kit.Button("Find it to view", T.PanelLight, nil, { Size = UDim2.new(1, 0, 0, 46), TextSize = 14, LayoutOrder = 6, Parent = panel })
+	end
+end
+
 local function renderCodex()
 	local codex = S.Get("Codex") or {}
 	local total, found = 0, 0
@@ -1061,6 +1175,11 @@ local function renderCodex()
 	codexTitle.Text = `{zone.Name}  {found}/{total}`
 	codexSetBar(found / math.max(total, 1), if pct >= 100 then T.Gold else Kit.Lighten(zone.FogColor, 0.35), `{pct}%`)
 	codexPaintTabs(tostring(codexZone))
+	-- keep the side panel on a relic of this zone; it redraws when the Codex data changes
+	local sel = codexSelected and Relics.ById[codexSelected]
+	if not sel or sel.Zone ~= codexZone then
+		codexSelected = nil
+	end
 
 	local parts = { tostring(codexZone) }
 	for _, def in defs do
@@ -1078,6 +1197,7 @@ local function renderCodex()
 		return
 	end
 	codexSig = sig
+	renderCodexDetail()
 
 	Kit.Clear(codexScroll)
 	for i, def in defs do
@@ -1094,11 +1214,8 @@ local function renderCodex()
 			Subtitle = if entry then `Variants {variants}/{#Mutations.List + 1}` else def.Rarity,
 			LayoutOrder = i,
 			OnClick = function()
-				if entry then
-					controllers.UIController.Toast(`{def.Name}: "{def.Lore}"`, "info")
-				else
-					controllers.UIController.Toast(`Undiscovered {def.Rarity} relic. Search {zone.Name}!`, "info")
-				end
+				codexSelected = def.Id
+				renderCodexDetail()
 			end,
 			Parent = codexScroll,
 		})
@@ -1169,11 +1286,22 @@ local function buildCodex(body: Frame)
 		Size = UDim2.fromOffset(0, 30),
 		Parent = strip,
 	})
-	codexScroll = Kit.Scroll({ Position = UDim2.fromOffset(0, 124), Size = UDim2.new(1, 0, 1, -124), Parent = body })
+	codexScroll = Kit.Scroll({ Position = UDim2.fromOffset(0, 124), Size = UDim2.new(1, -246, 1, -124), Parent = body })
 	local grid = Kit.Grid(Vector2.new(112, 150), 10)
 	grid.Parent = codexScroll
 	fitGrid(codexScroll, grid, 112, 150, 10)
 	New("UIPadding", { PaddingTop = UDim.new(0, 4), PaddingLeft = UDim.new(0, 4), Parent = codexScroll })
+	-- Detail panel on the right (same look as the Bag's)
+	local detailCard = Kit.Card({
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 124),
+		Size = UDim2.new(0, 236, 1, -124),
+		BackgroundColor3 = T.PanelDark,
+		Parent = body,
+	})
+	codexDetail = Kit.Scroll({ Size = UDim2.new(1, -12, 1, -12), Position = UDim2.fromOffset(6, 6), Parent = detailCard })
+	Kit.List(6, false, Enum.HorizontalAlignment.Center).Parent = codexDetail
+	renderCodexDetail()
 end
 
 ------------------------------------------------------------------------------------------

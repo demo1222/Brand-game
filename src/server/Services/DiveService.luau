@@ -386,6 +386,15 @@ local function tickPlayer(player: Player, s, dt: number, sendStatus: boolean)
 end
 
 function DiveService.Start()
+	-- Roblox kills anything below Workspace.FallenPartsDestroyHeight (default -500), and the sea
+	-- goes down to 2,200 m. Scripts can't change it: it is set on the place in Studio (Workspace).
+	local deepest = Zones.List[#Zones.List].MaxDepth
+	if workspace.FallenPartsDestroyHeight > World.WaterSurfaceY - deepest - 100 then
+		warn(
+			`[DiveService] Workspace.FallenPartsDestroyHeight is {workspace.FallenPartsDestroyHeight}: divers die below that.`
+				.. ` Set it to -5000 in Studio (Workspace properties).`
+		)
+	end
 	services.DataService.ProfileLoaded:Connect(function(player)
 		state[player] = newState()
 		local function onChar(char: Model)

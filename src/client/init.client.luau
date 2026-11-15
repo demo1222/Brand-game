@@ -17,12 +17,14 @@ local ORDER = {
 	"PromptController",
 	"HUDController",
 	"FXController",
+	"RelicAuraController",
 	"SonarController",
 	"RevealController",
 	"ShopController",
 	"MenuController",
 	"OfferController",
 	"TutorialController",
+	"DevController",
 	"IntroController",
 }
 

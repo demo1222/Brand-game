@@ -6,13 +6,9 @@ Read this first, then `docs/UI_OVERHAUL_PLAN.md` (what was built, by phase) and
 
 ## How the owner works (follow these)
 
-- **Never commit or push.** Pushing from cloud sessions is broken (a known issue the owner
-  already tracks). Deliver work as a patch file, and don't spend messages on git workarounds:
-  ```bash
-  git add -N <new files> && git diff --binary origin/main > <scratchpad>/<name>.patch
-  ```
-  Verify it with `git apply --check` on a fresh `git archive origin/main` copy, then hand over
-  the absolute path. The owner applies it with `git apply <file>` and commits it themselves.
+- **Work runs in local sessions only.** The Roblox Studio MCP is available, so changes can be
+  tested in Studio directly. Edit files in `src/` (Rojo is the source of truth); don't edit
+  synced scripts inside Studio.
 - **UI is the top priority.** The owner judges by screenshots from Roblox Studio.
 - **It must feel like a game, not a website.** Feedback on the instrument-panel pass: "design
   looks like a website", "vibe-coded buttons". Prefer chunky, tactile, playful game UI:

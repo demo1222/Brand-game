@@ -188,19 +188,26 @@ end
 local function deathScreen(info)
 	local f = modal(260, if info.Cause == "Oxygen" then Icons.Get("Oxygen") else Icons.Get("Death"), T.Bad)
 	local lowScare = (controllers.State.Get("Settings") or {}).LowScare
-	local causeText = ({
-		Leviathan = if lowScare then "The Leviathan got you." else "THE LEVIATHAN GOT YOU",
-		Oxygen = "You ran out of air.",
-		Pressure = "The pressure was too much. Get a stronger suit.",
-		Eel = "Shocked by an eel.",
-		Jellyfish = "Stung by jellyfish.",
-		Anglerfish = "An anglerfish got you. Never follow the light!",
-	})[info.Cause] or "You were knocked out."
-	title(f, causeText, Kit.Lighten(T.Bad, 0.3), 1)
+	-- A short title that always fits on one line, plus an optional hint underneath
+	local cause = ({
+		Leviathan = { if lowScare then "The Leviathan got you" else "THE LEVIATHAN GOT YOU" },
+		Oxygen = { "Out of air", "Upgrade your Oxygen Tank to dive longer." },
+		Pressure = { "Crushed by pressure", "Get a stronger suit for this depth." },
+		Eel = { "Shocked by an eel" },
+		Jellyfish = { "Stung by jellyfish" },
+		Anglerfish = { "An anglerfish got you", "Never follow the light!" },
+	})[info.Cause] or { "You were knocked out" }
+	local head = title(f, cause[1], Kit.Lighten(T.Bad, 0.3), 1)
+	head.TextScaled = true
+	head.TextWrapped = false
+	local hint = cause[2]
 	local bagText = if info.BagCount > 0
 		then `Your bag ({info.BagCount} relics, ~{NumberFormat.short(info.BagValue)} Coins) will sink in`
 		else "Your bag was empty."
-	local timerLabel = Kit.Label({ Text = bagText, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 50), Parent = f })
+	if hint then
+		bagText = `{hint}\n{bagText}`
+	end
+	local timerLabel = Kit.Label({ Text = bagText, TextWrapped = true, TextSize = 16, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 2, Size = UDim2.new(1, 0, 0, 50), Parent = f })
 	if info.Kept then
 		Kit.Label({ Text = "Vault Lock kept your most valuable relic safe.", TextColor3 = T.Good, TextSize = 14, TextXAlignment = Enum.TextXAlignment.Center, LayoutOrder = 3, Size = UDim2.new(1, 0, 0, 20), Parent = f })
 	end

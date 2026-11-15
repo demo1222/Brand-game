@@ -16,8 +16,19 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local RelicArt = require(Shared.RelicArt)
 local Relics = require(Shared.Config.Relics)
 local Mutations = require(Shared.Config.Mutations)
+local RelicAura = require(Shared.RelicAura)
 
 local RelicView = {}
+
+-- Blender relic meshes load lazily, so a card's first frame can be blank. Fetch them all once.
+task.spawn(function()
+	local folder = ReplicatedStorage:WaitForChild("RelicMeshes", 10)
+	if folder then
+		pcall(function()
+			game:GetService("ContentProvider"):PreloadAsync(folder:GetDescendants())
+		end)
+	end
+end)
 
 local TARGET = 4 -- model size in studs inside the viewport
 local FOV = 32
@@ -73,7 +84,87 @@ local function templateFor(id: string, mutations: { string }?): Model?
 	return t
 end
 
-local function mount(model: Model, props)
+------------------------------------------------------------------------------------------
+-- Aura motion and rarity glow (RelicAura): Spin_/Aura_ parts move, Epic+ cards get a glow.
+------------------------------------------------------------------------------------------
+local auraViews = setmetatable({}, { __mode = "k" }) :: { [ViewportFrame]: Model }
+local glowViews = setmetatable({}, { __mode = "k" }) :: { [Frame]: any }
+local fxConn: RBXScriptConnection? = nil
+
+local function ensureFxLoop()
+	if fxConn then
+		return
+	end
+	fxConn = RunService.RenderStepped:Connect(function()
+		local t = os.clock()
+		local any = false
+		for vpf, model in auraViews do
+			any = true
+			if vpf.Parent == nil then
+				auraViews[vpf] = nil
+			elseif vpf.Visible then
+				RelicAura.Animate(model, t)
+			end
+		end
+		for frame, g in glowViews do
+			any = true
+			if frame.Parent == nil then
+				glowViews[frame] = nil
+			elseif g.pulse > 0 then
+				local k = (math.sin(t * g.pulse) + 1) / 2
+				g.inner.BackgroundTransparency = g.transparency + 0.15 * k
+				g.outer.BackgroundTransparency = math.min(g.transparency + 0.2 + 0.12 * (1 - k), 1)
+			end
+		end
+		if not any and fxConn then
+			fxConn:Disconnect()
+			fxConn = nil
+		end
+	end)
+end
+
+local function circle(scale: number, color: Color3, transparency: number, parent: Instance): Frame
+	local f = Instance.new("Frame")
+	f.AnchorPoint = Vector2.new(0.5, 0.5)
+	f.Position = UDim2.fromScale(0.5, 0.5)
+	f.Size = UDim2.fromScale(scale, scale)
+	f.BackgroundColor3 = color
+	f.BackgroundTransparency = transparency
+	f.BorderSizePixel = 0
+	Instance.new("UICorner", f).CornerRadius = UDim.new(1, 0)
+	local ar = Instance.new("UIAspectRatioConstraint")
+	ar.AspectRatio = 1
+	ar.Parent = f
+	f.Parent = parent
+	return f
+end
+
+-- A soft rarity glow under the model: two circles in a frame that tracks the viewport.
+local function addGlow(vpf: ViewportFrame, parent: Instance, g)
+	local holder = Instance.new("Frame")
+	holder.Name = "RarityGlow"
+	holder.BackgroundTransparency = 1
+	holder.Size = vpf.Size
+	holder.Position = vpf.Position
+	holder.AnchorPoint = vpf.AnchorPoint
+	holder.ZIndex = math.max(vpf.ZIndex - 1, 0)
+	holder.Visible = vpf.Visible
+	local outer = circle(g.size * 1.2, g.color, math.min(g.transparency + 0.2, 1), holder)
+	local inner = circle(g.size * 0.75, g.color, g.transparency, holder)
+	holder.Parent = parent
+	vpf:GetPropertyChangedSignal("Visible"):Connect(function()
+		holder.Visible = vpf.Visible
+	end)
+	vpf.AncestryChanged:Connect(function()
+		if vpf.Parent ~= parent then
+			holder:Destroy()
+		end
+	end)
+	glowViews[holder] = { inner = inner, outer = outer, transparency = g.transparency, pulse = g.pulse }
+	ensureFxLoop()
+end
+
+local function mount(model: Model, props, rarity: string?)
 	local vpf = Instance.new("ViewportFrame")
 	vpf.BackgroundTransparency = 1
 	vpf.Ambient = Color3.fromRGB(150, 155, 170)
@@ -123,6 +214,26 @@ local function mount(model: Model, props)
 		}
 		ensureSpinLoop()
 	end
+	if RelicAura.HasMotion(clone) then
+		auraViews[vpf] = clone
+		ensureFxLoop()
+	end
+	if rarity and not props.Silhouette then
+		local glow = RelicAura.CardGlow(rarity)
+		if glow then
+			if props.Parent then
+				addGlow(vpf, props.Parent, glow)
+			else
+				local conn
+				conn = vpf:GetPropertyChangedSignal("Parent"):Connect(function()
+					if vpf.Parent then
+						conn:Disconnect()
+						addGlow(vpf, vpf.Parent, glow)
+					end
+				end)
+			end
+		end
+	end
 	if props.Parent then
 		vpf.Parent = props.Parent
 	end
@@ -139,7 +250,8 @@ function RelicView.new(props): ViewportFrame
 		empty.Parent = props.Parent
 		return empty
 	end
-	return mount(t, props)
+	local def = Relics.ById[relic.id]
+	return mount(t, props, def and def.Rarity)
 end
 
 local archetypeCache: { [string]: Model } = {}

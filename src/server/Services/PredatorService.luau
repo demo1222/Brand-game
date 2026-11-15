@@ -345,7 +345,43 @@ local function tickLeviathan(lev, dt: number)
 	render(lev)
 end
 
+-- DEV: dev test panel hooks (DevService). DevExtra adds leviathans on top of the natural count;
+-- DevPaused removes every natural one. Both are 0/false for normal play.
+PredatorService.DevExtra = 0
+PredatorService.DevPaused = false
+
+function PredatorService.DevSpawnNear(player: Player): boolean
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hrp then
+		return false
+	end
+	local lev = spawnLeviathan()
+	local flat = Vector3.new(rng:NextNumber(-1, 1), 0, rng:NextNumber(-1, 1))
+	flat = if flat.Magnitude > 0.1 then flat.Unit else Vector3.new(1, 0, 0)
+	lev.pos = hrp.Position + flat * 45
+	lev.look = -flat
+	for i = 1, #lev.trail do
+		lev.trail[i] = lev.pos
+	end
+	lev.state = "Hunt"
+	lev.target = player
+	hunted[player] = true
+	PredatorService.DevExtra += 1
+	return true
+end
+
+function PredatorService.DevClear(paused: boolean)
+	PredatorService.DevExtra = 0
+	PredatorService.DevPaused = paused
+	while #leviathans > 0 do
+		despawnLeviathan()
+	end
+end
+
 local function desiredLeviathans(): number
+	if PredatorService.DevPaused then
+		return 0
+	end
 	local deep = 0
 	for _, player in Players:GetPlayers() do
 		local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -679,7 +715,7 @@ function PredatorService.Start()
 			end
 			if acc >= 5 then
 				acc = 0
-				local want = desiredLeviathans()
+				local want = desiredLeviathans() + PredatorService.DevExtra -- DEV: DevExtra is 0 normally
 				while #leviathans < want do
 					spawnLeviathan()
 				end

@@ -142,7 +142,7 @@ function Build.RelicModel(def, rarityColor: Color3, mutations: { string }?, muta
 		mutations = mutations,
 		mutationDefs = mutationDefs,
 		size = size or 1,
-		targetSize = 2.2,
+		targetSize = 3, -- dock displays: big enough to admire on the pedestal
 		rarityColor = rarityColor,
 	})
 end

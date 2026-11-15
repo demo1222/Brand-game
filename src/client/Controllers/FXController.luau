@@ -158,13 +158,24 @@ local function addDisplay(model: Model)
 	if displays[model] then
 		return
 	end
+	local base = model:GetPivot()
+	local extras = {}
+	-- The pedestal (WorldService) and RelicAura now carry the rarity glow, light, sparkles and
+	-- pillar. This only adds the turntable motion; the old ring/sparkle/pillar extras are off.
+	if model:FindFirstChild("Pedestal", true) == nil and model.Parent and model.Parent:FindFirstChild("Pedestal") then
+		displays[model] = { model = model, base = base, phase = math.random() * math.pi * 2, extras = extras }
+		model.AncestryChanged:Connect(function(_, parent)
+			if not parent then
+				removeDisplay(model)
+			end
+		end)
+		return
+	end
 	local rarityName = model:GetAttribute("Rarity")
 	local rarity = rarityName and Rarities[rarityName]
 	local color = Kit.RarityColor(rarityName, Rarities)
 	local tier = if type(rarity) == "table" then rarity.Tier else 1
-	local base = model:GetPivot()
 	local _, size = model:GetBoundingBox()
-	local extras = {}
 
 	local ring = Instance.new("Part")
 	ring.Name = "DisplayRing"

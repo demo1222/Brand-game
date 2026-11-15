@@ -84,12 +84,35 @@ local function clearModel(stand: BasePart)
 	end
 end
 
+-- The pedestal under a stand (WorldService.buildPedestal): shown when the stand is unlocked,
+-- its Trim* parts glow in the displayed relic's rarity colour (grey when empty, gold on vaults).
+local TRIM_IDLE = Color3.fromRGB(90, 100, 120)
+local TRIM_VAULT = Color3.fromRGB(255, 196, 64)
+local function stylePedestal(stand: BasePart, visible: boolean, rarityColor: Color3?, isVault: boolean)
+	local ped = stand:FindFirstChild("Pedestal")
+	if not ped then
+		return
+	end
+	for _, p in ped:GetChildren() do
+		if p:IsA("BasePart") then
+			local isTrim = string.sub(p.Name, 1, 4) == "Trim"
+			p.Transparency = if not visible then 1 elseif p.Name == "TrimPad" then 0.6 else 0
+			p.CanCollide = visible and not isTrim
+			if isTrim then
+				p.Color = rarityColor or (if isVault then TRIM_VAULT else TRIM_IDLE)
+				p.Material = if rarityColor or isVault then Enum.Material.Neon else Enum.Material.SmoothPlastic
+			end
+		end
+	end
+end
+
 local function renderStand(stand: BasePart, relic, visible: boolean, mult: number, isVault: boolean)
 	clearModel(stand)
 	stand:SetAttribute("Visible", visible)
 	stand:SetAttribute("HasRelic", visible and relic ~= nil)
-	stand.Transparency = if visible then 0 else 1
-	stand.CanCollide = visible
+	stand.Transparency = 1
+	stand.CanCollide = false
+	stylePedestal(stand, visible, if visible and relic then Rarities[relic.rarity].Color else nil, isVault)
 	local place = stand:FindFirstChild("Place") :: ProximityPrompt
 	local steal = stand:FindFirstChild("Steal") :: ProximityPrompt?
 	local info = stand:FindFirstChild("Info") :: BillboardGui
@@ -107,7 +130,14 @@ local function renderStand(stand: BasePart, relic, visible: boolean, mult: numbe
 		model.Name = "RelicModel"
 		model:SetAttribute("Rarity", relic.rarity)
 		model:SetAttribute("RelicId", relic.id)
-		model:PivotTo(CFrame.new(stand.Position + Vector3.new(0, 2.8, 0)) * stand.CFrame.Rotation)
+		-- float the relic above the pedestal top, its front (+Z) turned toward the corridor
+		local _, extent = model:GetBoundingBox()
+		local top = stand.Position.Y + stand.Size.Y / 2
+		model:PivotTo(
+			CFrame.new(stand.Position.X, top + 0.7 + extent.Y / 2, stand.Position.Z)
+				* stand.CFrame.Rotation
+				* CFrame.Angles(0, math.pi, 0)
+		)
 		model.Parent = stand
 		local mut = if #relic.mutations > 0 then table.concat(relic.mutations, " ") .. " " else ""
 		info.Label.Text = `{mut}{def.Name}\n+{NumberFormat.short(Formulas.RelicCPS(relic) * mult)}/s`
@@ -118,7 +148,8 @@ local function renderStand(stand: BasePart, relic, visible: boolean, mult: numbe
 			steal.ObjectText = `{mut}{def.Name}`
 		end
 	else
-		info.Label.Text = if isVault then "VAULT (safe)" else "Empty"
+		-- empty stands stay quiet (no floating "Empty" signs); the prompt still says Display
+		info.Label.Text = if isVault then "VAULT (safe)" else ""
 		info.Label.TextColor3 = Color3.new(1, 1, 1)
 		place.ActionText = if isVault then "Vault" else "Display"
 		place.ObjectText = if isVault then "Unstealable slot" else "Empty stand"

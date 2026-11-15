@@ -25,6 +25,8 @@ local swimming = false
 local lastBoostSent = false
 local velocity = Vector3.zero
 local knock = Vector3.zero
+-- Depth to hold after a diving-board plunge, until the player moves or surfaces
+local holdDepth: number? = nil
 local linVel: LinearVelocity? = nil
 local align: AlignOrientation? = nil
 -- Diving-board dive: a scripted swan dive. Jumping off a board takes over the character:
@@ -45,8 +47,14 @@ type Dive = {
 	depth: number,
 	entrySpeed: number,
 	entryT: number,
+	stall: number?,
 }
 local dive: Dive? = nil
+-- Look-ahead for the underwater glide (ignores the character and anything non-solid)
+local glideParams = RaycastParams.new()
+glideParams.FilterType = Enum.RaycastFilterType.Exclude
+glideParams.RespectCanCollide = true
+glideParams.IgnoreWater = true
 -- Launch, out-distance and gravity live in Upgrades.Dive. The Board upgrade raises launch and
 -- out per level, and the character's DiveLaunch / DiveOut attributes carry the owner's values.
 
@@ -191,12 +199,18 @@ local function step(dt: number)
 			local k = math.clamp((t - 0.05) / 0.35, 0, 1)
 			head = Vector3.yAxis:Lerp(along, k)
 			velocity = v
+			-- a strong board launch can carry you into a dock or cliff: let go as soon as the arc
+			-- is blocked instead of pressing against it until the 3 s timeout
+			glideParams.FilterDescendantsInstances = { char }
+			local airBlocked = t > 0.15
+				and v.Magnitude > 1
+				and Workspace:Raycast(hrp.Position, v.Unit * (2.5 + v.Magnitude * 0.08), glideParams) ~= nil
 			if depth > 0.3 then
 				d.phase = "water"
 				d.entryT = now
 				d.entrySpeed = math.max(v.Magnitude, 50)
 				splash(hrp.Position, 90)
-			elseif t > 3 then
+			elseif airBlocked or t > 3 then
 				dive = nil -- never reached the water (blocked): give control back
 				hum.PlatformStand = false
 				linVel.MaxForce = 0
@@ -213,7 +227,26 @@ local function step(dt: number)
 			local swimSpeed = char:GetAttribute("SwimSpeed") or Upgrades.Base.SwimSpeed
 			local speed = d.entrySpeed + (swimSpeed * 1.3 - d.entrySpeed) * ease
 			velocity = velocity:Lerp(head * speed, math.clamp(dt * 10, 0, 1))
-			if progress >= 1 or now - d.entryT > 8 then -- 8 s: the deepest board (level 10) needs up to about 5 s at base swim speed
+			-- Blocked by a cliff, shelf or wreck: end the glide at once instead of pinning the
+			-- player against the wall until the timeout. Look a short way ahead, and also stop
+			-- if the body has nearly stopped moving although the glide is pushing it.
+			local blocked = false
+			if velocity.Magnitude > 1 then
+				glideParams.FilterDescendantsInstances = { char }
+				local reach = velocity.Unit * (3 + velocity.Magnitude * 0.12)
+				blocked = Workspace:Raycast(hrp.Position, reach, glideParams) ~= nil
+			end
+			if hrp.AssemblyLinearVelocity.Magnitude < speed * 0.25 and now - d.entryT > 0.3 then
+				d.stall = (d.stall or 0) + dt
+			else
+				d.stall = 0
+			end
+			local stalled = (d.stall or 0) > 0.2
+			if blocked or stalled then
+				velocity = Vector3.zero
+			end
+			if blocked or stalled or progress >= 1 or now - d.entryT > 8 then -- 8 s: the deepest board (level 10) needs up to about 5 s at base swim speed
+				holdDepth = depth
 				dive = nil
 				align.Responsiveness = 12
 				-- normal swimming takes over next frame with this velocity (no jolt)
@@ -241,6 +274,7 @@ local function step(dt: number)
 			splash(hrp.Position)
 		end
 		if not swimming then
+			holdDepth = nil
 			-- breaking the surface on the way up: a small ripple (no splash used to happen here)
 			if velocity.Y > 2 then
 				splash(hrp.Position, 12, 0.35)
@@ -289,9 +323,15 @@ local function step(dt: number)
 	end
 
 	local target = dir * speed
-	-- gentle sink when idle, stronger stop near the seabed
+	-- idle: hold the board depth after a plunge, otherwise sink gently
 	if dir.Magnitude < 0.05 then
-		target = Vector3.new(0, -1.5, 0)
+		if holdDepth then
+			target = Vector3.new(0, math.clamp(-(holdDepth - depth) * 2, -3, 3), 0)
+		else
+			target = Vector3.new(0, -1.5, 0)
+		end
+	else
+		holdDepth = nil
 	end
 	velocity = velocity:Lerp(target, math.clamp(dt * 6, 0, 1)) + knock
 	knock = knock * math.clamp(1 - dt * 4, 0, 1)

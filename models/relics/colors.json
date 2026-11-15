@@ -1,0 +1,268 @@
+{
+ "relics": {
+  "R011": {
+   "Main": "#F2B33D",
+   "Accent": "#C9CED6",
+   "Glass": "#AEE3FF",
+   "Trim": "#C8963E",
+   "Glow": "#FFFFFF"
+  },
+  "R012": {
+   "Main": "#EDE2C8",
+   "Accent": "#CBB892",
+   "Gem": "#F7F0FF",
+   "Glow": "#FFFFFF"
+  },
+  "R020": {
+   "Main": "#D3D8E0",
+   "Accent": "#B8343F",
+   "Trim": "#F0C860",
+   "Glow": "#FFFFFF"
+  },
+  "R022": {
+   "Main": "#3FAE7A",
+   "Trim": "#FFC440",
+   "Accent": "#2E6B55",
+   "Glow": "#B6FF9A"
+  },
+  "R030": {
+   "Main": "#D2A04A",
+   "Accent": "#6B4428",
+   "Trim": "#8A8F99",
+   "Glow": "#9FD8FF"
+  },
+  "R031": {
+   "Main": "#4F8F7E",
+   "Glass": "#CFEFFF",
+   "Glow": "#7DFFD4",
+   "Trim": "#2F3A3F",
+   "Gem": "#103A30"
+  },
+  "R032": {
+   "Main": "#8A5A34",
+   "Accent": "#3A3D45",
+   "Trim": "#FFC440",
+   "Gem": "#F7F0FF",
+   "Glow": "#FFD45A"
+  },
+  "R042": {
+   "Main": "#6A6088",
+   "Gem": "#3A2E55",
+   "Glow": "#B57BFF",
+   "Accent": "#7A6E98",
+   "Trim": "#E8DDFF"
+  },
+  "R043": {
+   "Main": "#E6DCC4",
+   "Accent": "#FFFFFF",
+   "Glow": "#7FE8FF",
+   "Gem": "#3A3226"
+  },
+  "R054": {
+   "Main": "#7C8590",
+   "Glow": "#63E6FF",
+   "Trim": "#D9D2BF"
+  },
+  "R055": {
+   "Gem": "#DDF4FF",
+   "Main": "#2E2B30",
+   "Glow": "#FFFFFF"
+  },
+  "R013": {
+   "Main": "#F3E2C4",
+   "Accent": "#FF8FA0",
+   "Trim": "#FFC440",
+   "Gem": "#36D6C3",
+   "Glow": "#FFB3C1"
+  },
+  "R023": {
+   "Main": "#3F9E8C",
+   "Trim": "#F2D7C0",
+   "Glass": "#1C2B3A",
+   "Glow": "#9AF7FF"
+  },
+  "R024": {
+   "Main": "#3E7F5A",
+   "Accent": "#7BC25B",
+   "Trim": "#FFC440",
+   "Glow": "#C9FF6B"
+  },
+  "R033": {
+   "Main": "#E4B54A",
+   "Accent": "#2E4D9A",
+   "Gem": "#4E7BD9",
+   "Glow": "#A8F0FF"
+  },
+  "R034": {
+   "Main": "#C8963E",
+   "Accent": "#F2E6C8",
+   "Trim": "#8A5A20",
+   "Spin_Needle": "#FF6B5C",
+   "Glow": "#FFD45A"
+  },
+  "R035": {
+   "Main": "#E9D7A8",
+   "Accent": "#7B3FA0",
+   "Trim": "#2A1E3A",
+   "Glow": "#C27BFF"
+  },
+  "R044": {
+   "Glass": "#BFE9FF",
+   "Main": "#A07A4E",
+   "Glow": "#7FFFE0"
+  },
+  "R045": {
+   "Main": "#2F4A44",
+   "Accent": "#4E7A6A",
+   "Glow": "#7DFFC0",
+   "Trim": "#D9D2BF"
+  },
+  "R046": {
+   "Main": "#6E1F33",
+   "Accent": "#2A0F18",
+   "Trim": "#E9C7CF",
+   "Glow": "#62C8FF"
+  },
+  "R056": {
+   "Main": "#EEE4CC",
+   "Accent": "#3F6F4A",
+   "Trim": "#3A2A22",
+   "Gem": "#E0303F",
+   "Glow": "#9DFF7A"
+  },
+  "R057": {
+   "Main": "#3A2F2E",
+   "Glow": "#FF7A2A",
+   "Accent": "#5A4440"
+  },
+  "R025": {
+   "Main": "#FFC440",
+   "Accent": "#4FA35E",
+   "Gem": "#F7F0FF",
+   "Glow": "#8FF3FF",
+   "Aura_Notes": "#8FF3FF"
+  },
+  "R036": {
+   "Main": "#9C6B42",
+   "Accent": "#2F5E8E",
+   "Trim": "#FFC440",
+   "Glow": "#BFF6FF",
+   "Gem": "#D9D2BF",
+   "Eyes": "#2A1A10",
+   "Aura_Foam": "#BFF6FF",
+   "Aura_Pearls": "#F7F0FF"
+  },
+  "R037": {
+   "Main": "#56606E",
+   "Accent": "#B8BEC8",
+   "Trim": "#B8343F",
+   "Glow": "#7DFF8A",
+   "Gem": "#24242C",
+   "Aura_Runes": "#7DFF8A"
+  },
+  "R041": {
+   "Main": "#3A3D45",
+   "Accent": "#EDE4D0",
+   "Glow": "#FFE27A",
+   "Trim": "#6B6F78",
+   "Aura_Rays": "#FFE27A"
+  },
+  "R047": {
+   "Main": "#2C2638",
+   "Trim": "#FFC440",
+   "Glow": "#FF5A3C",
+   "Aura_Flames": "#FF5A3C"
+  },
+  "R048": {
+   "Main": "#2BA6A0",
+   "Accent": "#E6DCC4",
+   "Trim": "#5A3A26",
+   "Glow": "#7FFFE8",
+   "Aura_Plates": "#7FFFE8"
+  },
+  "R059": {
+   "Main": "#5B6270",
+   "Accent": "#3A3F4A",
+   "Glow": "#FF4A3A",
+   "Trim": "#D9D2BF",
+   "Aura_Rocks": "#FF4A3A"
+  },
+  "R038": {
+   "Main": "#B07A3E",
+   "Accent": "#4FA38A",
+   "Trim": "#5A3E28",
+   "Glow": "#8FE0FF",
+   "Spin_Rope": "#BFF2FF",
+   "Aura_Waves": "#8FE0FF"
+  },
+  "R050": {
+   "Main": "#3A3548",
+   "Accent": "#5E3A7A",
+   "Gem": "#EDE6F2",
+   "Glow": "#C36BFF",
+   "Eyes": "#120A1A",
+   "Spin_Lid": "#4A3A5C",
+   "Aura_Fan": "#C36BFF",
+   "Aura_Ring": "#E0B8FF"
+  },
+  "R052": {
+   "Main": "#EFE7D2",
+   "Accent": "#4A3A34",
+   "Trim": "#7A7F88",
+   "Glow": "#FF6A4A",
+   "Aura_Slashes": "#FF6A4A",
+   "Aura_Embers": "#FFB04A"
+  },
+  "R058": {
+   "Main": "#D9A93A",
+   "Accent": "#5E8F6A",
+   "Trim": "#FF7A8A",
+   "Gem": "#F7F0FF",
+   "Glow": "#4DFFB8",
+   "Spin_Droplets": "#AEE9FF",
+   "Aura_Shards": "#4DFFB8"
+  },
+  "R051": {
+   "Main": "#121016",
+   "Accent": "#E8E2F0",
+   "Glow": "#B98CFF",
+   "Spin_Glyphs": "#D9C2FF",
+   "Aura_Void": "#3A1E5C"
+  },
+  "R060": {
+   "Main": "#6A3A3C",
+   "Glow": "#FF5A2A",
+   "Accent": "#8A5A4C",
+   "Spin_Rocks": "#5A4044",
+   "Aura_Pulse": "#C0281A"
+  }
+ },
+ "caches": {
+  "CACHE_KELP": {
+   "Main": "#4A5A4C",
+   "Accent": "#8A5A34",
+   "Trim": "#4FA35E",
+   "Lid": "#9C6B42",
+   "Glow": "#FFD45A"
+  },
+  "CACHE_WRECKS": {
+   "Main": "#5A5E66",
+   "Accent": "#6E4A30",
+   "Trim": "#3A3D45",
+   "Lid": "#7A5434",
+   "Glow": "#FFD45A"
+  },
+  "CACHE_ABYSS": {
+   "Main": "#1E2030",
+   "Accent": "#3A3548",
+   "Lid": "#4A4360",
+   "Glow": "#8A7BFF"
+  },
+  "CACHE_TRENCH": {
+   "Main": "#2A2224",
+   "Accent": "#3A2F2E",
+   "Lid": "#4A3A36",
+   "Glow": "#FF7A2A"
+  }
+ }
+}

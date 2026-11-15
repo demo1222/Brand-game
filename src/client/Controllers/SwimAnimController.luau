@@ -36,7 +36,7 @@ local BREATH_TURN = rad(50)
 type Rig = {
 	r15: boolean,
 	names: { string },
-	joints: { [string]: Motor6D },
+	joints: { [string]: Motor6D | AnimationConstraint },
 	idlePose: { [string]: CFrame },
 	movePose: { [string]: CFrame },
 	divePose: { [string]: CFrame },
@@ -97,7 +97,8 @@ local function buildRig(char: Model): Rig?
 		for joint, partName in R15_JOINTS do
 			local part = char:FindFirstChild(partName)
 			local m = part and part:FindFirstChild(joint)
-			if m and m:IsA("Motor6D") then
+			-- newer R15 avatars use AnimationConstraint instead of Motor6D; both have Transform
+			if m and (m:IsA("Motor6D") or m:IsA("AnimationConstraint")) then
 				joints[joint] = m
 			end
 		end
@@ -348,6 +349,14 @@ local function step(dt: number)
 			continue
 		end
 		rig.posed = true
+			-- The default Animator (Animate script) plays an idle track that overwrites Motor6D.Transform
+			-- every frame, so stop those tracks while this controller poses the rig
+			local animator = hum:FindFirstChildOfClass("Animator")
+			if animator then
+				for _, track in animator:GetPlayingAnimationTracks() do
+					track:Stop(0)
+				end
+			end
 
 		if not swimming then
 			-- in the air: only the dive pose (a board dive)

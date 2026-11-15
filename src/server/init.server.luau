@@ -12,6 +12,7 @@ local ORDER = {
 	"PolicyWrapper",
 	"DataService",
 	"AnalyticsService",
+	"RelicMeshService",
 	"CurrencyService",
 	"BoostService",
 	"MonetizationService",
@@ -32,6 +33,7 @@ local ORDER = {
 	"AnnouncementService",
 	"CodesService",
 	"AdminService",
+	"DevService",
 	"SecurityService",
 }
 

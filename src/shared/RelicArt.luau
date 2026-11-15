@@ -1034,9 +1034,160 @@ function RelicArt.Place(model: Model, cf: CFrame)
 	end
 end
 
+------------------------------------------------------------------------------------------
+-- Blender meshes (docs/ART_PASS_PLAN.md). A relic with a template in
+-- ReplicatedStorage.RelicMeshes is built from it; every other relic uses its recipe.
+------------------------------------------------------------------------------------------
+local meshConfig = nil
+local function getMeshConfig()
+	if meshConfig == nil then
+		local ok, cfg = pcall(function()
+			return require(script.Parent.Config.RelicMeshes)
+		end)
+		meshConfig = if ok then cfg else false
+	end
+	return meshConfig or nil
+end
+
+local function findTemplate(name: string): Model?
+	local ok, found = pcall(function()
+		local folder = game:GetService("ReplicatedStorage"):FindFirstChild("RelicMeshes")
+		return folder and folder:FindFirstChild(name)
+	end)
+	if ok and found and found:IsA("Model") then
+		return found
+	end
+	return nil
+end
+
+-- Clone a mesh template, colour its parts by role, centre it on a Root at the origin and
+-- scale its longest side to `longest` studs. Returns the model and the first glow colour.
+function RelicArt.FromTemplate(template: Model, id: string, colors, longest: number, mut, forViewport: boolean)
+	local cfg = getMeshConfig()
+	local clone = template:Clone()
+	local parts = {}
+	for _, d in clone:GetDescendants() do
+		if d:IsA("SurfaceAppearance") then
+			d:Destroy()
+		elseif d:IsA("BasePart") then
+			table.insert(parts, d)
+		end
+	end
+	local minV = Vector3.new(math.huge, math.huge, math.huge)
+	local maxV = -minV
+	for _, p in parts do
+		local h = p.Size / 2
+		for _, sx in { -1, 1 } do
+			for _, sy in { -1, 1 } do
+				for _, sz in { -1, 1 } do
+					local w = p.CFrame * Vector3.new(h.X * sx, h.Y * sy, h.Z * sz)
+					minV = minV:Min(w)
+					maxV = maxV:Max(w)
+				end
+			end
+		end
+	end
+	local center = (minV + maxV) / 2
+	local extent = maxV - minV
+	local k = longest / math.max(extent.X, extent.Y, extent.Z, 0.01)
+
+	local model = Instance.new("Model")
+	model.Name = id
+	local root = Instance.new("Part")
+	root.Name = "Root"
+	root.Size = Vector3.one * 0.2
+	root.Transparency = 1
+	root.Anchored = true
+	root.CanCollide = false
+	root.CanQuery = false
+	root.CanTouch = false
+	root.CFrame = CFrame.new()
+	root.Parent = model
+	model.PrimaryPart = root
+
+	-- Blender fronts face -Z; recipes (and the RelicView camera) face +Z, so turn meshes round.
+	local turn = CFrame.Angles(0, math.pi, 0)
+	local glowColor = nil
+	for _, p in parts do
+		local role = if cfg then cfg.RoleOf(p.Name, id) else p.Name
+		local neon = cfg and cfg.IsNeonRole(role)
+		p.Anchored = true
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.CastShadow = false
+		p.CFrame = turn * CFrame.new((p.CFrame.Position - center) * k) * p.CFrame.Rotation
+		p.Size *= k
+		p.Color = (colors and colors[role]) or p.Color
+		p.Material = if neon then Enum.Material.Neon else Enum.Material.SmoothPlastic
+		if role == "Glass" then
+			p.Material = if forViewport then Enum.Material.SmoothPlastic else Enum.Material.Glass
+			p.Transparency = 0.55
+		end
+		if role == "Main" and mut then
+			local matName = mut.Material
+			if forViewport and (matName == "ForceField" or matName == "Glass") then
+				matName = "Neon"
+			end
+			p.Color = mut.Color
+			p.Material = Enum.Material[matName] or Enum.Material.SmoothPlastic
+			p.Transparency = if mut.Material == "Glass" and not forViewport then 0.25 else 0
+		end
+		if neon then
+			glowColor = glowColor or p.Color
+		end
+		p:SetAttribute("Role", role)
+		p.Name = role
+		p.Parent = model
+	end
+	clone:Destroy()
+	return model, glowColor
+end
+
+function RelicArt.BuildFromMesh(def, opts)
+	local cfg = getMeshConfig()
+	local entry = cfg and cfg.Relics[def.Id]
+	local template = entry and findTemplate(def.Id)
+	if not template then
+		return nil
+	end
+	local mut = nil
+	if opts.mutations and #opts.mutations > 0 and opts.mutationDefs then
+		mut = opts.mutationDefs[opts.mutations[1]]
+	end
+	local model, glowColor = RelicArt.FromTemplate(
+		template,
+		def.Id,
+		entry.Colors,
+		(opts.targetSize or 4) * (opts.size or 1) * (entry.Scale or 1),
+		mut,
+		opts.forViewport == true
+	)
+	model.Name = opts.name or def.Id
+	if opts.light ~= false and not opts.forViewport then
+		local light = Instance.new("PointLight")
+		light.Color = if mut then mut.Color else (glowColor or opts.rarityColor or Color3.new(1, 1, 1))
+		light.Range = 10 * (opts.size or 1)
+		light.Brightness = 1.6
+		light.Parent = model.PrimaryPart
+		-- Rarity aura: lights, particles and (Mythic+) a light pillar; clients animate it.
+		local ok, RelicAura = pcall(function()
+			return require(script.Parent.RelicAura)
+		end)
+		if ok and RelicAura then
+			RelicAura.Decorate(model, def.Rarity, (opts.targetSize or 4) * (opts.size or 1) * (entry.Scale or 1))
+		end
+	end
+	return model
+end
+
 -- def: Relics.ById entry. opts: see header.
 function RelicArt.Build(def, opts)
 	opts = opts or {}
+	local fromMesh = RelicArt.BuildFromMesh(def, opts)
+	if fromMesh then
+		return fromMesh
+	end
 	local art = RelicArt.ArtFor(def.Id, def.Shape)
 	local o = table.clone(opts)
 	o.name = o.name or def.Id

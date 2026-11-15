@@ -100,6 +100,7 @@ Icons.Images = {
 }
 
 Icons.Names = {
+	Dev = "wrench",
 	-- currencies
 	Coins = "coin",
 	Pearls = "pearl",
@@ -319,6 +320,7 @@ Icons.Colors = {
 	Settings = Color3.fromRGB(169, 189, 214),
 	Trade = Color3.fromRGB(245, 192, 74),
 	Diver = Color3.fromRGB(63, 214, 230),
+	Dev = Color3.fromRGB(255, 110, 190),
 }
 
 return Icons

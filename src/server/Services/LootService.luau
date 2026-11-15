@@ -18,6 +18,8 @@ local Zones = require(Shared.Config.Zones)
 local Relics = require(Shared.Config.Relics)
 local Rarities = require(Shared.Config.Rarities)
 local Economy = require(Shared.Config.Economy)
+local RelicMeshes = require(Shared.Config.RelicMeshes)
+local RelicArt = require(Shared.RelicArt)
 local Build = require(script.Parent.Parent.Util.Build)
 
 local LootService = {}
@@ -60,6 +62,11 @@ local LANDMARK_LUCK = 1.25
 
 function LootService.RollFor(player: Player, zoneIndex: number, position: Vector3?)
 	local data = services.DataService.GetData(player)
+	-- DEV: a forced rarity from the dev panel (Studio only) wins over everything else
+	local forced = services.DevService and services.DevService.ForcedRoll(player, zoneIndex)
+	if forced then
+		return forced
+	end
 	-- FTUE (§17): first salvage is a Rusty Anchor, second a guaranteed Rare Doubloon
 	if not data.Flags.TutorialSalvage1 then
 		data.Flags.TutorialSalvage1 = true
@@ -243,9 +250,48 @@ end
 -- Visible node (UI/Visual Overhaul Plan, Phase 2): a sand mound with a glinting relic edge
 -- poking out, plus sparkles. Every node looks the same, so the look gives away nothing
 -- about the server-side roll; sonar reveals rarity.
+-- Blender salvage cache for this zone (Config.RelicMeshes.Caches), sitting on the node's base.
+local function decorateWithCache(part: BasePart, zoneIndex: number): boolean
+	local entry = RelicMeshes.Caches[zoneIndex]
+	local folder = ReplicatedStorage:FindFirstChild("RelicMeshes")
+	local template = entry and folder and folder:FindFirstChild(entry.Name)
+	if not template then
+		return false
+	end
+	local model = RelicArt.FromTemplate(template, entry.Name, entry.Colors, entry.Width, nil, false)
+	local _, size = model:GetBoundingBox()
+	model.Name = "Cache"
+	RelicArt.Place(model, part.CFrame * CFrame.new(0, -part.Size.Y / 2 - 0.4 + size.Y / 2, 0))
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+		end
+	end
+	model.Parent = part
+	return true
+end
+
 local function decorateNode(part: BasePart, zoneIndex: number)
 	local glint = nodeZoneColor(zoneIndex)
 	local cf = part.CFrame
+	if decorateWithCache(part, zoneIndex) then
+		local attach = Build.Instance("Attachment", { Name = "SparkleAttachment", Position = Vector3.new(0, 0.6, 0), Parent = part })
+		Build.Instance("ParticleEmitter", {
+			Name = "Sparkles",
+			Texture = "rbxasset://textures/particles/sparkles_main.dds",
+			Color = ColorSequence.new(glint),
+			LightEmission = 1,
+			Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0) }),
+			Lifetime = NumberRange.new(0.8, 1.4),
+			Rate = 6,
+			Speed = NumberRange.new(0.5, 1.5),
+			SpreadAngle = Vector2.new(180, 180),
+			Parent = attach,
+		})
+		return
+	end
 	Build.Part({
 		Name = "Mound",
 		Size = Vector3.new(3.4, 1.1, 3.0),

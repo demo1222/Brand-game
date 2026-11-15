@@ -407,14 +407,15 @@ local function feet(folder: Instance, char: Model, tier, suitColor: Color3)
 				)
 			else
 				local len = fl * (if tier.feet == "longfins" then 2.4 else 1.6)
-				local finColor = if tier.glow then tier.metal else suitColor:Lerp(rgb(0, 0, 0), 0.25)
-				piece(folder, foot, "Block", Vector3.new(fw * 1.15, math.max(fh, 0.3) * 1.2, fl * 0.9), off, finColor)
+				local finColor = if tier.glow then tier.metal else suitColor:Lerp(rgb(0, 0, 0), 0.5)
+				-- foot cap: slimmer and darker than the blade, so it sits into the suit
+				piece(folder, foot, "Block", Vector3.new(fw * 1.05, math.max(fh, 0.3) * 1.0, fl * 0.8), off, suitColor:Lerp(rgb(0, 0, 0), 0.5))
 				piece(
 					folder,
 					foot,
 					"Block",
-					Vector3.new(fw * 1.7, 0.1, len),
-					off * cf(0, -math.max(fh, 0.3) * 0.3, -fl * 0.45 - len / 2),
+					Vector3.new(fw * 1.4, 0.1, len * 0.75),
+					off * cf(0, -math.max(fh, 0.3) * 0.3, -fl * 0.45 - len * 0.375),
 					finColor,
 					"SmoothPlastic"
 				)

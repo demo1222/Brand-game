@@ -115,6 +115,17 @@ function InventoryService.AddToStorage(player: Player, relic): boolean
 	return true
 end
 
+-- DEV: used by DevService only. Adds a relic to Storage ignoring STORAGE_MAX (no auto-sell) and
+-- without replicating; the caller replicates "Storage" once after a batch.
+function InventoryService.DevAddToStorage(player: Player, relic): boolean
+	local data = services.DataService.GetData(player)
+	if not data then
+		return false
+	end
+	table.insert(data.Storage, relic)
+	return true
+end
+
 -- Bag → Storage when the diver gets home safely (§5.2 "Escape")
 function InventoryService.SecureBag(player: Player): number
 	local data = services.DataService.GetData(player)

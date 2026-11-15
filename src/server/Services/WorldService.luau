@@ -485,6 +485,64 @@ local function buildPlaza()
 	end)
 end
 
+------------------------------------------------------------------------------------------
+-- Display pedestal (a dock keeper: rebuilt from this code). Blocky stepped plinth with brass
+-- corners. Parts named Trim* are recoloured by DockService to the displayed relic's rarity.
+-- The stand part itself is an invisible box over the pedestal that carries the prompts.
+------------------------------------------------------------------------------------------
+local PEDESTAL_HEIGHT = 2.6
+
+local PED = {
+	Base = Color3.fromRGB(38, 48, 63),
+	Step = Color3.fromRGB(52, 64, 90),
+	Column = Color3.fromRGB(62, 76, 104),
+	Brass = Color3.fromRGB(128, 94, 42), -- darker than gold on purpose: bright yellow blooms
+	TrimIdle = Color3.fromRGB(90, 100, 120),
+	VaultBase = Color3.fromRGB(70, 52, 24),
+	VaultStep = Color3.fromRGB(120, 88, 34),
+	VaultColumn = Color3.fromRGB(150, 112, 44),
+}
+
+local function buildPedestal(stand: BasePart, isVault: boolean)
+	local ped = Instance.new("Model")
+	ped.Name = "Pedestal"
+	local floor = stand.CFrame * CFrame.new(0, -PEDESTAL_HEIGHT / 2, 0)
+	local function block(name: string, size: Vector3, y: number, color: Color3, neon: boolean?, offset: Vector3?)
+		return Build.Part({
+			Name = name,
+			Size = size,
+			CFrame = floor * CFrame.new((offset or Vector3.zero) + Vector3.new(0, y, 0)),
+			Color = color,
+			Material = if neon then Enum.Material.Neon else Enum.Material.SmoothPlastic,
+			CanCollide = not neon,
+			CastShadow = not neon,
+			Parent = ped,
+		})
+	end
+	local base = if isVault then PED.VaultBase else PED.Base
+	local step = if isVault then PED.VaultStep else PED.Step
+	local column = if isVault then PED.VaultColumn else PED.Column
+	local trim = if isVault then PED.Brass else PED.TrimIdle
+	block("Base", Vector3.new(3.8, 0.5, 3.8), 0.25, base)
+	block("TrimLow", Vector3.new(3.9, 0.12, 3.9), 0.56, trim, true)
+	block("Step", Vector3.new(3.2, 0.4, 3.2), 0.82, step)
+	block("Column", Vector3.new(2.3, 1.1, 2.3), 1.57, column)
+	-- a brass plaque on the front (the side facing the corridor, -Z)
+	block("Plaque", Vector3.new(1.4, 0.5, 0.1), 1.6, PED.Brass, false, Vector3.new(0, 0, -1.2)).Material = Enum.Material.Metal
+	block("TrimHigh", Vector3.new(3.16, 0.1, 3.16), 2.12, trim, true)
+	block("Cap", Vector3.new(3.1, 0.35, 3.1), 2.3, step)
+	local pad = block("TrimPad", Vector3.new(2.2, 0.06, 2.2), 2.5, trim, true)
+	pad.Transparency = 0.6
+	for _, cx in { -1, 1 } do
+		for _, cz in { -1, 1 } do
+			block("Corner", Vector3.new(0.45, 0.45, 0.45), 2.66, PED.Brass, false, Vector3.new(cx * 1.33, 0, cz * 1.33)).Material =
+				Enum.Material.Metal
+		end
+	end
+	ped.Parent = stand
+	return ped
+end
+
 local function buildDock(index: number)
 	local angle = (index - 1) / World.DockCount * math.pi * 2
 	local center = Vector3.new(math.cos(angle) * World.DockRingRadius, SURFACE + World.DockHeight, math.sin(angle) * World.DockRingRadius)
@@ -578,57 +636,67 @@ local function buildDock(index: number)
 		signBack.Label.Text = signGui.Label.Text
 	end)
 
-	-- Stands: 5 rows x 7 columns grid
+	-- Stands line both long sides of the dock, leaving a clear corridor from the spawn to the
+	-- diving board. Three lines per side (outer, middle, inner) of six pedestals each. They fill
+	-- outer lines first, from the plaza end toward the sea, alternating left and right, so the
+	-- first stands a new player owns sit by the spawn. Each pedestal faces the corridor.
 	local stands = {}
-	local cols = 7
+	local lines = { size.X / 2 - 5, size.X / 2 - 11.5, size.X / 2 - 18 }
+	local rowsZ = { 12, 6.8, 1.6, -3.6, -8.8, -14 }
+	local slots = {}
+	for _, lx in lines do
+		for _, z in rowsZ do
+			table.insert(slots, { x = -lx, z = z, yaw = -90 })
+			table.insert(slots, { x = lx, z = z, yaw = 90 })
+		end
+	end
 	for i = 1, World.MaxStands do
-		local row = (i - 1) // cols
-		local col = (i - 1) % cols
-		local x = (col - (cols - 1) / 2) * World.StandSpacing
-		local z = size.Z / 2 - 8 - row * World.StandSpacing
+		local s = slots[i]
+		local standCf = cf * CFrame.new(s.x, PEDESTAL_HEIGHT / 2, s.z) * CFrame.Angles(0, math.rad(s.yaw), 0)
 		local stand = Build.Part({
 			Name = "Stand" .. i,
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(2, 4, 4),
-			CFrame = cf * CFrame.new(x, 1, z) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(200, 200, 210),
-			Material = Enum.Material.Marble,
+			Size = Vector3.new(3, PEDESTAL_HEIGHT, 3),
+			CFrame = standCf,
 			Transparency = 1,
 			CanCollide = false,
 			Parent = model,
 		})
 		stand:SetAttribute("StandIndex", i)
+		buildPedestal(stand, false)
 		local place = Build.Prompt(stand, "Display", "Stand " .. i, 0, "Place")
 		place.Enabled = false
 		local steal = Build.Prompt(stand, "Steal", "Relic", 2.5, "Steal")
 		steal.Enabled = false
 		steal.KeyboardKeyCode = Enum.KeyCode.F
 		steal.UIOffset = Vector2.new(0, 60)
-		local label = Build.Billboard(stand, "", UDim2.fromOffset(140, 36), Vector3.new(0, 4.5, 0))
+		local label = Build.Billboard(stand, "", UDim2.fromOffset(150, 38), Vector3.new(0, 6.4, 0))
 		label.Name = "Info"
-		label.MaxDistance = 40
+		label.MaxDistance = 36
+		-- fixed pixel size: the stands line the walkway, and stud-sized labels filled the screen
+		label.Size = UDim2.fromOffset(170, 44)
 		stands[i] = stand
 	end
-	-- Vault stands (§8.1)
+	-- Vault stands (§8.1): gold pedestals flanking the way to the diving board
 	local vault = {}
 	for i = 1, 2 do
+		local sx = if i == 1 then -1 else 1
 		local stand = Build.Part({
 			Name = "Vault" .. i,
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(2, 4, 4),
-			CFrame = cf * CFrame.new((i == 1 and -1 or 1) * (size.X / 2 - 4), 1, -size.Z / 2 + 6) * CFrame.Angles(0, 0, math.rad(90)),
-			Color = Color3.fromRGB(255, 200, 60),
-			Material = Enum.Material.Foil,
+			Size = Vector3.new(3, PEDESTAL_HEIGHT, 3),
+			CFrame = cf * CFrame.new(sx * 6, PEDESTAL_HEIGHT / 2, -size.Z / 2 + 5) * CFrame.Angles(0, math.rad(180), 0),
 			Transparency = 1,
 			CanCollide = false,
 			Parent = model,
 		})
 		stand:SetAttribute("VaultIndex", i)
+		buildPedestal(stand, true)
 		local place = Build.Prompt(stand, "Vault", "Vault " .. i, 0, "Place")
 		place.Enabled = false
-		local label = Build.Billboard(stand, "", UDim2.fromOffset(140, 36), Vector3.new(0, 4.5, 0))
+		local label = Build.Billboard(stand, "", UDim2.fromOffset(150, 38), Vector3.new(0, 6.4, 0))
 		label.Name = "Info"
-		label.MaxDistance = 40
+		label.MaxDistance = 36
+		-- fixed pixel size: the stands line the walkway, and stud-sized labels filled the screen
+		label.Size = UDim2.fromOffset(170, 44)
 		vault[i] = stand
 	end
 

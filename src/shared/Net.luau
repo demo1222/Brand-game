@@ -45,6 +45,7 @@ local EVENTS = {
 	"RenameDock",
 	"OfferShown",
 	"RequestEventShopBuy", -- (itemId): spend Event Tokens in the event shop
+	"DevAction", -- (action, arg): Studio-only dev test panel; server re-checks admin (DevService)
 	-- server -> client
 	"StateUpdated",
 	"Notify",
