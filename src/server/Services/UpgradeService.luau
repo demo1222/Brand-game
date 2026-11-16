@@ -11,6 +11,7 @@ local RateLimiter = require(Shared.RateLimiter)
 local Formulas = require(Shared.Formulas)
 local NumberFormat = require(Shared.NumberFormat)
 local Upgrades = require(Shared.Config.Upgrades)
+local Zones = require(Shared.Config.Zones)
 local SuitArt = require(Shared.SuitArt)
 
 local UpgradeService = {}
@@ -43,7 +44,9 @@ function UpgradeService.Derived(player: Player)
 		OfflineRate = Formulas.OfflineRate(data),
 		OfflineCapHours = Formulas.OfflineCapHours(data, passes, subscribed),
 		CoinMult = services.DockService.GetCoinMultiplier(player),
-		Luck = services.MonetizationService.GetLuckMultiplier(player) * services.EventService.GetLuckMultiplier(),
+		Luck = services.MonetizationService.GetLuckMultiplier(player)
+			* services.EventService.GetLuckMultiplier()
+			* Formulas.SuitLuck(data),
 		RebirthRequirement = Formulas.RebirthRequirement(data.Rebirths),
 		StarterPackAvailable = services.MonetizationService.StarterPackAvailable(player),
 		StarterPackShownAt = data.StarterPackShownAt,
@@ -114,15 +117,35 @@ function UpgradeService.BuySuit(player: Player): boolean
 		return false
 	end
 	data.Suit = nextIndex
-	services.DataService.Replicate(player, "Suit")
+	data.SuitLook = 0 -- wear the new suit
+	services.DataService.Replicate(player, "Suit", "SuitLook")
 	UpgradeService.PushDerived(player)
 	UpgradeService.ApplySuitVisual(player)
 	services.AnalyticsService.Custom(player, "ZoneUnlocked", nextIndex)
-	if nextIndex == 2 then
+	if nextIndex == Upgrades.SuitIndex.Neoprene then
 		services.AnalyticsService.Funnel(player, "KelpSuit")
 	end
-	Net.Notify:FireClient(player, `New suit: {suit.Name}! You can now dive safely to zone {nextIndex}.`, "upgrade")
+	local zone = Zones.List[suit.Zone]
+	Net.Notify:FireClient(player, `New suit: {suit.Name}! Safe down to {zone and zone.Name or "the deep"}.`, "upgrade")
 	return true
+end
+
+-- Wear any owned suit (looks only: depth and perks always come from the newest suit)
+function UpgradeService.EquipSuit(player: Player, index: number): boolean
+	local data = services.DataService.GetData(player)
+	if not data or index % 1 ~= 0 or index < 1 or index > data.Suit then
+		return false
+	end
+	data.SuitLook = if index == data.Suit then 0 else index
+	services.DataService.Replicate(player, "SuitLook")
+	UpgradeService.ApplySuitVisual(player)
+	return true
+end
+
+-- The suit index a player is wearing
+function UpgradeService.LookIndex(data): number
+	local look = data.SuitLook or 0
+	return if look >= 1 and look <= data.Suit then look else data.Suit
 end
 
 -- Dresses the character in the suit tier's gear (shared/SuitArt), honouring the player's
@@ -133,8 +156,8 @@ function UpgradeService.ApplySuitVisual(player: Player)
 	if not data or not char then
 		return
 	end
-	local suit = Upgrades.Suits[data.Suit]
-	SuitArt.Apply(char, data.Suit, suit.Color, data.Settings)
+	local index = UpgradeService.LookIndex(data)
+	SuitArt.Apply(char, index, Upgrades.Suit(index).Color, data.Settings)
 end
 
 function UpgradeService.Start()
@@ -146,6 +169,11 @@ function UpgradeService.Start()
 	Net.RequestBuySuit.OnServerEvent:Connect(function(player)
 		if limiter:Check(player) then
 			UpgradeService.BuySuit(player)
+		end
+	end)
+	Net.RequestEquipSuit.OnServerEvent:Connect(function(player, index)
+		if limiter:Check(player) and typeof(index) == "number" then
+			UpgradeService.EquipSuit(player, index)
 		end
 	end)
 	services.DataService.ProfileLoaded:Connect(function(player)

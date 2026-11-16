@@ -88,13 +88,21 @@ local function objective(): (string?, Vector3?)
 		local pad = dock and dock:FindFirstChild("CollectorPad")
 		return "Step on the green pad to collect Coins, then open UPGRADE and buy one.", pad and pad.Position
 	end
-	if (S.Get("Suit") or 1) < 2 then
-		return `Next goal: buy the Neoprene suit ({NumberFormat.short(Upgrades.Suits[2].Cost)} Coins) to dive into the Kelp Twilight.`, nil
+	if Upgrades.SuitZone(S.Get("Suit")) < 2 then
+		local neo = Upgrades.Suits[Upgrades.SuitIndex.Neoprene]
+		return `Next goal: buy the {neo.Name} suit ({NumberFormat.short(neo.Cost)} Coins) at the Suit Shop to dive into the Kelp Twilight.`, nil
 	end
 	return nil
 end
 
+-- The starter guide (objective text + guide beam) is switched off for now at the owner's
+-- request. Set ENABLED = true to bring it back.
+local ENABLED = false
+
 function TutorialController.Start()
+	if not ENABLED then
+		return
+	end
 	label = Kit.Label({
 		Name = "Objective",
 		Text = "",

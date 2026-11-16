@@ -58,6 +58,46 @@ local function ensureFromBundle(assetId: number, missing: { [string]: boolean })
 	container:Destroy()
 end
 
+-- World meshes (Config.WorldMeshes): guardians and reef props into ReplicatedStorage.WorldMeshes.
+-- WorldService calls this before it builds the reef, so props can use the Blender models.
+local worldLoaded = false
+function RelicMeshService.EnsureWorldMeshes()
+	if worldLoaded then
+		return
+	end
+	worldLoaded = true
+	local WorldMeshes = require(ReplicatedStorage.Shared.Config.WorldMeshes)
+	local f = ReplicatedStorage:FindFirstChild("WorldMeshes")
+	if not f then
+		f = Instance.new("Folder")
+		f.Name = "WorldMeshes"
+		f.Parent = ReplicatedStorage
+	end
+	local missing = {}
+	for _, name in WorldMeshes.Names do
+		if not f:FindFirstChild(name) then
+			missing[name] = true
+		end
+	end
+	for _, bundleId in WorldMeshes.Bundles do
+		if not next(missing) then
+			break
+		end
+		local ok, container = pcall(InsertService.LoadAsset, InsertService, bundleId)
+		if not ok then
+			warn(`[RelicMeshService] could not load world bundle {bundleId}: {container}`)
+			continue
+		end
+		for _, d in container:GetDescendants() do
+			if d:IsA("Model") and missing[d.Name] then
+				missing[d.Name] = nil
+				d.Parent = f
+			end
+		end
+		container:Destroy()
+	end
+end
+
 function RelicMeshService.Start()
 	local f = folder()
 	local missing = {}

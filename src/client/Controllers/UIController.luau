@@ -1,9 +1,13 @@
 -- UIController: root ScreenGuis, window manager (one window at a time), toasts and banners.
--- Windows get a dim backdrop (tap outside to close), a coloured title band with an outlined
--- title and a red close button, a thick outline, and a pop-in animation.
+-- Windows get a dim backdrop, a striped coloured title band with an outlined title and a red
+-- close button, a thick outline, and pop-in / pop-out animations. A window closes only through
+-- its X, gamepad B or its own buttons: a click that misses a button does nothing
+-- (docs/UI_STYLE_GUIDE.md).
 
 local Players = game:GetService("Players")
+local Lighting = game:GetService("Lighting")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -21,7 +25,8 @@ local windows = {}
 local openWindow: string? = nil
 local toastList: Frame
 local bannerFrame: Frame
-local backdrop: TextButton
+local backdrop: Frame
+local closeToken = 0
 
 UIController.Root = nil :: ScreenGui?
 UIController.Overlay = nil :: ScreenGui?
@@ -63,10 +68,10 @@ function UIController.Init()
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 		Parent = pg,
 	})
-	backdrop = New("TextButton", {
+	-- Active so it swallows clicks (the world and HUD behind can't be clicked) without closing
+	backdrop = New("Frame", {
 		Name = "Backdrop",
-		Text = "",
-		AutoButtonColor = false,
+		Active = true,
 		BackgroundColor3 = Color3.fromRGB(0, 4, 12),
 		BackgroundTransparency = 1,
 		Size = UDim2.new(1, 0, 1, 60),
@@ -75,8 +80,10 @@ function UIController.Init()
 		ZIndex = 0,
 		Parent = UIController.Windows,
 	})
-	backdrop.Activated:Connect(function()
-		UIController.Close()
+	UserInputService.InputBegan:Connect(function(input)
+		if input.KeyCode == Enum.KeyCode.ButtonB and openWindow then
+			UIController.Close()
+		end
 	end)
 	toastList = New("Frame", {
 		Name = "Toasts",
@@ -99,121 +106,123 @@ function UIController.Init()
 	}, { New("UISizeConstraint", { MaxSize = Vector2.new(660, 44) }) })
 end
 
--- Register a window: builder(body) fills it, refresh() is called on open
-function UIController.RegisterWindow(name: string, title: string, build: (Frame) -> (), refresh: (() -> ())?)
+-- Register a window: builder(body) fills it, refresh() is called on open.
+-- The look (owner reference docs/reference/shop_upgrades): a black panel with a soft glow in
+-- the window's colour round it, a slanted colour band that hangs over the top-left corner with
+-- the title on it, and a red close button over the top-right corner.
+--   opts.Plain   = a charcoal panel with no band or coloured glow (Settings)
+--   opts.MaxSize = the largest size (default 820 x 580)
+--   opts.Header  = function(holder): add things to the right end of the title band
+function UIController.RegisterWindow(
+	name: string,
+	title: string,
+	build: (Frame) -> (),
+	refresh: (() -> ())?,
+	opts: { Plain: boolean?, MaxSize: Vector2?, Header: ((Frame) -> ())? }?
+)
+	local o = opts or {}
+	local C = Kit.Clean
 	local accent = Icons.Colors[name] or T.Accent
-	local frame = Kit.Panel({
+	local frame = New("Frame", {
 		Name = name,
+		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.52),
-		Size = UDim2.new(0.94, 0, 0.84, 0),
+		Position = UDim2.fromScale(0.5, 0.53),
+		Size = UDim2.new(0.94, 0, 0.82, 0),
 		Visible = false,
 		ZIndex = 2,
 		Parent = UIController.Windows,
 	})
-	New("UISizeConstraint", { MaxSize = Vector2.new(820, 580), Parent = frame })
-	local stroke = frame:FindFirstChildOfClass("UIStroke")
-	if stroke then
-		stroke.Color = T.Outline
-		stroke.Thickness = 4
-		stroke.Transparency = 0
+	New("UISizeConstraint", { MaxSize = o.MaxSize or Vector2.new(820, 580), Parent = frame })
+	-- the glow: thin rounded layers behind the panel that add up to a smooth falloff
+	local hue, sat = accent:ToHSV()
+	local glowColor = if o.Plain then Color3.new(0, 0, 0) else Color3.fromHSV(hue, math.max(sat, 0.7), 1)
+	local LAYERS, STEP, OUTLINE = 11, 3, 4
+	for k, alpha in Kit.GlowLayers(LAYERS, if o.Plain then 0.5 else 0.82, 1.4) do
+		local grow = OUTLINE + k * STEP
+		New("Frame", {
+			Name = "Glow" .. k,
+			BackgroundColor3 = glowColor,
+			BackgroundTransparency = 1 - alpha,
+			Position = UDim2.fromOffset(-grow, -grow),
+			Size = UDim2.new(1, grow * 2, 1, grow * 2),
+			ZIndex = 0,
+			Parent = frame,
+		}, { Kit.Corner(16 + grow) })
 	end
-	-- Inner rim in the window colour, just inside the dark outline
+	-- Active: a click on the panel never reaches the world behind it
 	New("Frame", {
-		Name = "Rim",
-		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(2, 2),
-		Size = UDim2.new(1, -4, 1, -4),
+		Name = "Panel",
+		Active = true,
+		BackgroundColor3 = if o.Plain then C.PanelPlain else C.Panel,
+		Size = UDim2.fromScale(1, 1),
+		ZIndex = 1,
 		Parent = frame,
-	}, { Kit.Corner(18), Kit.Stroke(accent, 3, 0.15) })
+	}, { Kit.Corner(16), Kit.Stroke(Color3.new(0, 0, 0), OUTLINE, 0) })
 
-	-- Title band: a solid strip in the window colour across the top (rounded top corners;
-	-- a filler frame squares off its bottom edge), with an outlined title and a red close
-	local band = New("Frame", {
-		Name = "TitleBand",
-		BackgroundColor3 = accent,
-		Size = UDim2.new(1, 0, 0, 62),
-		ZIndex = 2,
-		Parent = frame,
-	}, {
-		Kit.Corner(20),
-		New(
-			"UIGradient",
-			{ Rotation = 90, Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(200, 200, 200)) }
-		),
-	})
-	New("Frame", {
-		Name = "Square",
-		BackgroundColor3 = accent,
-		BorderSizePixel = 0,
-		Position = UDim2.new(0, 0, 1, -22),
-		Size = UDim2.new(1, 0, 0, 22),
-		ZIndex = 2,
-		Parent = band,
-	}, {
-		New("UIGradient", {
-			Rotation = 90,
-			Color = ColorSequence.new(Color3.fromRGB(215, 215, 215), Color3.fromRGB(200, 200, 200)),
-		}),
-	})
-	New("Frame", {
-		Name = "Edge",
-		BackgroundColor3 = Kit.Darken(accent, 0.55),
-		BorderSizePixel = 0,
-		Position = UDim2.new(0, 0, 1, 0),
-		Size = UDim2.new(1, 0, 0, 5),
-		ZIndex = 2,
-		Parent = band,
-	})
-	local header = New("Frame", {
-		Name = "Header",
-		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(16, 9),
-		Size = UDim2.new(1, -28, 0, 44),
-		ZIndex = 3,
-		Parent = frame,
-	})
-	local iconChip = New("Frame", {
-		BackgroundColor3 = Kit.Darken(accent, 0.6),
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 0, 0.5, 0),
-		Size = UDim2.fromOffset(42, 42),
-		ZIndex = 3,
-		Parent = header,
-	}, { Kit.Corner(12), Kit.Stroke(T.Outline, 2, 0) })
-	Icon.new(Icons.Get(name), 28, Kit.Lighten(accent, 0.25), {
-		Weight = 2.6,
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		ZIndex = 4,
-		Parent = iconChip,
-	})
-	Kit.Title({
-		Text = title,
-		TextSize = 30,
-		TextColor3 = Color3.new(1, 1, 1),
-		Position = UDim2.fromOffset(54, 0),
-		Size = UDim2.new(1, -110, 1, 0),
-		TextWrapped = false,
-		TextTruncate = Enum.TextTruncate.AtEnd,
-		ZIndex = 4,
-		Parent = header,
-	})
-	local closeHolder, close = Kit.GameButton(T.Bad, Vector2.new(46, 42), {
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, 0, 0.5, -2),
-		ZIndex = 4,
-		Parent = header,
-	})
-	for _, d in closeHolder:GetDescendants() do
-		if d:IsA("GuiObject") then
-			d.ZIndex += 3
-		elseif d:IsA("UIStroke") then
-			d.Color, d.Thickness, d.Transparency = T.Outline, 2, 0
+	local top = 48
+	if o.Plain then
+		Kit.Text(title, 27, {
+			Name = "Title",
+			Outline = 3,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Position = UDim2.fromOffset(20, 10),
+			Size = UDim2.new(1, -90, 0, 36),
+			ZIndex = 4,
+			Parent = frame,
+		})
+		top = 54
+	else
+		local band = Kit.SlantBand(frame, {
+			Position = UDim2.fromOffset(-14, -22),
+			Size = UDim2.new(1, -60, 0, 58),
+			Colors = Kit.BandColors(accent),
+			ZIndex = 3,
+		})
+		Kit.Text(title, 32, {
+			Name = "Title",
+			Outline = 4,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Position = UDim2.fromOffset(34, 0),
+			Size = UDim2.new(0.6, 0, 1, -4),
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			ZIndex = 5,
+			Parent = band,
+		})
+		if o.Header then
+			local holder = New("Frame", {
+				Name = "HeaderRight",
+				BackgroundTransparency = 1,
+				AnchorPoint = Vector2.new(1, 0.5),
+				Position = UDim2.new(1, -46, 0.5, -2),
+				Size = UDim2.new(0.5, 0, 0, 44),
+				ZIndex = 5,
+				Parent = band,
+			}, {
+				New("UIListLayout", {
+					FillDirection = Enum.FillDirection.Horizontal,
+					HorizontalAlignment = Enum.HorizontalAlignment.Right,
+					VerticalAlignment = Enum.VerticalAlignment.Center,
+					Padding = UDim.new(0, 8),
+					SortOrder = Enum.SortOrder.LayoutOrder,
+				}),
+			})
+			o.Header(holder)
 		end
 	end
-	Icon.new("close", 20, Color3.new(1, 1, 1), {
-		Weight = 3.2,
+	local closeHolder, close = Kit.GameButton(T.Bad, Vector2.new(46, 42), {
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 12, 0, -18),
+		ZIndex = 6,
+		Parent = frame,
+	})
+	for _, d in closeHolder:GetDescendants() do
+		if d:IsA("UIStroke") then
+			d.Color, d.Thickness, d.Transparency = C.Ink, 3, 0
+		end
+	end
+	Icon.new("close", 22, Color3.new(1, 1, 1), {
+		Weight = 3.6,
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
 		ZIndex = 8,
@@ -226,27 +235,39 @@ function UIController.RegisterWindow(name: string, title: string, build: (Frame)
 	local body = New("Frame", {
 		Name = "Body",
 		BackgroundTransparency = 1,
-		Position = UDim2.fromOffset(18, 80),
-		Size = UDim2.new(1, -36, 1, -96),
+		Position = UDim2.fromOffset(14, top),
+		Size = UDim2.new(1, -28, 1, -(top + 14)),
+		ZIndex = 2,
 		Parent = frame,
 	})
 	build(body)
 	windows[name] = { frame = frame, refresh = refresh }
 end
 
+-- The world behind an open window is dimmed and blurred
+local blur: BlurEffect? = nil
 local function showBackdrop(on: boolean)
+	if not blur then
+		blur = New("BlurEffect", { Name = "AbyssWindowBlur", Size = 0, Enabled = false, Parent = Lighting })
+	end
+	local b = blur :: BlurEffect
 	if on then
 		backdrop.Visible = true
+		b.Enabled = true
 		TweenService:Create(backdrop, TweenInfo.new(0.2), { BackgroundTransparency = 0.5 }):Play()
+		TweenService:Create(b, TweenInfo.new(0.2), { Size = 14 }):Play()
 	else
 		backdrop.BackgroundTransparency = 1
 		backdrop.Visible = false
+		b.Size = 0
+		b.Enabled = false
 	end
 end
 
 function UIController.Open(name: string)
-	if openWindow and windows[openWindow] then
-		windows[openWindow].frame.Visible = false
+	closeToken += 1 -- cancels a close animation still running
+	for _, other in windows do
+		other.frame.Visible = false
 	end
 	local w = windows[name]
 	if not w then
@@ -262,7 +283,7 @@ function UIController.Open(name: string)
 	end
 	w.frame.Visible = true
 	showBackdrop(true)
-	Kit.Pop(w.frame)
+	Kit.Pop(w.frame, 0.85, 0.22)
 end
 
 function UIController.Toggle(name: string)
@@ -274,15 +295,32 @@ function UIController.Toggle(name: string)
 end
 
 function UIController.Close()
-	if openWindow and windows[openWindow] then
-		windows[openWindow].frame.Visible = false
-	end
+	local w = openWindow and windows[openWindow]
 	openWindow = nil
-	showBackdrop(false)
+	if not w then
+		showBackdrop(false)
+		return
+	end
+	closeToken += 1
+	local token = closeToken
+	TweenService:Create(backdrop, TweenInfo.new(0.14), { BackgroundTransparency = 1 }):Play()
+	if blur then
+		TweenService:Create(blur, TweenInfo.new(0.14), { Size = 0 }):Play()
+	end
+	Kit.PopOut(w.frame, function()
+		if token == closeToken then
+			w.frame.Visible = false
+			showBackdrop(false)
+		end
+	end)
 end
 
 function UIController.IsOpen(name: string): boolean
 	return openWindow == name
+end
+
+function UIController.AnyOpen(): boolean
+	return openWindow ~= nil
 end
 
 function UIController.Refresh(name: string)

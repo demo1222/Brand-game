@@ -12,6 +12,7 @@ local NumberFormat = require(Shared.NumberFormat)
 local Relics = require(Shared.Config.Relics)
 local Rarities = require(Shared.Config.Rarities)
 local Mutations = require(Shared.Config.Mutations)
+local Materials = require(Shared.Config.Materials)
 local Upgrades = require(Shared.Config.Upgrades)
 local Economy = require(Shared.Config.Economy)
 local Build = require(script.Parent.Parent.Util.Build)
@@ -49,6 +50,7 @@ function DockService.GetCoinMultiplier(player: Player): number
 		return 1
 	end
 	local m = Formulas.RebirthMultiplier(data.Rebirths)
+	m *= Formulas.SuitIncome(data) -- suit perk
 	m *= services.MonetizationService.GetCoinMultiplier(player)
 	m *= services.SocialService.GetCoinMultiplier(player)
 	m *= services.EventService.GetCoinMultiplier()
@@ -115,18 +117,26 @@ local function renderStand(stand: BasePart, relic, visible: boolean, mult: numbe
 	stylePedestal(stand, visible, if visible and relic then Rarities[relic.rarity].Color else nil, isVault)
 	local place = stand:FindFirstChild("Place") :: ProximityPrompt
 	local steal = stand:FindFirstChild("Steal") :: ProximityPrompt?
-	local info = stand:FindFirstChild("Info") :: BillboardGui
+	-- The relic's facts ride on attributes; each client shows them in a hover card
+	-- (StandHoverController) instead of a label that always floats over the stand.
+	stand:SetAttribute("RelicName", nil)
+	stand:SetAttribute("RelicRarity", nil)
+	stand:SetAttribute("RelicRate", nil)
+	stand:SetAttribute("RelicMutations", nil)
+	stand:SetAttribute("RelicHuge", nil)
+	stand:SetAttribute("RelicMaterial", nil)
+	stand:SetAttribute("RelicSizeTier", nil)
+	stand:SetAttribute("IsVault", isVault)
 	place.Enabled = visible
 	if steal then
 		steal.Enabled = visible and relic ~= nil
 	end
 	if not visible then
-		info.Label.Text = ""
 		return
 	end
 	if relic then
 		local def = Relics.ById[relic.id]
-		local model = Build.RelicModel(def, Rarities[relic.rarity].Color, relic.mutations, Mutations.ById, relic.size)
+		local model = Build.RelicModel(def, Rarities[relic.rarity].Color, Materials.LookList(relic), Materials.LookDefs, relic.size)
 		model.Name = "RelicModel"
 		model:SetAttribute("Rarity", relic.rarity)
 		model:SetAttribute("RelicId", relic.id)
@@ -139,9 +149,14 @@ local function renderStand(stand: BasePart, relic, visible: boolean, mult: numbe
 				* CFrame.Angles(0, math.pi, 0)
 		)
 		model.Parent = stand
-		local mut = if #relic.mutations > 0 then table.concat(relic.mutations, " ") .. " " else ""
-		info.Label.Text = `{mut}{def.Name}\n+{NumberFormat.short(Formulas.RelicCPS(relic) * mult)}/s`
-		info.Label.TextColor3 = Rarities[relic.rarity].Color
+		local mut = Materials.Prefix(relic)
+		stand:SetAttribute("RelicName", def.Name)
+		stand:SetAttribute("RelicRarity", relic.rarity)
+		stand:SetAttribute("RelicRate", Formulas.RelicCPS(relic) * mult)
+		stand:SetAttribute("RelicMutations", table.concat(relic.mutations, ","))
+		stand:SetAttribute("RelicHuge", (relic.size or 1) >= 1.35)
+		stand:SetAttribute("RelicMaterial", relic.material)
+		stand:SetAttribute("RelicSizeTier", Materials.SizeTier(relic.size).Label)
 		place.ActionText = "Take back"
 		place.ObjectText = def.Name
 		if steal then
@@ -149,8 +164,6 @@ local function renderStand(stand: BasePart, relic, visible: boolean, mult: numbe
 		end
 	else
 		-- empty stands stay quiet (no floating "Empty" signs); the prompt still says Display
-		info.Label.Text = if isVault then "VAULT (safe)" else ""
-		info.Label.TextColor3 = Color3.new(1, 1, 1)
 		place.ActionText = if isVault then "Vault" else "Display"
 		place.ObjectText = if isVault then "Unstealable slot" else "Empty stand"
 	end

@@ -15,7 +15,9 @@ local RateLimiter = require(Shared.RateLimiter)
 local LootRoll = require(Shared.LootRoll)
 local Formulas = require(Shared.Formulas)
 local Zones = require(Shared.Config.Zones)
+local Upgrades = require(Shared.Config.Upgrades)
 local Relics = require(Shared.Config.Relics)
+local Materials = require(Shared.Config.Materials)
 local Rarities = require(Shared.Config.Rarities)
 local Economy = require(Shared.Config.Economy)
 local RelicMeshes = require(Shared.Config.RelicMeshes)
@@ -46,6 +48,7 @@ function LootService.BuildMods(player: Player, zoneIndex: number)
 		* services.EventService.GetLuckMultiplier()
 		* services.SocialService.GetPartyLuck(player)
 		* services.InventoryService.ZoneLuckBonus(data, zoneIndex)
+		* Formulas.SuitLuck(data) -- suit perk
 	return {
 		luck = luck,
 		pity = data.Pity[zone.Id] or 0,
@@ -60,7 +63,7 @@ end
 local LANDMARK_RADIUS = 70
 local LANDMARK_LUCK = 1.25
 
-function LootService.RollFor(player: Player, zoneIndex: number, position: Vector3?)
+function LootService.RollFor(player: Player, zoneIndex: number, position: Vector3?, extraLuck: number?)
 	local data = services.DataService.GetData(player)
 	-- DEV: a forced rarity from the dev panel (Studio only) wins over everything else
 	local forced = services.DevService and services.DevService.ForcedRoll(player, zoneIndex)
@@ -78,6 +81,9 @@ function LootService.RollFor(player: Player, zoneIndex: number, position: Vector
 	local mods = LootService.BuildMods(player, zoneIndex)
 	if position and services.WorldService.IsNearLandmark(position, zoneIndex, LANDMARK_RADIUS) then
 		mods.luck = (mods.luck or 1) * LANDMARK_LUCK
+	end
+	if extraLuck then -- guarded nodes (GuardianService lairs)
+		mods.luck = (mods.luck or 1) * extraLuck
 	end
 	return LootRoll.Roll(rng, zoneIndex, mods)
 end
@@ -132,9 +138,7 @@ function LootService.OnRelicFound(player: Player, relic, zoneIndex: number)
 
 	Net.RevealRelic:FireClient(player, relic, "Salvage")
 
-	local mut = if #relic.mutations > 0 then table.concat(relic.mutations, " ") .. " " else ""
-	local huge = if relic.size >= 1.35 then "HUGE " else ""
-	local label = `{huge}{mut}{def.Name}`
+	local label = `{Materials.Prefix(relic)}{def.Name}`
 	local announce = Rarities[relic.rarity].Announce
 	if announce == "local" then
 		services.AnnouncementService.Near(player, `{player.DisplayName} found a LEGENDARY {label}!`, relic.rarity)
@@ -161,11 +165,12 @@ function LootService.GrantLegendaryRoll(player: Player): boolean
 	if not data then
 		return false
 	end
-	local zoneIndex = math.clamp(data.Suit, 2, 5)
+	local zoneIndex = math.clamp(Upgrades.SuitZone(data.Suit), 2, 5)
 	local relic = services.InventoryService.CreateRelic(player, {
 		id = LootRoll.RollRelicId(rng, zoneIndex, "Legendary"),
 		rarity = "Legendary",
 		mutations = LootRoll.RollMutations(rng, LootService.BuildMods(player, zoneIndex)),
+		material = LootRoll.RollMaterial(rng, LootService.BuildMods(player, zoneIndex)),
 		size = LootRoll.RollSize(rng),
 	})
 	services.InventoryService.AddToStorage(player, relic)
@@ -193,7 +198,7 @@ end
 local function getPreRoll(player: Player, node)
 	local roll = node.preRolls[player]
 	if not roll then
-		roll = LootService.RollFor(player, node.zone, node.pos)
+		roll = LootService.RollFor(player, node.zone, node.pos, node.luck)
 		node.preRolls[player] = roll
 	end
 	return roll
@@ -239,10 +244,11 @@ local function salvage(player: Player, part: BasePart, skipHold: boolean?): bool
 	LootService.OnRelicFound(player, relic, node.zone)
 
 	local zoneIndex = node.zone
+	local lair = node.lair
 	nodes[part] = nil
 	part:Destroy()
 	task.delay(rng:NextNumber(15, 30), function()
-		spawnNode(zoneIndex)
+		spawnNode(zoneIndex, lair)
 	end)
 	return true
 end
@@ -342,8 +348,78 @@ local function decorateNode(part: BasePart, zoneIndex: number)
 	})
 end
 
-spawnNode = function(zoneIndex: number)
-	local pos = services.WorldService.RandomPointInZone(zoneIndex, rng)
+-- Make a node easy to find: a soft light pillar rising from it (seen through the fog as a
+-- glowing column) and a small diamond marker that shows through corals within ~110 studs.
+-- Same look for every node, so nothing leaks about the roll.
+local GUARDED_GLINT = Color3.fromRGB(255, 90, 70)
+
+local function markNode(part: BasePart, zoneIndex: number, guarded: boolean?)
+	local glint = if guarded then GUARDED_GLINT else nodeZoneColor(zoneIndex)
+	local height = 26
+	Build.Part({
+		Name = "LightPillar",
+		Shape = Enum.PartType.Cylinder,
+		Size = Vector3.new(height, 2.2, 2.2),
+		CFrame = CFrame.new(part.Position + Vector3.new(0, height / 2 - 0.5, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+		Color = glint,
+		Material = Enum.Material.Neon,
+		Transparency = 0.86,
+		CanCollide = false,
+		CanQuery = false,
+		CanTouch = false,
+		CastShadow = false,
+		Parent = part,
+	})
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "Marker"
+	gui.Size = UDim2.fromScale(2.4, 2.4) -- studs, so it shrinks with distance
+	gui.StudsOffsetWorldSpace = Vector3.new(0, 3.2, 0)
+	gui.AlwaysOnTop = true
+	gui.LightInfluence = 0
+	gui.MaxDistance = 110
+	gui.Parent = part
+	local diamond = Instance.new("Frame")
+	diamond.AnchorPoint = Vector2.new(0.5, 0.5)
+	diamond.Position = UDim2.fromScale(0.5, 0.5)
+	diamond.Size = UDim2.fromScale(0.62, 0.62)
+	diamond.Rotation = 45
+	diamond.BackgroundColor3 = glint
+	diamond.Parent = gui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0.18, 0)
+	corner.Parent = diamond
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2
+	stroke.Color = Color3.fromRGB(20, 22, 30)
+	stroke.Parent = diamond
+	local shine = Instance.new("Frame")
+	shine.AnchorPoint = Vector2.new(0.5, 0.5)
+	shine.Position = UDim2.fromScale(0.5, 0.5)
+	shine.Size = UDim2.fromScale(0.42, 0.42)
+	shine.BackgroundColor3 = Color3.new(1, 1, 1)
+	shine.BackgroundTransparency = 0.15
+	shine.Parent = diamond
+	local c2 = Instance.new("UICorner")
+	c2.CornerRadius = UDim.new(0.25, 0)
+	c2.Parent = shine
+	if guarded then
+		-- a guarded relic: red marker with a skull-ish dark centre and a bigger, warning size
+		gui.Size = UDim2.fromScale(3, 3)
+		shine.BackgroundColor3 = Color3.fromRGB(255, 220, 120)
+	end
+end
+
+-- `lair` (optional) = a guardian lair from GuardianService: { pos, radius, luck }. Guarded
+-- nodes sit around the lair, roll with the lair's luck and respawn at the same lair.
+spawnNode = function(zoneIndex: number, lair)
+	local pos
+	if lair then
+		local a = rng:NextNumber(0, math.pi * 2)
+		local d = rng:NextNumber(2, lair.radius)
+		pos = lair.pos + Vector3.new(math.cos(a) * d, 0, math.sin(a) * d)
+	else
+		pos = services.WorldService.RandomPointInZone(zoneIndex, rng)
+	end
 	local yaw = rng:NextNumber(0, math.pi * 2)
 	local part = Build.Part({
 		Name = "Node",
@@ -358,10 +434,16 @@ spawnNode = function(zoneIndex: number)
 	})
 	part:SetAttribute("Zone", zoneIndex)
 	decorateNode(part, zoneIndex)
-	Build.Instance("PointLight", { Range = 14, Brightness = 2, Color = part.Color, Parent = part })
+	-- soft: guarded nodes cluster at a lair, and several bright lights washed the guardian and
+	-- the corals out to white
+	Build.Instance("PointLight", { Range = 12, Brightness = if lair then 0.8 else 1.4, Color = part.Color, Shadows = false, Parent = part })
+	markNode(part, zoneIndex, lair ~= nil)
+	if lair then
+		part:SetAttribute("Guarded", true)
+	end
 	local prompt = Build.Prompt(part, "Salvage", "Glinting relic", Formulas.SalvageSeconds({}), "Salvage")
 	prompt.MaxActivationDistance = MAX_SALVAGE_DISTANCE
-	local node = { zone = zoneIndex, pos = pos, preRolls = {}, holdStart = {}, taken = false }
+	local node = { zone = zoneIndex, pos = pos, preRolls = {}, holdStart = {}, taken = false, lair = lair, luck = lair and lair.luck }
 	nodes[part] = node
 	prompt.PromptButtonHoldBegan:Connect(function(player)
 		node.holdStart[player] = os.clock()
@@ -374,6 +456,13 @@ spawnNode = function(zoneIndex: number)
 	prompt.Triggered:Connect(function(player)
 		salvage(player, part)
 	end)
+end
+
+-- GuardianService: seed a lair's guarded nodes
+function LootService.SpawnGuarded(zoneIndex: number, lair, count: number)
+	for _ = 1, count do
+		spawnNode(zoneIndex, lair)
+	end
 end
 
 function LootService.NodesNear(position: Vector3, range: number)

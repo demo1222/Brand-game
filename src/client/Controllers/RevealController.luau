@@ -15,8 +15,10 @@ local NumberFormat = require(Shared.NumberFormat)
 local Relics = require(Shared.Config.Relics)
 local Rarities = require(Shared.Config.Rarities)
 local Mutations = require(Shared.Config.Mutations)
+local Materials = require(Shared.Config.Materials)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local RelicView = require(script.Parent.Parent.UI.RelicView)
+local RelicOpening = require(script.Parent.Parent.UI.RelicOpening)
 
 local New, T = Kit.New, Kit.Theme
 local RevealController = {}
@@ -82,6 +84,25 @@ local function showNext()
 	end
 	showing = true
 	local entry = table.remove(queue, 1)
+	if entry.source == "Salvage" then
+		-- salvages get the summon-style chest opening (UI/RelicOpening). It is the whole reveal:
+		-- the relic shows in the world with its name, rarity, chips and income, and it waits for
+		-- a click, so this full-screen card is skipped. Then the next queued reveal plays.
+		seen += 1
+		RelicOpening.Play(entry.relic, {
+			play = function(name: string, pitch: number?)
+				local audio = controllers.AudioController
+				if audio and audio.Play then
+					audio.Play(name, pitch)
+				end
+			end,
+			onDone = function()
+				showing = false
+				showNext()
+			end,
+		})
+		return
+	end
 	local relic = entry.relic
 	local def = Relics.ById[relic.id]
 	local rarity = Rarities[relic.rarity]
@@ -160,7 +181,7 @@ local function showNext()
 		Parent = title,
 	})
 	Kit.Title({
-		Text = (if relic.size >= 1.35 then "HUGE! " else "") .. def.Name,
+		Text = Materials.Prefix(relic) .. def.Name,
 		TextSize = 24,
 		TextXAlignment = Enum.TextXAlignment.Center,
 		Size = UDim2.new(1, 0, 0, 28),
@@ -168,7 +189,8 @@ local function showNext()
 		ZIndex = 4,
 		Parent = info,
 	})
-	if #relic.mutations > 0 then
+	local matDef = relic.material and Materials.ById[relic.material]
+	if #relic.mutations > 0 or matDef then
 		local chips = New("Frame", {
 			BackgroundTransparency = 1,
 			Size = UDim2.new(1, 0, 0, 24),
@@ -176,6 +198,10 @@ local function showNext()
 			ZIndex = 4,
 			Parent = info,
 		}, { Kit.List(6, true, Enum.HorizontalAlignment.Center) })
+		if matDef then
+			local chip = Kit.Pill(`{matDef.Name} ×{matDef.Mult}`, matDef.Color, { TextSize = 15, Size = UDim2.fromOffset(0, 26), LayoutOrder = 0, ZIndex = 4, Parent = chips })
+			Kit.Shine(chip, 2)
+		end
 		for i, m in relic.mutations do
 			local md = Mutations.ById[m]
 			Kit.Pill(

@@ -1,0 +1,4586 @@
+{
+"note": "Generated VFX texture library. id = the Texture value to use in the sim (Studio: upload the png).",
+"textures": [
+{
+"file": "beams/streak_cel_00.png",
+"kind": "beam",
+"category": "beams",
+"family": "streak",
+"style": "cel",
+"size": [
+1024,
+256
+],
+"tile": false,
+"coverage": 0.1993,
+"thumb": "00000000000000000000000000000000000000000000000000000000011111100111111111111111000000000111111000000000000000000000000000000000",
+"tags": [
+"beam",
+"trail",
+"ribbon",
+"strip",
+"streak",
+"cel"
+],
+"id": "sim:lib/beams/streak_cel_00"
+},
+{
+"file": "beams/streak_cel_01.png",
+"kind": "beam",
+"category": "beams",
+"family": "streak",
+"style": "cel",
+"size": [
+1024,
+256
+],
+"tile": false,
+"coverage": 0.2146,
+"thumb": "00000000000000000000000000000000000000000000011100000000001111110111111111111111000000000011111100000000000001100000000000000000",
+"tags": [
+"beam",
+"trail",
+"ribbon",
+"strip",
+"streak",
+"cel"
+],
+"id": "sim:lib/beams/streak_cel_01"
+},
+{
+"file": "beams/streak_cel_02.png",
+"kind": "beam",
+"category": "beams",
+"family": "streak",
+"style": "cel",
+"size": [
+1024,
+256
+],
+"tile": false,
+"coverage": 0.2886,
+"thumb": "00000000000000000000000000000010000000000000111100000000011111110111111111111111000000000111111100000000000011110000000000000010",
+"tags": [
+"beam",
+"trail",
+"ribbon",
+"strip",
+"streak",
+"cel"
+],
+"id": "sim:lib/beams/streak_cel_02"
+},
+{
+"file": "beams/streak_glow_00.png",
+"kind": "beam",
+"category": "beams",
+"family": "streak",
+"style": "glow",
+"size": [
+1024,
+256
+],
+"tile": false,
+"coverage": 0.2128,
+"thumb": "00000000000000000000000000000000000000000000000000000000111111100111111111111111000000001111111000000000000000000000000000000000",
+"tags": [
+"beam",
+"trail",
+"ribbon",
+"strip",
+"streak",
+"glow"
+],
+"id": "sim:lib/beams/streak_glow_00"
+},
+{
+"file": "beams/streak_glow_01.png",
+"kind": "beam",
+"category": "beams",
+"family": "streak",
+"style": "glow",
+"size": [
+1024,
+256
+],
+"tile": false,
+"coverage": 0.2258,
+"thumb": "00000000000000000000000000000000000000000000011100000000011111110111111111111111000000000011111100000000000001110000000000000000",
+"tags": [
+"beam",
+"trail",
+"ribbon",
+"strip",
+"streak",
+"glow"
+],
+"id": "sim:lib/beams/streak_glow_01"
+},
+{
+"file": "beams/streak_glow_02.png",
+"kind": "beam",
+"category": "beams",
+"family": "streak",
+"style": "glow",
+"size": [
+1024,
+256
+],
+"tile": false,
+"coverage": 0.3002,
+"thumb": "00000000000000000000000000000010000000000001111100000000111111110111111111111111000000000111111100000000000011110000000000000010",
+"tags": [
+"beam",
+"trail",
+"ribbon",
+"strip",
+"streak",
+"glow"
+],
+"id": "sim:lib/beams/streak_glow_02"
+},
+{
+"file": "beams/streak_soft_00.png",
+"kind": "beam",
+"category": "beams",
+"family": "streak",
+"style": "soft",
+"size": [
+1024,
+256
+],
+"tile": false,
+"coverage": 0.2714,
+"thumb": "00000000000000000000000000000000000000000000110000001111111111110111111111111111000011111111111100000000000011000000000000000000",
+"tags": [
+"beam",
+"trail",
+"ribbon",
+"strip",
+"streak",
+"soft"
+],
+"id": "sim:lib/beams/streak_soft_00"
+},
+{
+"file": "beams/streak_soft_01.png",
+"kind": "beam",
+"category": "beams",
+"family": "streak",
+"style": "soft",
+"size": [
+1024,
+256
+],
+"tile": false,
+"coverage": 0.287,
+"thumb": "00000000000000000000000000000010000000000001111100000001111111110111111111111111000000011111111100000000000011110000000000000010",
+"tags": [
+"beam",
+"trail",
+"ribbon",
+"strip",
+"streak",
+"soft"
+],
+"id": "sim:lib/beams/streak_soft_01"
+},
+{
+"file": "beams/streak_soft_02.png",
+"kind": "beam",
+"category": "beams",
+"family": "streak",
+"style": "soft",
+"size": [
+1024,
+256
+],
+"tile": false,
+"coverage": 0.361,
+"thumb": "00000000000000000000000000000111000000000011111100000011111111110111111111111111000000111111111100000000001111110000000000000111",
+"tags": [
+"beam",
+"trail",
+"ribbon",
+"strip",
+"streak",
+"soft"
+],
+"id": "sim:lib/beams/streak_soft_02"
+},
+{
+"file": "flipbooks/impacts/explosion_cel_00_4x4.png",
+"kind": "flip",
+"category": "impacts",
+"family": "explosion",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1497,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000010001000100000000000000010000000000000000000000000010001000010001000100010001000100000000000000000000000000100010000000000001000100010000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"explosion",
+"cel"
+],
+"id": "sim:lib/flipbooks/impacts/explosion_cel_00_4x4"
+},
+{
+"file": "flipbooks/impacts/explosion_cel_01_4x4.png",
+"kind": "flip",
+"category": "impacts",
+"family": "explosion",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1635,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000001000000010001000100000000000000000000000000000000000100010001000100010001000100010000000000000000000000000000000000010000000000000001000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"explosion",
+"cel"
+],
+"id": "sim:lib/flipbooks/impacts/explosion_cel_01_4x4"
+},
+{
+"file": "flipbooks/impacts/explosion_cel_02_4x4.png",
+"kind": "flip",
+"category": "impacts",
+"family": "explosion",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1528,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000010000000010001000100000000000000000000000000000000001000100010001000010001000100010000000000000000000000000000000000100010001000000001000100010001000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"explosion",
+"cel"
+],
+"id": "sim:lib/flipbooks/impacts/explosion_cel_02_4x4"
+},
+{
+"file": "flipbooks/impacts/explosion_hot_00_4x4.png",
+"kind": "flip",
+"category": "impacts",
+"family": "explosion",
+"style": "hot",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.116,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000010001000100000000000000010000000000000000001000100010001000010001000100010001000100010000000000000000000000100010001000000001000100010000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"explosion",
+"hot"
+],
+"id": "sim:lib/flipbooks/impacts/explosion_hot_00_4x4"
+},
+{
+"file": "flipbooks/impacts/explosion_hot_01_4x4.png",
+"kind": "flip",
+"category": "impacts",
+"family": "explosion",
+"style": "hot",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1311,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000001000000010001000100000000000000000000000000000000000100010001000100010001000100010000000000000000000000000000000000010000000000000001000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"explosion",
+"hot"
+],
+"id": "sim:lib/flipbooks/impacts/explosion_hot_01_4x4"
+},
+{
+"file": "flipbooks/impacts/explosion_hot_02_4x4.png",
+"kind": "flip",
+"category": "impacts",
+"family": "explosion",
+"style": "hot",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1134,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000010000000010001000100000000000000000000000000000000001000100010001000011001100110011000000000000000000000000000000000100010001000000001100110010001000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"explosion",
+"hot"
+],
+"id": "sim:lib/flipbooks/impacts/explosion_hot_02_4x4"
+},
+{
+"file": "flipbooks/impacts/explosion_soft_00_4x4.png",
+"kind": "flip",
+"category": "impacts",
+"family": "explosion",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.116,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000010001000100000000000000010000000000000000001000100010001000010001000100010001000100010000000000000000000000100010001000000001000100010000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"explosion",
+"soft"
+],
+"id": "sim:lib/flipbooks/impacts/explosion_soft_00_4x4"
+},
+{
+"file": "flipbooks/impacts/explosion_soft_01_4x4.png",
+"kind": "flip",
+"category": "impacts",
+"family": "explosion",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1311,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000001000000010001000100000000000000000000000000000000000100010001000100010001000100010000000000000000000000000000000000010000000000000001000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"explosion",
+"soft"
+],
+"id": "sim:lib/flipbooks/impacts/explosion_soft_01_4x4"
+},
+{
+"file": "flipbooks/impacts/explosion_soft_02_4x4.png",
+"kind": "flip",
+"category": "impacts",
+"family": "explosion",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1134,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000010000000010001000100000000000000000000000000000000001000100010001000011001100110011000000000000000000000000000000000100010001000000001100110010001000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"explosion",
+"soft"
+],
+"id": "sim:lib/flipbooks/impacts/explosion_soft_02_4x4"
+},
+{
+"file": "flipbooks/magic/charge_in_cel_00_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "charge_in",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0688,
+"last": 0.0688,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100011000000000000000000000000000000000000000000000000001100100010001000000000000000000000000000000000000000000000000000100010001000100000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"charge",
+"in",
+"cel"
+],
+"id": "sim:lib/flipbooks/magic/charge_in_cel_00_4x4"
+},
+{
+"file": "flipbooks/magic/charge_in_cel_01_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "charge_in",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0688,
+"last": 0.0688,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000000000000000000001000100010001000000000000000000000000000000000000000000000000000100010001000100000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"charge",
+"in",
+"cel"
+],
+"id": "sim:lib/flipbooks/magic/charge_in_cel_01_4x4"
+},
+{
+"file": "flipbooks/magic/charge_in_cel_02_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "charge_in",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0688,
+"last": 0.0688,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000010001000000000000000000000000000000000000001000100010001000000000000000000000000000000000000000000000000000100010001000100000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"charge",
+"in",
+"cel"
+],
+"id": "sim:lib/flipbooks/magic/charge_in_cel_02_4x4"
+},
+{
+"file": "flipbooks/magic/charge_in_glow_00_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "charge_in",
+"style": "glow",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0728,
+"last": 0.0728,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100011000000000000000000000000000000000000000000000000001100100010001000000000000000000000000000000000000000000000000000100010001000100000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"charge",
+"in",
+"glow"
+],
+"id": "sim:lib/flipbooks/magic/charge_in_glow_00_4x4"
+},
+{
+"file": "flipbooks/magic/charge_in_glow_01_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "charge_in",
+"style": "glow",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0728,
+"last": 0.0728,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000000000000000000001000100010001000000000000000000000000000000000000000000000000000100010001000100000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"charge",
+"in",
+"glow"
+],
+"id": "sim:lib/flipbooks/magic/charge_in_glow_01_4x4"
+},
+{
+"file": "flipbooks/magic/charge_in_glow_02_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "charge_in",
+"style": "glow",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0728,
+"last": 0.0728,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100011000000010000000000000000000000000000000000000000001000100010001000000000000000000000000000000000000000000000000000100010001000100000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"charge",
+"in",
+"glow"
+],
+"id": "sim:lib/flipbooks/magic/charge_in_glow_02_4x4"
+},
+{
+"file": "flipbooks/magic/magic_poof_cel_00_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "magic_poof",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0544,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000100100000000000000000000000000000000000010001000100010010001000000000000000000000000000000000000000000001000100010000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"magic",
+"poof",
+"cel"
+],
+"id": "sim:lib/flipbooks/magic/magic_poof_cel_00_4x4"
+},
+{
+"file": "flipbooks/magic/magic_poof_cel_01_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "magic_poof",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.088,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000000000000000000001000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"magic",
+"poof",
+"cel"
+],
+"id": "sim:lib/flipbooks/magic/magic_poof_cel_01_4x4"
+},
+{
+"file": "flipbooks/magic/magic_poof_cel_02_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "magic_poof",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0926,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000000000000000000001000100010001000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"magic",
+"poof",
+"cel"
+],
+"id": "sim:lib/flipbooks/magic/magic_poof_cel_02_4x4"
+},
+{
+"file": "flipbooks/magic/magic_poof_glow_00_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "magic_poof",
+"style": "glow",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0603,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000100100000000000000000000000000000000000010001000100010010001000100010000000000000000000000000000000000001000100010000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"magic",
+"poof",
+"glow"
+],
+"id": "sim:lib/flipbooks/magic/magic_poof_glow_00_4x4"
+},
+{
+"file": "flipbooks/magic/magic_poof_glow_01_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "magic_poof",
+"style": "glow",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0941,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000000000000000000001000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"magic",
+"poof",
+"glow"
+],
+"id": "sim:lib/flipbooks/magic/magic_poof_glow_01_4x4"
+},
+{
+"file": "flipbooks/magic/magic_poof_glow_02_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "magic_poof",
+"style": "glow",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0985,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000000000000000000001000100010001000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"magic",
+"poof",
+"glow"
+],
+"id": "sim:lib/flipbooks/magic/magic_poof_glow_02_4x4"
+},
+{
+"file": "flipbooks/magic/magic_poof_soft_00_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "magic_poof",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0844,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001100100000000001100000000000000000000000000000000000000010001000100010000001000100010000000000000000000000000000000000001000100010000001000100010000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"magic",
+"poof",
+"soft"
+],
+"id": "sim:lib/flipbooks/magic/magic_poof_soft_00_4x4"
+},
+{
+"file": "flipbooks/magic/magic_poof_soft_01_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "magic_poof",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1014,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000000000000000000001000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"magic",
+"poof",
+"soft"
+],
+"id": "sim:lib/flipbooks/magic/magic_poof_soft_01_4x4"
+},
+{
+"file": "flipbooks/magic/magic_poof_soft_02_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "magic_poof",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1079,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000000000000000000001000100010001000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"magic",
+"poof",
+"soft"
+],
+"id": "sim:lib/flipbooks/magic/magic_poof_soft_02_4x4"
+},
+{
+"file": "flipbooks/magic/sigil_spin_cel_00_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "sigil_spin",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": true,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0592,
+"last": 0.0592,
+"moving": true,
+"thumb": "0000000000000000010001000100010000000000000000000000000000000000000000000000000001000100010001000000000000000000000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"sigil",
+"spin",
+"cel"
+],
+"id": "sim:lib/flipbooks/magic/sigil_spin_cel_00_4x4"
+},
+{
+"file": "flipbooks/magic/sigil_spin_cel_01_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "sigil_spin",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": true,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0633,
+"last": 0.0625,
+"moving": true,
+"thumb": "0000000000000000000000100000000000000000000100000001000100010001000000000000000000000000000000000000000000000000000100010011000100000000000000000000000000000000000000000000000000110001000100010000000000000000010000000000000000000000000000000001000100010001",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"sigil",
+"spin",
+"cel"
+],
+"id": "sim:lib/flipbooks/magic/sigil_spin_cel_01_4x4"
+},
+{
+"file": "flipbooks/magic/sigil_spin_cel_02_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "sigil_spin",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": true,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0618,
+"last": 0.0606,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000000100010010001000100010000000000000000000000000010100000001000100010001000000000101000000000000000000000000001000100000000000000000000000000000000000000000000000000000000000000000000000000100010001000100000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"sigil",
+"spin",
+"cel"
+],
+"id": "sim:lib/flipbooks/magic/sigil_spin_cel_02_4x4"
+},
+{
+"file": "flipbooks/magic/sigil_spin_glow_00_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "sigil_spin",
+"style": "glow",
+"grid": 4,
+"frames": 16,
+"loop": true,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0273,
+"last": 0.0146,
+"moving": true,
+"thumb": "0000000000000000010001000100010000000000000000000000000000000000000000000000000001000100010001000000000000000000000000000000000000000000000000000100010001000100000000000000000000010000000000000000000000000000010001000100010000000000000000000000000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"sigil",
+"spin",
+"glow"
+],
+"id": "sim:lib/flipbooks/magic/sigil_spin_glow_00_4x4"
+},
+{
+"file": "flipbooks/magic/sigil_spin_glow_01_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "sigil_spin",
+"style": "glow",
+"grid": 4,
+"frames": 16,
+"loop": true,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0352,
+"last": 0.0211,
+"moving": true,
+"thumb": "0000000000000000000000110001000000000000000000000001000100010001000000000000000000000000000000000000000000000000000100010011000100000000000000000000000000000100000000000000000001110101010100010000000000000000010001000000000000000000000000000001000100010001",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"sigil",
+"spin",
+"glow"
+],
+"id": "sim:lib/flipbooks/magic/sigil_spin_glow_01_4x4"
+},
+{
+"file": "flipbooks/magic/sigil_spin_glow_02_4x4.png",
+"kind": "flip",
+"category": "magic",
+"family": "sigil_spin",
+"style": "glow",
+"grid": 4,
+"frames": 16,
+"loop": true,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0475,
+"last": 0.0414,
+"moving": true,
+"thumb": "0000000000000000010100000000000000000000000100010110001000100010000000000000000000000000010000000001000100010001000000000101000000000000000000000010001000100000000000000000000000000000000000000000000000000000000000000000000000000100010001000101000000000000",
+"tags": [
+"magic",
+"portal",
+"sigil",
+"heal",
+"charge",
+"poof",
+"sigil",
+"spin",
+"glow"
+],
+"id": "sim:lib/flipbooks/magic/sigil_spin_glow_02_4x4"
+},
+{
+"file": "flipbooks/shockwaves/shockwave_cel_00_4x4.png",
+"kind": "flip",
+"category": "shockwaves",
+"family": "shockwave",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.2235,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000010001000100000010101010000000000100010000000000000000001100101010101010101000000000000011001010101010100000000000000000101000100000000000000000000000001010001000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"shockwave",
+"ring",
+"wave",
+"shockwave",
+"cel"
+],
+"id": "sim:lib/flipbooks/shockwaves/shockwave_cel_00_4x4"
+},
+{
+"file": "flipbooks/shockwaves/shockwave_cel_01_4x4.png",
+"kind": "flip",
+"category": "shockwaves",
+"family": "shockwave",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1285,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000001000100000000001010000000000000010000000000000000000100000010001010101000000000000001000000101010100000000000000000101010101000000000000000000000001010101010100010000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"shockwave",
+"ring",
+"wave",
+"shockwave",
+"cel"
+],
+"id": "sim:lib/flipbooks/shockwaves/shockwave_cel_01_4x4"
+},
+{
+"file": "flipbooks/shockwaves/shockwave_cel_02_4x4.png",
+"kind": "flip",
+"category": "shockwaves",
+"family": "shockwave",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1137,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000001000100000000001010000000000000010000000000000000000100000000001010101000000000000001000000000010100000000000000000101010101010000000000000000000001010101010100000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"shockwave",
+"ring",
+"wave",
+"shockwave",
+"cel"
+],
+"id": "sim:lib/flipbooks/shockwaves/shockwave_cel_02_4x4"
+},
+{
+"file": "flipbooks/shockwaves/shockwave_glow_00_4x4.png",
+"kind": "flip",
+"category": "shockwaves",
+"family": "shockwave",
+"style": "glow",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.2412,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000010001000100010010101010000000000100010000000000000000001110101010101010101000100000000011101010101010100000000000000000101010101000000000000000000000001010101000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"shockwave",
+"ring",
+"wave",
+"shockwave",
+"glow"
+],
+"id": "sim:lib/flipbooks/shockwaves/shockwave_glow_00_4x4"
+},
+{
+"file": "flipbooks/shockwaves/shockwave_glow_01_4x4.png",
+"kind": "flip",
+"category": "shockwaves",
+"family": "shockwave",
+"style": "glow",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1459,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000001000100000000001010000000000000010000000000000000000100000010101010101000000000000001000000101010100000000000000000101010101000000000000000000000001010101010100010000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"shockwave",
+"ring",
+"wave",
+"shockwave",
+"glow"
+],
+"id": "sim:lib/flipbooks/shockwaves/shockwave_glow_01_4x4"
+},
+{
+"file": "flipbooks/shockwaves/shockwave_glow_02_4x4.png",
+"kind": "flip",
+"category": "shockwaves",
+"family": "shockwave",
+"style": "glow",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1309,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000001000100000000001010000000000000010000000000000000000100000010101010101000000000000001000000101010100000000000000000101010101010000000000000000000001010101010100000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"shockwave",
+"ring",
+"wave",
+"shockwave",
+"glow"
+],
+"id": "sim:lib/flipbooks/shockwaves/shockwave_glow_02_4x4"
+},
+{
+"file": "flipbooks/shockwaves/shockwave_ink_00_4x4.png",
+"kind": "flip",
+"category": "shockwaves",
+"family": "shockwave",
+"style": "ink",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1969,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000010001000100000010101010000000000100010000000000000000001110101010101010101000000000000011001010101010100000000000000000101010100000000000000000000000001010001000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"shockwave",
+"ring",
+"wave",
+"shockwave",
+"ink"
+],
+"id": "sim:lib/flipbooks/shockwaves/shockwave_ink_00_4x4"
+},
+{
+"file": "flipbooks/shockwaves/shockwave_ink_01_4x4.png",
+"kind": "flip",
+"category": "shockwaves",
+"family": "shockwave",
+"style": "ink",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1121,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000001000100000000001010000000000000010000000000000000000100000000001010101000000000000001000000100010100000000000000000101010101000000000000000000000001010101010100010000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"shockwave",
+"ring",
+"wave",
+"shockwave",
+"ink"
+],
+"id": "sim:lib/flipbooks/shockwaves/shockwave_ink_01_4x4"
+},
+{
+"file": "flipbooks/shockwaves/shockwave_ink_02_4x4.png",
+"kind": "flip",
+"category": "shockwaves",
+"family": "shockwave",
+"style": "ink",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1037,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000001000000000000001010000000000000010000000000000000000100000000001010101000000000000001000000000000100000000000000000101010101010000000000000000000001010101010100000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"shockwave",
+"ring",
+"wave",
+"shockwave",
+"ink"
+],
+"id": "sim:lib/flipbooks/shockwaves/shockwave_ink_02_4x4"
+},
+{
+"file": "flipbooks/shockwaves/shockwave_soft_00_4x4.png",
+"kind": "flip",
+"category": "shockwaves",
+"family": "shockwave",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.2493,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000010001000100000010101010000000000100010000000000000000001110101010101010101000100000000011101010101010100000000000000000101010000000000000000000000000001010101000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"shockwave",
+"ring",
+"wave",
+"shockwave",
+"soft"
+],
+"id": "sim:lib/flipbooks/shockwaves/shockwave_soft_00_4x4"
+},
+{
+"file": "flipbooks/shockwaves/shockwave_soft_01_4x4.png",
+"kind": "flip",
+"category": "shockwaves",
+"family": "shockwave",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.137,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000001000100000000001010000000000000010000000000000000000100000010101010101000000000000001000000100010100000000000000000101010101000000000000000000000001010101010100010000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"shockwave",
+"ring",
+"wave",
+"shockwave",
+"soft"
+],
+"id": "sim:lib/flipbooks/shockwaves/shockwave_soft_01_4x4"
+},
+{
+"file": "flipbooks/shockwaves/shockwave_soft_02_4x4.png",
+"kind": "flip",
+"category": "shockwaves",
+"family": "shockwave",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1197,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000001000100000000001010000000000000010000000000000000000100000010101010101000000000000001000000101010100000000000000000101010101010000000000000000000001010101010100000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"shockwave",
+"ring",
+"wave",
+"shockwave",
+"soft"
+],
+"id": "sim:lib/flipbooks/shockwaves/shockwave_soft_02_4x4"
+},
+{
+"file": "flipbooks/smoke/dust_ground_cel_00_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "dust_ground",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.2557,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000001000110000001000100110000000000000000000000000000000000111011101110111011101110111011100000000000000000000000000000000011101100010000001010100010000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"dust",
+"ground",
+"cel"
+],
+"id": "sim:lib/flipbooks/smoke/dust_ground_cel_00_4x4"
+},
+{
+"file": "flipbooks/smoke/dust_ground_cel_01_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "dust_ground",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1272,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000000000000000000000100010000000000000000000000000000000000010001000100010001001100110011000000000000000000000000000000000001000100000000001100110000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"dust",
+"ground",
+"cel"
+],
+"id": "sim:lib/flipbooks/smoke/dust_ground_cel_01_4x4"
+},
+{
+"file": "flipbooks/smoke/dust_ground_cel_02_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "dust_ground",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.2254,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000001001100000001000100010000000000000000000000000000000000110011001100110001100110111011100000000000000000000000000000000011000100010001001110111000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"dust",
+"ground",
+"cel"
+],
+"id": "sim:lib/flipbooks/smoke/dust_ground_cel_02_4x4"
+},
+{
+"file": "flipbooks/smoke/dust_ground_soft_00_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "dust_ground",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.234,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000001101110000001000100111000000000000000000000000000000000111011101110111011101110111011100000000000000000000000000000000011101100010000001010100010000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"dust",
+"ground",
+"soft"
+],
+"id": "sim:lib/flipbooks/smoke/dust_ground_soft_00_4x4"
+},
+{
+"file": "flipbooks/smoke/dust_ground_soft_01_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "dust_ground",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1172,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000000000000000000000100010000000000000000000000000000000000010011001100010011001100110011000000000000000000000000000000000001000100000000001100110000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"dust",
+"ground",
+"soft"
+],
+"id": "sim:lib/flipbooks/smoke/dust_ground_soft_01_4x4"
+},
+{
+"file": "flipbooks/smoke/dust_ground_soft_02_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "dust_ground",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.2075,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000001001100000001000100010000000000000000000000000000000000110011001100110001101110111011100000000000000000000000000000000011000100010001001110111000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"dust",
+"ground",
+"soft"
+],
+"id": "sim:lib/flipbooks/smoke/dust_ground_soft_02_4x4"
+},
+{
+"file": "flipbooks/smoke/smoke_puff_fb_cel_00_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "smoke_puff_fb",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1227,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"smoke",
+"puff",
+"fb",
+"cel"
+],
+"id": "sim:lib/flipbooks/smoke/smoke_puff_fb_cel_00_4x4"
+},
+{
+"file": "flipbooks/smoke/smoke_puff_fb_cel_01_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "smoke_puff_fb",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0834,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"smoke",
+"puff",
+"fb",
+"cel"
+],
+"id": "sim:lib/flipbooks/smoke/smoke_puff_fb_cel_01_4x4"
+},
+{
+"file": "flipbooks/smoke/smoke_puff_fb_cel_02_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "smoke_puff_fb",
+"style": "cel",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0871,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000000000000000000001000100010001000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"smoke",
+"puff",
+"fb",
+"cel"
+],
+"id": "sim:lib/flipbooks/smoke/smoke_puff_fb_cel_02_4x4"
+},
+{
+"file": "flipbooks/smoke/smoke_puff_fb_ink_00_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "smoke_puff_fb",
+"style": "ink",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1035,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"smoke",
+"puff",
+"fb",
+"ink"
+],
+"id": "sim:lib/flipbooks/smoke/smoke_puff_fb_ink_00_4x4"
+},
+{
+"file": "flipbooks/smoke/smoke_puff_fb_ink_01_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "smoke_puff_fb",
+"style": "ink",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0658,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"smoke",
+"puff",
+"fb",
+"ink"
+],
+"id": "sim:lib/flipbooks/smoke/smoke_puff_fb_ink_01_4x4"
+},
+{
+"file": "flipbooks/smoke/smoke_puff_fb_ink_02_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "smoke_puff_fb",
+"style": "ink",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0723,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"smoke",
+"puff",
+"fb",
+"ink"
+],
+"id": "sim:lib/flipbooks/smoke/smoke_puff_fb_ink_02_4x4"
+},
+{
+"file": "flipbooks/smoke/smoke_puff_fb_soft_00_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "smoke_puff_fb",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0832,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010001000100010000000000000000000000000000000000000000000000000001000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"smoke",
+"puff",
+"fb",
+"soft"
+],
+"id": "sim:lib/flipbooks/smoke/smoke_puff_fb_soft_00_4x4"
+},
+{
+"file": "flipbooks/smoke/smoke_puff_fb_soft_01_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "smoke_puff_fb",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0468,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"smoke",
+"puff",
+"fb",
+"soft"
+],
+"id": "sim:lib/flipbooks/smoke/smoke_puff_fb_soft_01_4x4"
+},
+{
+"file": "flipbooks/smoke/smoke_puff_fb_soft_02_4x4.png",
+"kind": "flip",
+"category": "smoke",
+"family": "smoke_puff_fb",
+"style": "soft",
+"grid": 4,
+"frames": 16,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0592,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000000000000000000000100010001000100000000000000000000000000000000000000000001000100010001000100010000000000000000000000000000000000010000000000000001000100010001000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"smoke",
+"cloud",
+"puff",
+"dust",
+"smoke",
+"puff",
+"fb",
+"soft"
+],
+"id": "sim:lib/flipbooks/smoke/smoke_puff_fb_soft_02_4x4"
+},
+{
+"file": "flipbooks/specks/embers_rise_cel_00_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "embers_rise",
+"style": "cel",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0135,
+"last": 0.002,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010101000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"embers",
+"rise",
+"cel"
+],
+"id": "sim:lib/flipbooks/specks/embers_rise_cel_00_8x8"
+},
+{
+"file": "flipbooks/specks/embers_rise_cel_01_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "embers_rise",
+"style": "cel",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0355,
+"last": 0.0031,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"embers",
+"rise",
+"cel"
+],
+"id": "sim:lib/flipbooks/specks/embers_rise_cel_01_8x8"
+},
+{
+"file": "flipbooks/specks/embers_rise_cel_02_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "embers_rise",
+"style": "cel",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0231,
+"last": 0.0047,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010100000000000000000101000000000101000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"embers",
+"rise",
+"cel"
+],
+"id": "sim:lib/flipbooks/specks/embers_rise_cel_02_8x8"
+},
+{
+"file": "flipbooks/specks/embers_rise_glow_00_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "embers_rise",
+"style": "glow",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0157,
+"last": 0.0011,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010101000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"embers",
+"rise",
+"glow"
+],
+"id": "sim:lib/flipbooks/specks/embers_rise_glow_00_8x8"
+},
+{
+"file": "flipbooks/specks/embers_rise_glow_01_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "embers_rise",
+"style": "glow",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0413,
+"last": 0.0015,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"embers",
+"rise",
+"glow"
+],
+"id": "sim:lib/flipbooks/specks/embers_rise_glow_01_8x8"
+},
+{
+"file": "flipbooks/specks/embers_rise_glow_02_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "embers_rise",
+"style": "glow",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0276,
+"last": 0.0034,
+"moving": true,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010100000000000000000101000000010101000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"embers",
+"rise",
+"glow"
+],
+"id": "sim:lib/flipbooks/specks/embers_rise_glow_02_8x8"
+},
+{
+"file": "flipbooks/specks/sparks_cel_00_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "sparks",
+"style": "cel",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.016,
+"last": 0.0045,
+"moving": true,
+"thumb": "0000000000000000010101010101010100000000000000000101010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"sparks",
+"cel"
+],
+"id": "sim:lib/flipbooks/specks/sparks_cel_00_8x8"
+},
+{
+"file": "flipbooks/specks/sparks_cel_01_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "sparks",
+"style": "cel",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0175,
+"last": 0.0026,
+"moving": true,
+"thumb": "0000000000000000010101010101010100000000000000000101010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"sparks",
+"cel"
+],
+"id": "sim:lib/flipbooks/specks/sparks_cel_01_8x8"
+},
+{
+"file": "flipbooks/specks/sparks_cel_02_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "sparks",
+"style": "cel",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0173,
+"last": 0.0018,
+"moving": true,
+"thumb": "0000000000000000010101010101010100000000000000000101000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"sparks",
+"cel"
+],
+"id": "sim:lib/flipbooks/specks/sparks_cel_02_8x8"
+},
+{
+"file": "flipbooks/specks/sparks_glow_00_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "sparks",
+"style": "glow",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0214,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000010101010101010100000000000000000101010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"sparks",
+"glow"
+],
+"id": "sim:lib/flipbooks/specks/sparks_glow_00_8x8"
+},
+{
+"file": "flipbooks/specks/sparks_glow_01_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "sparks",
+"style": "glow",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0236,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000010101010101010100000000000000000101010100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"sparks",
+"glow"
+],
+"id": "sim:lib/flipbooks/specks/sparks_glow_01_8x8"
+},
+{
+"file": "flipbooks/specks/sparks_glow_02_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "sparks",
+"style": "glow",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.0229,
+"last": 0.0,
+"moving": true,
+"thumb": "0000000000000000010101010101010100000000000000000101010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"sparks",
+"glow"
+],
+"id": "sim:lib/flipbooks/specks/sparks_glow_02_8x8"
+},
+{
+"file": "flipbooks/specks/twinkle_cel_00_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "twinkle",
+"style": "cel",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1477,
+"last": 0.0012,
+"moving": true,
+"thumb": "0000000000000000000101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"twinkle",
+"cel"
+],
+"id": "sim:lib/flipbooks/specks/twinkle_cel_00_8x8"
+},
+{
+"file": "flipbooks/specks/twinkle_cel_01_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "twinkle",
+"style": "cel",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1299,
+"last": 0.0012,
+"moving": true,
+"thumb": "0000000000000000000101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"twinkle",
+"cel"
+],
+"id": "sim:lib/flipbooks/specks/twinkle_cel_01_8x8"
+},
+{
+"file": "flipbooks/specks/twinkle_cel_02_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "twinkle",
+"style": "cel",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1523,
+"last": 0.0012,
+"moving": true,
+"thumb": "0000000000000000000101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"twinkle",
+"cel"
+],
+"id": "sim:lib/flipbooks/specks/twinkle_cel_02_8x8"
+},
+{
+"file": "flipbooks/specks/twinkle_glow_00_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "twinkle",
+"style": "glow",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1621,
+"last": 0.0015,
+"moving": true,
+"thumb": "0000000000000000000101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"twinkle",
+"glow"
+],
+"id": "sim:lib/flipbooks/specks/twinkle_glow_00_8x8"
+},
+{
+"file": "flipbooks/specks/twinkle_glow_01_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "twinkle",
+"style": "glow",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1436,
+"last": 0.0007,
+"moving": true,
+"thumb": "0000000000000000000101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"twinkle",
+"glow"
+],
+"id": "sim:lib/flipbooks/specks/twinkle_glow_01_8x8"
+},
+{
+"file": "flipbooks/specks/twinkle_glow_02_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "twinkle",
+"style": "glow",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1797,
+"last": 0.001,
+"moving": true,
+"thumb": "0000000000000000000101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"twinkle",
+"glow"
+],
+"id": "sim:lib/flipbooks/specks/twinkle_glow_02_8x8"
+},
+{
+"file": "flipbooks/specks/twinkle_soft_00_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "twinkle",
+"style": "soft",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1448,
+"last": 0.002,
+"moving": true,
+"thumb": "0000000000000000000101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"twinkle",
+"soft"
+],
+"id": "sim:lib/flipbooks/specks/twinkle_soft_00_8x8"
+},
+{
+"file": "flipbooks/specks/twinkle_soft_01_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "twinkle",
+"style": "soft",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1262,
+"last": 0.002,
+"moving": true,
+"thumb": "0000000000000000000101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"twinkle",
+"soft"
+],
+"id": "sim:lib/flipbooks/specks/twinkle_soft_01_8x8"
+},
+{
+"file": "flipbooks/specks/twinkle_soft_02_8x8.png",
+"kind": "flip",
+"category": "specks",
+"family": "twinkle",
+"style": "soft",
+"grid": 8,
+"frames": 64,
+"loop": false,
+"size": [
+1024,
+1024
+],
+"coverage": 0.1516,
+"last": 0.0015,
+"moving": true,
+"thumb": "0000000000000000000101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101000000000000000001010101010101010000000000000000010101010101010100000000000000000101010101010101",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"twinkle",
+"soft"
+],
+"id": "sim:lib/flipbooks/specks/twinkle_soft_02_8x8"
+},
+{
+"file": "sprites/flares/anamorphic_glow_00.png",
+"kind": "sprite",
+"category": "flares",
+"family": "anamorphic",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0154,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111111100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"anamorphic",
+"glow"
+],
+"id": "sim:lib/sprites/flares/anamorphic_glow_00"
+},
+{
+"file": "sprites/flares/anamorphic_glow_01.png",
+"kind": "sprite",
+"category": "flares",
+"family": "anamorphic",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0393,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011100000000000011111000000000000111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"anamorphic",
+"glow"
+],
+"id": "sim:lib/sprites/flares/anamorphic_glow_01"
+},
+{
+"file": "sprites/flares/anamorphic_glow_02.png",
+"kind": "sprite",
+"category": "flares",
+"family": "anamorphic",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0157,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"anamorphic",
+"glow"
+],
+"id": "sim:lib/sprites/flares/anamorphic_glow_02"
+},
+{
+"file": "sprites/flares/anamorphic_soft_00.png",
+"kind": "sprite",
+"category": "flares",
+"family": "anamorphic",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.0148,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111111100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"anamorphic",
+"soft"
+],
+"id": "sim:lib/sprites/flares/anamorphic_soft_00"
+},
+{
+"file": "sprites/flares/anamorphic_soft_01.png",
+"kind": "sprite",
+"category": "flares",
+"family": "anamorphic",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.0346,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011100000100000011111000000000000110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"anamorphic",
+"soft"
+],
+"id": "sim:lib/sprites/flares/anamorphic_soft_01"
+},
+{
+"file": "sprites/flares/anamorphic_soft_02.png",
+"kind": "sprite",
+"category": "flares",
+"family": "anamorphic",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.0154,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000001110000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"anamorphic",
+"soft"
+],
+"id": "sim:lib/sprites/flares/anamorphic_soft_02"
+},
+{
+"file": "sprites/flares/bokeh_cel_00.png",
+"kind": "sprite",
+"category": "flares",
+"family": "bokeh",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.2602,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000011100000000000111111100000000111111111000000011111111100000001111111110000000111111111000000011111111100000000111111100000000000111000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"bokeh",
+"cel"
+],
+"id": "sim:lib/sprites/flares/bokeh_cel_00"
+},
+{
+"file": "sprites/flares/bokeh_cel_01.png",
+"kind": "sprite",
+"category": "flares",
+"family": "bokeh",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.0914,
+"thumb": "0000000000000000000000000000000000000001111000000000110000010000000000000000100000010000000001000000000000000010001000000000001000000000000000100010000000000010000000000000001000010000000000100000000000001000000011000001000000000001111000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"bokeh",
+"cel"
+],
+"id": "sim:lib/sprites/flares/bokeh_cel_01"
+},
+{
+"file": "sprites/flares/bokeh_cel_02.png",
+"kind": "sprite",
+"category": "flares",
+"family": "bokeh",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.1972,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000011000000000000011111000000000011111111000000011111111000000001111111100000000011111110000000001111111000000000011111100000000001000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"bokeh",
+"cel"
+],
+"id": "sim:lib/sprites/flares/bokeh_cel_02"
+},
+{
+"file": "sprites/flares/bokeh_glow_00.png",
+"kind": "sprite",
+"category": "flares",
+"family": "bokeh",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.2687,
+"thumb": "0000000000000000000000000000000000000000000000000000000010000000000000111110000000001111111100000000111111111000000011111111100000001111111110000000111111111000000011111111100000000111111110000000001111100000000000001000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"bokeh",
+"glow"
+],
+"id": "sim:lib/sprites/flares/bokeh_glow_00"
+},
+{
+"file": "sprites/flares/bokeh_glow_01.png",
+"kind": "sprite",
+"category": "flares",
+"family": "bokeh",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.1143,
+"thumb": "0000000000000000000000000000000000000001111000000000110000010000000110000000100000010000000001100001000000000010001000000000001000100000000000100010000000000010000100000000001000010000000001100001000000001000000011100001000000000001111000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"bokeh",
+"glow"
+],
+"id": "sim:lib/sprites/flares/bokeh_glow_01"
+},
+{
+"file": "sprites/flares/bokeh_glow_02.png",
+"kind": "sprite",
+"category": "flares",
+"family": "bokeh",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.2049,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000011000000000000011111000000000011111111000000011111111100000001111111100000000011111110000000001111111000000000011111100000000001100000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"bokeh",
+"glow"
+],
+"id": "sim:lib/sprites/flares/bokeh_glow_02"
+},
+{
+"file": "sprites/flares/bokeh_soft_00.png",
+"kind": "sprite",
+"category": "flares",
+"family": "bokeh",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.2929,
+"thumb": "0000000000000000000000000000000000000000000000000000000111000000000001111110000000001111111110000000111111111100000011111111100000001111111110000001111111111000000111111111100000001111111110000000001111110000000000011100000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"bokeh",
+"soft"
+],
+"id": "sim:lib/sprites/flares/bokeh_soft_00"
+},
+{
+"file": "sprites/flares/bokeh_soft_01.png",
+"kind": "sprite",
+"category": "flares",
+"family": "bokeh",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.0943,
+"thumb": "0000000000000000000000000000000000000001111000000000110000010000000000000000100000010000000001100000000000000010001000000000001000100000000000100010000000000010000000000000001000010000000001100000000000001000000011000001000000000001111000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"bokeh",
+"soft"
+],
+"id": "sim:lib/sprites/flares/bokeh_soft_01"
+},
+{
+"file": "sprites/flares/bokeh_soft_02.png",
+"kind": "sprite",
+"category": "flares",
+"family": "bokeh",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.2269,
+"thumb": "0000000000000000000000000000000000000000000000000000000100000000000000111100000000000111111100000000111111111000000111111111100000001111111110000000111111111000000001111111100000000111111100000000001111100000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"bokeh",
+"soft"
+],
+"id": "sim:lib/sprites/flares/bokeh_soft_02"
+},
+{
+"file": "sprites/flares/flare_glow_00.png",
+"kind": "sprite",
+"category": "flares",
+"family": "flare",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0136,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000001110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"flare",
+"glow"
+],
+"id": "sim:lib/sprites/flares/flare_glow_00"
+},
+{
+"file": "sprites/flares/flare_glow_01.png",
+"kind": "sprite",
+"category": "flares",
+"family": "flare",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.024,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000010000000000000001100000000000011110000000000000111000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"flare",
+"glow"
+],
+"id": "sim:lib/sprites/flares/flare_glow_01"
+},
+{
+"file": "sprites/flares/flare_glow_02.png",
+"kind": "sprite",
+"category": "flares",
+"family": "flare",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0198,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000100010000000000000000000000000100101001000000000000000000000000011111000000000000000000000000010000000100000000000000000000000001000100000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"flare",
+"glow"
+],
+"id": "sim:lib/sprites/flares/flare_glow_02"
+},
+{
+"file": "sprites/flares/flare_soft_00.png",
+"kind": "sprite",
+"category": "flares",
+"family": "flare",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.0133,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000010111100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"flare",
+"soft"
+],
+"id": "sim:lib/sprites/flares/flare_soft_00"
+},
+{
+"file": "sprites/flares/flare_soft_01.png",
+"kind": "sprite",
+"category": "flares",
+"family": "flare",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.0256,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000010100000000000010010100000000000011000000000000011111000000000000011000000000000101000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"flare",
+"soft"
+],
+"id": "sim:lib/sprites/flares/flare_soft_01"
+},
+{
+"file": "sprites/flares/flare_soft_02.png",
+"kind": "sprite",
+"category": "flares",
+"family": "flare",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.0214,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000100101001000000000000000000000000011111000000000000000000000000000000000100000000000000000000000001000100000000000000000000000000000000000000000000000000000",
+"tags": [
+"flare",
+"lens",
+"glint",
+"star",
+"bokeh",
+"light",
+"flare",
+"soft"
+],
+"id": "sim:lib/sprites/flares/flare_soft_02"
+},
+{
+"file": "sprites/impacts/comic_burst_cel_00.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "comic_burst",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.1373,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000010100000000000111110100000000110000100100000001000001000000011100000011000000100000001000000001000011110000000111011100000000000111000000000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"comic",
+"burst",
+"cel"
+],
+"id": "sim:lib/sprites/impacts/comic_burst_cel_00"
+},
+{
+"file": "sprites/impacts/comic_burst_cel_01.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "comic_burst",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.1541,
+"thumb": "0000000000000000000000000000000000000000000000000000000101000000000000011100000000000011011000000000011000110000000011000001100000011000000111000000110000011000001001000101000000001011111010000000010100010000000000010001000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"comic",
+"burst",
+"cel"
+],
+"id": "sim:lib/sprites/impacts/comic_burst_cel_01"
+},
+{
+"file": "sprites/impacts/comic_burst_cel_02.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "comic_burst",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.1264,
+"thumb": "0000000000000000000000000000000000000000000000000000000001000000000000000110000000001011101110000000100000001000000001000000100000110000000001100000110000001000000010000000100000011111111110000000001000100000000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"comic",
+"burst",
+"cel"
+],
+"id": "sim:lib/sprites/impacts/comic_burst_cel_02"
+},
+{
+"file": "sprites/impacts/comic_burst_glow_00.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "comic_burst",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.1658,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000011010100000000000111111100000000111101111100000011000001100000011100000111100000110000011100000111000011110000000111011100000000000111000000000000010000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"comic",
+"burst",
+"glow"
+],
+"id": "sim:lib/sprites/impacts/comic_burst_glow_00"
+},
+{
+"file": "sprites/impacts/comic_burst_glow_01.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "comic_burst",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.1867,
+"thumb": "0000000000000000000000000000000000000000000000000000000101000000000000111100000000001111111010000000111100111000000011000001110000011100000111000000110000011100001011100111100000001111111110000000010111110000000000010001000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"comic",
+"burst",
+"glow"
+],
+"id": "sim:lib/sprites/impacts/comic_burst_glow_01"
+},
+{
+"file": "sprites/impacts/comic_burst_glow_02.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "comic_burst",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.1524,
+"thumb": "0000000000000000000000000000000000000000000000000000000001100000000000011110010000001111101111000000110000001000000011000000110000111000000011100000110000001000000011000000100000011111111111000000001101100100000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"comic",
+"burst",
+"glow"
+],
+"id": "sim:lib/sprites/impacts/comic_burst_glow_02"
+},
+{
+"file": "sprites/impacts/comic_burst_ink_00.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "comic_burst",
+"style": "ink",
+"size": [
+512,
+512
+],
+"coverage": 0.1129,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000010100000000000111111100000000110000100100000001000001000000011100000011000000100000000000000001000000110000000111001100000000000111000000000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"comic",
+"burst",
+"ink"
+],
+"id": "sim:lib/sprites/impacts/comic_burst_ink_00"
+},
+{
+"file": "sprites/impacts/comic_burst_ink_01.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "comic_burst",
+"style": "ink",
+"size": [
+512,
+512
+],
+"coverage": 0.1189,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000011100000000000010011000000000011000110000000011000001100000011000000011000000110000001000000001000000000000001001111010000000000000000000000000010000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"comic",
+"burst",
+"ink"
+],
+"id": "sim:lib/sprites/impacts/comic_burst_ink_01"
+},
+{
+"file": "sprites/impacts/comic_burst_ink_02.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "comic_burst",
+"style": "ink",
+"size": [
+512,
+512
+],
+"coverage": 0.1061,
+"thumb": "0000000000000000000000000000000000000000000000000000000001000000000000000110000000001011101110000000100000001000000001000000100000010000000001100000100000000000000010000000100000001110111100000000001000100100000000000000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"comic",
+"burst",
+"ink"
+],
+"id": "sim:lib/sprites/impacts/comic_burst_ink_02"
+},
+{
+"file": "sprites/impacts/speed_lines_cel_00.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "speed_lines",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.0674,
+"thumb": "0000000000000000000000010100000000000000010000000000100000100000000101000000010000001000000000000001000000000100010000000000000100000000000000000100000000000001000100000000000000001000000010000001000000010100000000000000100000000000000000000000000101000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"speed",
+"lines",
+"cel"
+],
+"id": "sim:lib/sprites/impacts/speed_lines_cel_00"
+},
+{
+"file": "sprites/impacts/speed_lines_cel_01.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "speed_lines",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.0612,
+"thumb": "0000000000000000000000000100000000000000001000000000010000010000000000000000000000011000000011000000000000000000000000000000100000000000000000000100000000001001000000000000000000010000000000000000010000000000000000000001000000000000000000000000000101000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"speed",
+"lines",
+"cel"
+],
+"id": "sim:lib/sprites/impacts/speed_lines_cel_01"
+},
+{
+"file": "sprites/impacts/speed_lines_cel_02.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "speed_lines",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.0509,
+"thumb": "0000000000000000000000100000000000000000010000000000000000100000000000000001000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000100000101000010000000000010010000000000001001000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"speed",
+"lines",
+"cel"
+],
+"id": "sim:lib/sprites/impacts/speed_lines_cel_02"
+},
+{
+"file": "sprites/impacts/speed_lines_glow_00.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "speed_lines",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0808,
+"thumb": "0000000000000000000000010100000000000001010000000000100000100000001101000000010000001000000000100001000000000110010000000000001100000000000000000110000000000011000100000000000000001000000010000001000000010110000000000000100000000001010000000000000101000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"speed",
+"lines",
+"glow"
+],
+"id": "sim:lib/sprites/impacts/speed_lines_glow_00"
+},
+{
+"file": "sprites/impacts/speed_lines_glow_01.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "speed_lines",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0561,
+"thumb": "0000000000000000000000000100000000000100011100000000010000111000000000000000010000011000000011100000000000000000000000000000000000000000000000000100000000001011001100000000001000110000000000100000010000000000000010000001100000000000010000000000000101000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"speed",
+"lines",
+"glow"
+],
+"id": "sim:lib/sprites/impacts/speed_lines_glow_01"
+},
+{
+"file": "sprites/impacts/speed_lines_glow_02.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "speed_lines",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0623,
+"thumb": "0000000000000000000000100100000000000010010000000000000001101000000000000001000000000000000000100011000000000000000000000000000000000000000000000000000000001100000000000000000000010000000000000010100000000100000101000010000000000010010000000000001001000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"speed",
+"lines",
+"glow"
+],
+"id": "sim:lib/sprites/impacts/speed_lines_glow_02"
+},
+{
+"file": "sprites/impacts/starburst_cel_00.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "starburst",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.2037,
+"thumb": "0000000000000000000000000000000000000000000000000000001000100000000000110110000000000011011000000000001111111100000001111111100000000011111000000000011111110000000010111110000000000011011000000000001001100000000000000010000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"starburst",
+"cel"
+],
+"id": "sim:lib/sprites/impacts/starburst_cel_00"
+},
+{
+"file": "sprites/impacts/starburst_cel_01.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "starburst",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.2119,
+"thumb": "0000000000000000000000000000000000000000000000000000000100000000000000011001000000000001101100000000111111100000000011111110000000000111111110000000111111100000000111111110000000000001111100000000000100010000000000010000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"starburst",
+"cel"
+],
+"id": "sim:lib/sprites/impacts/starburst_cel_01"
+},
+{
+"file": "sprites/impacts/starburst_cel_02.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "starburst",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.1843,
+"thumb": "0000000000000000000000000000000000000001000000000000000100000000000000100010000000000100000100000000101111101000001000111110001000000011111000000000001111100010000010111110100000000100000100000000001000101000000000000100000000000000010000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"starburst",
+"cel"
+],
+"id": "sim:lib/sprites/impacts/starburst_cel_02"
+},
+{
+"file": "sprites/impacts/starburst_glow_00.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "starburst",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.2192,
+"thumb": "0000000000000000000000000000000000000000000000000000001000100000000000110110000000000011111000000000111111111100000011111111100000000111111100000000111111110000000011111111100000000011111000000000001101100000000000000010000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"starburst",
+"glow"
+],
+"id": "sim:lib/sprites/impacts/starburst_glow_00"
+},
+{
+"file": "sprites/impacts/starburst_glow_01.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "starburst",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.225,
+"thumb": "0000000000000000000000000000000000000000000000000000000100000000000000011001000000000011111100000001111111110000000011111111000000000111111110000000111111110000000111111111000000000011111100000000000110110000000000010000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"starburst",
+"glow"
+],
+"id": "sim:lib/sprites/impacts/starburst_glow_01"
+},
+{
+"file": "sprites/impacts/starburst_glow_02.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "starburst",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.2137,
+"thumb": "0000000000000000000000000000000000000001000000000000000100000000000000111010000000000111111100000000111111111000001111111111111000001111111110000001011111111110000011111111100000000111111100000000001011101000000000000100000000000000010000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"starburst",
+"glow"
+],
+"id": "sim:lib/sprites/impacts/starburst_glow_02"
+},
+{
+"file": "sprites/impacts/starburst_ink_00.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "starburst",
+"style": "ink",
+"size": [
+512,
+512
+],
+"coverage": 0.1932,
+"thumb": "0000000000000000000000000000000000000000000000000000001000100000000000110110000000000011011000000000010111011100000001111111100000000011111000000000011111110000000011111100000000000011011000000000001101100000000000000010000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"starburst",
+"ink"
+],
+"id": "sim:lib/sprites/impacts/starburst_ink_00"
+},
+{
+"file": "sprites/impacts/starburst_ink_01.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "starburst",
+"style": "ink",
+"size": [
+512,
+512
+],
+"coverage": 0.1938,
+"thumb": "0000000000000000000000000000000000000000000000000000000100000000000000011000000000000001101100000000111111100000000011111110000000000111111110000000111111100000000111111110000000000001111100000000000100010000000000010000000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"starburst",
+"ink"
+],
+"id": "sim:lib/sprites/impacts/starburst_ink_01"
+},
+{
+"file": "sprites/impacts/starburst_ink_02.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "starburst",
+"style": "ink",
+"size": [
+512,
+512
+],
+"coverage": 0.1698,
+"thumb": "0000000000000000000000000000000000000001000000000000000100000000000000100010000000000100000100000000101111101000001000111110001000000111111000000000001111100000000010111110100000000100000100000000001000101000000000000100000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"starburst",
+"ink"
+],
+"id": "sim:lib/sprites/impacts/starburst_ink_02"
+},
+{
+"file": "sprites/impacts/starburst_soft_00.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "starburst",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.2249,
+"thumb": "0000000000000000000000000000000000000000000000000000001000100000000000110110000000000011111000000000111111111100000011111111100000000111111100000000111111111000000111111111100000000011111000000000001101100000000000100010000000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"starburst",
+"soft"
+],
+"id": "sim:lib/sprites/impacts/starburst_soft_00"
+},
+{
+"file": "sprites/impacts/starburst_soft_01.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "starburst",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.2336,
+"thumb": "0000000000000000000000000000000000000000000000000000000100000000000000111001000000000001111100000001111111110000000011111111000000000111111111000000111111110000000111111111000000010001111100000000000110110000000000010000100000000000000000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"starburst",
+"soft"
+],
+"id": "sim:lib/sprites/impacts/starburst_soft_01"
+},
+{
+"file": "sprites/impacts/starburst_soft_02.png",
+"kind": "sprite",
+"category": "impacts",
+"family": "starburst",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.2079,
+"thumb": "0000000000000000000000000000000000000001000000000000000100000000000000100010100000000101110100000000101111101000001101111111011000000111111100000000011111110110000010111110100000000101110100000000101000101000000000000100000000000000010000000000000000000000",
+"tags": [
+"impact",
+"hit",
+"burst",
+"explosion",
+"pop",
+"star",
+"comic",
+"starburst",
+"soft"
+],
+"id": "sim:lib/sprites/impacts/starburst_soft_02"
+},
+{
+"file": "sprites/rings/ring_cel_00.png",
+"kind": "sprite",
+"category": "rings",
+"family": "ring",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.199,
+"thumb": "0000000000000000000000000000000000000111111100000000110000011000000110000000110000110000000001000010000000000000001000000000000000000000000000000000000000000011000000000000011000010000000001100001100000001100000111100001100000000111111100000000000110000000",
+"tags": [
+"ring",
+"shockwave",
+"circle",
+"wave",
+"pulse",
+"ring",
+"cel"
+],
+"id": "sim:lib/sprites/rings/ring_cel_00"
+},
+{
+"file": "sprites/rings/ring_cel_01.png",
+"kind": "sprite",
+"category": "rings",
+"family": "ring",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.0473,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000111110000000000100000000000000100000000000000010000000000000001000000010000000000000001000000000000000100000000000000100000000001111100000000000000000000000000000000000000000000000000000",
+"tags": [
+"ring",
+"shockwave",
+"circle",
+"wave",
+"pulse",
+"ring",
+"cel"
+],
+"id": "sim:lib/sprites/rings/ring_cel_01"
+},
+{
+"file": "sprites/rings/ring_cel_02.png",
+"kind": "sprite",
+"category": "rings",
+"family": "ring",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.1391,
+"thumb": "0000000000000000000000000000000000000000000000000000001111100000000001100011000000001100000110000001100000001000000110000000110000010000000001000001100000000100000010000000010000001100000010000000011001110000000000011100000000000000000000000000000000000000",
+"tags": [
+"ring",
+"shockwave",
+"circle",
+"wave",
+"pulse",
+"ring",
+"cel"
+],
+"id": "sim:lib/sprites/rings/ring_cel_02"
+},
+{
+"file": "sprites/rings/ring_glow_00.png",
+"kind": "sprite",
+"category": "rings",
+"family": "ring",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.2192,
+"thumb": "0000000000000000000000011100000000000111111100000001111000111100000110000000110000110000000001100011000000000000011000000000000000000000000000000000000000000011000000000000011000110000000001100011100000001100000111110011110000001111111100000000000111000000",
+"tags": [
+"ring",
+"shockwave",
+"circle",
+"wave",
+"pulse",
+"ring",
+"glow"
+],
+"id": "sim:lib/sprites/rings/ring_glow_00"
+},
+{
+"file": "sprites/rings/ring_glow_01.png",
+"kind": "sprite",
+"category": "rings",
+"family": "ring",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0584,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000111110000000000100000000000000100000000000000010000000000000001000000010000000000000001000000000000000100000000000000100000000001111100000000000000000000000000000000000000000000000000000",
+"tags": [
+"ring",
+"shockwave",
+"circle",
+"wave",
+"pulse",
+"ring",
+"glow"
+],
+"id": "sim:lib/sprites/rings/ring_glow_01"
+},
+{
+"file": "sprites/rings/ring_glow_02.png",
+"kind": "sprite",
+"category": "rings",
+"family": "ring",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.1571,
+"thumb": "0000000000000000000000000000000000000000000000000000001111100000000001100011000000001100000110000001100000001100000110000000110000011000000001000001100000000100000110000000110000001100000110000000011111111000000000111110000000000000000000000000000000000000",
+"tags": [
+"ring",
+"shockwave",
+"circle",
+"wave",
+"pulse",
+"ring",
+"glow"
+],
+"id": "sim:lib/sprites/rings/ring_glow_02"
+},
+{
+"file": "sprites/rings/ring_ink_00.png",
+"kind": "sprite",
+"category": "rings",
+"family": "ring",
+"style": "ink",
+"size": [
+512,
+512
+],
+"coverage": 0.1725,
+"thumb": "0000000000000000000000000000000000000111111100000000110000011000000110000000110000110000000001000010000000000000001000000000000000000000000000000000000000000010000000000000011000010000000001100001100000001100000111000001100000000111111100000000000010000000",
+"tags": [
+"ring",
+"shockwave",
+"circle",
+"wave",
+"pulse",
+"ring",
+"ink"
+],
+"id": "sim:lib/sprites/rings/ring_ink_00"
+},
+{
+"file": "sprites/rings/ring_ink_01.png",
+"kind": "sprite",
+"category": "rings",
+"family": "ring",
+"style": "ink",
+"size": [
+512,
+512
+],
+"coverage": 0.0411,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000011110000000000100000000000000100000000000000010000000000000001000000010000000000000001000000000000000000000000000000100000000001100100000000000000000000000000000000000000000000000000000",
+"tags": [
+"ring",
+"shockwave",
+"circle",
+"wave",
+"pulse",
+"ring",
+"ink"
+],
+"id": "sim:lib/sprites/rings/ring_ink_01"
+},
+{
+"file": "sprites/rings/ring_ink_02.png",
+"kind": "sprite",
+"category": "rings",
+"family": "ring",
+"style": "ink",
+"size": [
+512,
+512
+],
+"coverage": 0.1271,
+"thumb": "0000000000000000000000000000000000000000000000000000001111100000000001000011000000001100000010000001100000001000000110000000010000010000000001000001100000000100000010000000010000001100000010000000011001110000000000111100000000000000000000000000000000000000",
+"tags": [
+"ring",
+"shockwave",
+"circle",
+"wave",
+"pulse",
+"ring",
+"ink"
+],
+"id": "sim:lib/sprites/rings/ring_ink_02"
+},
+{
+"file": "sprites/rings/ring_soft_00.png",
+"kind": "sprite",
+"category": "rings",
+"family": "ring",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.2279,
+"thumb": "0000000000000000000000011100000000001111111110000001111000111100001110000000111000110000000001000111000000000000011000000000000000000000000000000000000000000111000000000000011100010000000001100011100000001110000111110111110000001111111100000000001111000000",
+"tags": [
+"ring",
+"shockwave",
+"circle",
+"wave",
+"pulse",
+"ring",
+"soft"
+],
+"id": "sim:lib/sprites/rings/ring_soft_00"
+},
+{
+"file": "sprites/rings/ring_soft_01.png",
+"kind": "sprite",
+"category": "rings",
+"family": "ring",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.051,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000111110000000000100000000000000100000000000000010000000000000001000000010000000000000001000000000000000100000000000000100000000001111100000000000000000000000000000000000000000000000000000",
+"tags": [
+"ring",
+"shockwave",
+"circle",
+"wave",
+"pulse",
+"ring",
+"soft"
+],
+"id": "sim:lib/sprites/rings/ring_soft_01"
+},
+{
+"file": "sprites/rings/ring_soft_02.png",
+"kind": "sprite",
+"category": "rings",
+"family": "ring",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.1566,
+"thumb": "0000000000000000000000000000000000000000000000000000001111100000000001100011000000001100000110000001100000001100000110000000110000011000000001000001100000000100000110000000110000001100000010000000011111111000000000111110000000000000000000000000000000000000",
+"tags": [
+"ring",
+"shockwave",
+"circle",
+"wave",
+"pulse",
+"ring",
+"soft"
+],
+"id": "sim:lib/sprites/rings/ring_soft_02"
+},
+{
+"file": "sprites/sigils/sigil_cel_00.png",
+"kind": "sprite",
+"category": "sigils",
+"family": "sigil",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.0643,
+"thumb": "0000000000000000000000010100000000000100001000000001010000000100000010000000100000010000000000000000000000100000010000000000000100000000000000000100000000000001000000100010000000000000000000000000100000000000000100000000010000000001000000000000000101000000",
+"tags": [
+"magic",
+"circle",
+"rune",
+"sigil",
+"arcane",
+"glyph",
+"hex",
+"sigil",
+"cel"
+],
+"id": "sim:lib/sprites/sigils/sigil_cel_00"
+},
+{
+"file": "sprites/sigils/sigil_cel_01.png",
+"kind": "sprite",
+"category": "sigils",
+"family": "sigil",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.1111,
+"thumb": "0000000000000000000000000000000000000110000100000000000111100000000100000000000000100010001001100000010101000100000100100010010000010000000001000001001000000100000101010001010000100000001001100000000000000000000000111110000000000110000100000000000000000000",
+"tags": [
+"magic",
+"circle",
+"rune",
+"sigil",
+"arcane",
+"glyph",
+"hex",
+"sigil",
+"cel"
+],
+"id": "sim:lib/sprites/sigils/sigil_cel_01"
+},
+{
+"file": "sprites/sigils/sigil_cel_02.png",
+"kind": "sprite",
+"category": "sigils",
+"family": "sigil",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.0528,
+"thumb": "0000000000000000000000001000000000000000000000000000000010000000000000001000000000010000100000000000000010000000000000001000000001000000100000010000000010000000000000001000000000000000100000000000000010000000000000001000000000000000000000000000000010000000",
+"tags": [
+"magic",
+"circle",
+"rune",
+"sigil",
+"arcane",
+"glyph",
+"hex",
+"sigil",
+"cel"
+],
+"id": "sim:lib/sprites/sigils/sigil_cel_02"
+},
+{
+"file": "sprites/sigils/sigil_glow_00.png",
+"kind": "sprite",
+"category": "sigils",
+"family": "sigil",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0591,
+"thumb": "0000000000000000000000011100000000001100001010000001010000000100001010000000100000010000000000000000001000100000010000000000000101000000000000010100000000000001000000100010000000000000000000000010100000000000000100000000010000000001000000000000000111000000",
+"tags": [
+"magic",
+"circle",
+"rune",
+"sigil",
+"arcane",
+"glyph",
+"hex",
+"sigil",
+"glow"
+],
+"id": "sim:lib/sprites/sigils/sigil_glow_00"
+},
+{
+"file": "sprites/sigils/sigil_glow_01.png",
+"kind": "sprite",
+"category": "sigils",
+"family": "sigil",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.1666,
+"thumb": "0000000000000000000000000000000000000110010100000000101111100000000101000001000000101011011011100001010111010100001101100011010000010010001001100001011000110100000101011101010000101011011011100001010000011100000010111110100000000110010100000000000000000000",
+"tags": [
+"magic",
+"circle",
+"rune",
+"sigil",
+"arcane",
+"glyph",
+"hex",
+"sigil",
+"glow"
+],
+"id": "sim:lib/sprites/sigils/sigil_glow_01"
+},
+{
+"file": "sprites/sigils/sigil_glow_02.png",
+"kind": "sprite",
+"category": "sigils",
+"family": "sigil",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0503,
+"thumb": "0000000000000000000000011100000000000000100100000001000010000000000000001000000000010000100000100010000010000000010000101010000101000000100000110100001010100001001000001000000000000000100000000000000010000000000100001000000000000000000100000000000111000000",
+"tags": [
+"magic",
+"circle",
+"rune",
+"sigil",
+"arcane",
+"glyph",
+"hex",
+"sigil",
+"glow"
+],
+"id": "sim:lib/sprites/sigils/sigil_glow_02"
+},
+{
+"file": "sprites/specks/streak_cel_00.png",
+"kind": "sprite",
+"category": "specks",
+"family": "streak",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.039,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011100000000000111100000000001111000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"streak",
+"cel"
+],
+"id": "sim:lib/sprites/specks/streak_cel_00"
+},
+{
+"file": "sprites/specks/streak_cel_01.png",
+"kind": "sprite",
+"category": "specks",
+"family": "streak",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.0261,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000001000000000000001100000000000000100000000000000100000000000000100000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"streak",
+"cel"
+],
+"id": "sim:lib/sprites/specks/streak_cel_01"
+},
+{
+"file": "sprites/specks/streak_cel_02.png",
+"kind": "sprite",
+"category": "specks",
+"family": "streak",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.024,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011111110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"streak",
+"cel"
+],
+"id": "sim:lib/sprites/specks/streak_cel_02"
+},
+{
+"file": "sprites/specks/streak_glow_00.png",
+"kind": "sprite",
+"category": "specks",
+"family": "streak",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0439,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011100000000000111100000000001111000000000011000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"streak",
+"glow"
+],
+"id": "sim:lib/sprites/specks/streak_glow_00"
+},
+{
+"file": "sprites/specks/streak_glow_01.png",
+"kind": "sprite",
+"category": "specks",
+"family": "streak",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0304,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000001000000000000001100000000000001100000000000000100000000000000100000000000000100000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"streak",
+"glow"
+],
+"id": "sim:lib/sprites/specks/streak_glow_01"
+},
+{
+"file": "sprites/specks/streak_glow_02.png",
+"kind": "sprite",
+"category": "specks",
+"family": "streak",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.0281,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"streak",
+"glow"
+],
+"id": "sim:lib/sprites/specks/streak_glow_02"
+},
+{
+"file": "sprites/specks/streak_soft_00.png",
+"kind": "sprite",
+"category": "specks",
+"family": "streak",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.0386,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011100000000000111100000000001111000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"streak",
+"soft"
+],
+"id": "sim:lib/sprites/specks/streak_soft_00"
+},
+{
+"file": "sprites/specks/streak_soft_01.png",
+"kind": "sprite",
+"category": "specks",
+"family": "streak",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.026,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000001000000000000001100000000000001100000000000000100000000000000100000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"streak",
+"soft"
+],
+"id": "sim:lib/sprites/specks/streak_soft_01"
+},
+{
+"file": "sprites/specks/streak_soft_02.png",
+"kind": "sprite",
+"category": "specks",
+"family": "streak",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.0235,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000011111110000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"speck",
+"dot",
+"spark",
+"particle",
+"wisp",
+"ember",
+"streak",
+"streak",
+"soft"
+],
+"id": "sim:lib/sprites/specks/streak_soft_02"
+},
+{
+"file": "sprites/stars/star_cel_00.png",
+"kind": "sprite",
+"category": "stars",
+"family": "star",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.1996,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000011000000001110011100000000111111110000000001111110000000000011111000000000001111110000000001111111100000000111001110000000011000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"star",
+"sparkle",
+"twinkle",
+"star",
+"cel"
+],
+"id": "sim:lib/sprites/stars/star_cel_00"
+},
+{
+"file": "sprites/stars/star_cel_01.png",
+"kind": "sprite",
+"category": "stars",
+"family": "star",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.3451,
+"thumb": "0000000000000000000000000000000000000001100000000000000111000000000000111100000000000011111111000011111111111110001111111111110000011111111110000000111111110000000001111111100000001111111110000000111101111000000011100001100000000000000000000000000000000000",
+"tags": [
+"star",
+"sparkle",
+"twinkle",
+"star",
+"cel"
+],
+"id": "sim:lib/sprites/stars/star_cel_01"
+},
+{
+"file": "sprites/stars/star_cel_02.png",
+"kind": "sprite",
+"category": "stars",
+"family": "star",
+"style": "cel",
+"size": [
+512,
+512
+],
+"coverage": 0.2473,
+"thumb": "0000000000000000000000000000000000000000100000000000000111000000000000011100000000000001110000000000000111000000000111111111110000111111111111100001111111111100000000011100000000000001110000000000000111000000000000011100000000000000100000000000000000000000",
+"tags": [
+"star",
+"sparkle",
+"twinkle",
+"star",
+"cel"
+],
+"id": "sim:lib/sprites/stars/star_cel_02"
+},
+{
+"file": "sprites/stars/star_glow_00.png",
+"kind": "sprite",
+"category": "stars",
+"family": "star",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.2112,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000010000011000000001110011100000000111111110000000001111110000000000011111000000000001111110000000001111111100000000111001110000000111000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"star",
+"sparkle",
+"twinkle",
+"star",
+"glow"
+],
+"id": "sim:lib/sprites/stars/star_glow_00"
+},
+{
+"file": "sprites/stars/star_glow_01.png",
+"kind": "sprite",
+"category": "stars",
+"family": "star",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.3582,
+"thumb": "0000000000000000000000000000000000000001100000000000000111000000000000111110000000001111111111000011111111111110001111111111110000011111111111000000111111111000000011111111100000001111111110000000111111111000000011100011100000000000000000000000000000000000",
+"tags": [
+"star",
+"sparkle",
+"twinkle",
+"star",
+"glow"
+],
+"id": "sim:lib/sprites/stars/star_glow_01"
+},
+{
+"file": "sprites/stars/star_glow_02.png",
+"kind": "sprite",
+"category": "stars",
+"family": "star",
+"style": "glow",
+"size": [
+512,
+512
+],
+"coverage": 0.261,
+"thumb": "0000000000000000000000000000000000000000100000000000000111000000000000011100000000000001110000000000001111100000000111111111110000111111111111100001111111111100000000111110000000000001110000000000000111000000000000011100000000000000100000000000000000000000",
+"tags": [
+"star",
+"sparkle",
+"twinkle",
+"star",
+"glow"
+],
+"id": "sim:lib/sprites/stars/star_glow_02"
+},
+{
+"file": "sprites/stars/star_ink_00.png",
+"kind": "sprite",
+"category": "stars",
+"family": "star",
+"style": "ink",
+"size": [
+512,
+512
+],
+"coverage": 0.1872,
+"thumb": "0000000000000000000000000000000000000000000000000000000000000000000000000011000000001110011100000000111101110000000001111110000000000011111000000000001111110000000001111111100000000111001110000000011000000000000000000000000000000000000000000000000000000000",
+"tags": [
+"star",
+"sparkle",
+"twinkle",
+"star",
+"ink"
+],
+"id": "sim:lib/sprites/stars/star_ink_00"
+},
+{
+"file": "sprites/stars/star_ink_01.png",
+"kind": "sprite",
+"category": "stars",
+"family": "star",
+"style": "ink",
+"size": [
+512,
+512
+],
+"coverage": 0.326,
+"thumb": "0000000000000000000000000000000000000001100000000000000110000000000000011100000000000001110111000011111111111110001111111111110000011111111110000000111111110000000001111111000000001111111110000000111100111000000011000000000000000000000000000000000000000000",
+"tags": [
+"star",
+"sparkle",
+"twinkle",
+"star",
+"ink"
+],
+"id": "sim:lib/sprites/stars/star_ink_01"
+},
+{
+"file": "sprites/stars/star_ink_02.png",
+"kind": "sprite",
+"category": "stars",
+"family": "star",
+"style": "ink",
+"size": [
+512,
+512
+],
+"coverage": 0.2341,
+"thumb": "0000000000000000000000000000000000000000100000000000000111000000000000011100000000000001110000000000000111000000000111111111110000111111111111100001111111111100000000011100000000000001110000000000000111000000000000011100000000000000100000000000000000000000",
+"tags": [
+"star",
+"sparkle",
+"twinkle",
+"star",
+"ink"
+],
+"id": "sim:lib/sprites/stars/star_ink_02"
+},
+{
+"file": "sprites/stars/star_soft_00.png",
+"kind": "sprite",
+"category": "stars",
+"family": "star",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.2157,
+"thumb": "0000000000000000000000000000000000000000000000000000000000001000000110000011100000001110011100000000111111110000000001111110000000000011111000000000001111110000000001111111100000000111001110000000111000001100000010000000000000000000000000000000000000000000",
+"tags": [
+"star",
+"sparkle",
+"twinkle",
+"star",
+"soft"
+],
+"id": "sim:lib/sprites/stars/star_soft_00"
+},
+{
+"file": "sprites/stars/star_soft_01.png",
+"kind": "sprite",
+"category": "stars",
+"family": "star",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.3666,
+"thumb": "0000000000000000000000001000000000000001110000000000001111000000000000111110000000001111111111100111111111111110001111111111111000011111111111000000111111111000000011111111100000001111111110000000111111111000000011110011100000001000000000000000000000000000",
+"tags": [
+"star",
+"sparkle",
+"twinkle",
+"star",
+"soft"
+],
+"id": "sim:lib/sprites/stars/star_soft_01"
+},
+{
+"file": "sprites/stars/star_soft_02.png",
+"kind": "sprite",
+"category": "stars",
+"family": "star",
+"style": "soft",
+"size": [
+512,
+512
+],
+"coverage": 0.2652,
+"thumb": "0000000000000000000000001000000000000000110000000000000111000000000000011100000000000001110000000000010111000000001111111111110000111111111111100001111111111110000000011100000000000011110000000000000111000000000000011100000000000001100000000000000000000000",
+"tags": [
+"star",
+"sparkle",
+"twinkle",
+"star",
+"soft"
+],
+"id": "sim:lib/sprites/stars/star_soft_02"
+}
+]
+}

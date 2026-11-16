@@ -6,6 +6,7 @@
 return {
 	VIP = { id = 0, price = 249, name = "VIP Diver", desc = "1.5x Coins, [VIP] tag, +2h offline cap, daily VIP chest" },
 	DoubleOxygen = { id = 0, price = 199, name = "2x Oxygen", desc = "Twice the base tank" },
+	AutoRefill = { id = 0, price = 49, name = "Auto Refill", desc = "Your tank refills by itself at the surface" },
 	Drone = { id = 0, price = 399, name = "Auto-Salvage Drone", desc = "Collects Common & Uncommon relics within 20 studs" },
 	LuckySonar = { id = 0, price = 349, name = "Lucky Sonar", desc = "+25% luck" },
 	VaultLock = { id = 0, price = 299, name = "Vault Lock", desc = "2 unstealable vault slots + keep 1 relic on death" },

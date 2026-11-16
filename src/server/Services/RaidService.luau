@@ -15,6 +15,7 @@ local NumberFormat = require(Shared.NumberFormat)
 local Relics = require(Shared.Config.Relics)
 local Rarities = require(Shared.Config.Rarities)
 local Mutations = require(Shared.Config.Mutations)
+local Materials = require(Shared.Config.Materials)
 local Economy = require(Shared.Config.Economy)
 local Build = require(script.Parent.Parent.Util.Build)
 
@@ -102,7 +103,7 @@ local function attachCarryVisual(raider: Player, relic)
 		return
 	end
 	local def = Relics.ById[relic.id]
-	local model = Build.RelicModel(def, Rarities[relic.rarity].Color, relic.mutations, Mutations.ById, relic.size)
+	local model = Build.RelicModel(def, Rarities[relic.rarity].Color, Materials.LookList(relic), Materials.LookDefs, relic.size)
 	model.Name = "CarriedRelic"
 	model:PivotTo(torso.CFrame * CFrame.new(0, 0.5, 1.6))
 	local root = model.PrimaryPart :: BasePart
@@ -304,67 +305,6 @@ local function trySteal(raider: Player, dock, slot: number)
 	Net.Notify:FireClient(raider, "Got it! Run back to YOUR dock before someone tags you!", "info")
 end
 
-------------------------------------------------------------------------------------------
--- Raid tutorial ghost (§17 step 11)
-------------------------------------------------------------------------------------------
-local function runRaidTutorial(player: Player)
-	local data = services.DataService.GetData(player)
-	local dock = services.DockService.GetDock(player)
-	if not data or not dock or data.Flags.RaidTutorialDone then
-		return
-	end
-	local slot, relic
-	for k, r in data.Stands do
-		if not relic or Formulas.RelicCPS(r) < Formulas.RelicCPS(relic) then
-			slot, relic = tonumber(k), r
-		end
-	end
-	if not relic then
-		return
-	end
-	local stand = dock.Stands[slot]
-	local ghost = Build.Part({
-		Name = "TutorialGhost",
-		Shape = Enum.PartType.Ball,
-		Size = Vector3.one * 4,
-		CFrame = CFrame.new(stand.Position + Vector3.new(0, 4, 0)),
-		Color = Color3.fromRGB(200, 230, 255),
-		Material = Enum.Material.ForceField,
-		CanCollide = false,
-		Parent = services.WorldService.Root(),
-	})
-	Build.Billboard(ghost, "Ghost Thief", UDim2.fromOffset(140, 36), Vector3.new(0, 3, 0), Color3.fromRGB(200, 230, 255))
-	Net.Notify:FireClient(player, "A ghost is stealing your relic! Touch it to get it back!", "error")
-	Net.Intruder:FireClient(player, { Name = "Ghost Thief", UserId = 0, Stealing = Relics.ById[relic.id].Name, Tutorial = true })
-	local target = Vector3.new(0, ghost.Position.Y, 0)
-	local started = os.clock()
-	task.spawn(function()
-		while ghost.Parent and os.clock() - started < 45 do
-			local dt = task.wait(0.1)
-			local dir = target - ghost.Position
-			if dir.Magnitude > 1 then
-				ghost.Position += dir.Unit * 6 * dt
-			end
-			local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
-			if hrp and (hrp.Position - ghost.Position).Magnitude < 7 then
-				data.Flags.RaidTutorialDone = true
-				services.AnalyticsService.Funnel(player, "RaidTutorial")
-				Net.Notify:FireClient(
-					player,
-					"Recovered! Real thieves carry relics to their dock — tag them first. Laser Gates and Vault slots keep you safe.",
-					"reward"
-				)
-				services.CurrencyService.AddPearls(player, 10, "RaidTutorial")
-				break
-			end
-		end
-		if ghost.Parent then
-			ghost:Destroy()
-		end
-		data.Flags.RaidTutorialDone = true
-	end)
-end
-
 function RaidService.Start()
 	for _, dock in services.WorldService.GetDocks() do
 		for i, stand in dock.Stands do
@@ -418,26 +358,6 @@ function RaidService.Start()
 							break
 						end
 					end
-				end
-			end
-		end
-	end)
-
-	-- Raid tutorial trigger at ~10 minutes of playtime
-	task.spawn(function()
-		while true do
-			task.wait(20)
-			for _, player in Players:GetPlayers() do
-				local data = services.DataService.GetData(player)
-				if
-					data
-					and not data.Flags.RaidTutorialDone
-					and not data.Flags.RaidTutorialStarted
-					and data.PlayTime >= 600
-					and next(data.Stands)
-				then
-					data.Flags.RaidTutorialStarted = true -- only offer once
-					runRaidTutorial(player)
 				end
 			end
 		end

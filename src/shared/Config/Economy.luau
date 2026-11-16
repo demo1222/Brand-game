@@ -12,8 +12,8 @@ return {
 
 	-- §12 rebirth
 	Rebirth = {
-		RequiredSuit = 4, -- Pressure Mk II
-		BaseCoins = 5e6,
+		RequiredSuit = 10, -- Pressure Mk II (Upgrades.Suits index; 16-suit list)
+		BaseCoins = 100e6, -- ~a suit and a half past Mk II (docs/ECONOMY.md)
 		Growth = 3,
 		CoinMultPerRebirth = 0.5,
 		LuckPerRebirth = 0.02,

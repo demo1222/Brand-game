@@ -34,6 +34,7 @@ function InventoryService.CreateRelic(player: Player?, roll): any
 		id = roll.id,
 		rarity = roll.rarity,
 		mutations = roll.mutations or {},
+		material = roll.material,
 		size = roll.size or 1,
 		foundAt = os.time(),
 		foundBy = if player then player.UserId else 0,

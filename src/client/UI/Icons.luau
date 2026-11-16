@@ -76,6 +76,7 @@ Icons.Images = {
 	Track_Sonar = "rbxassetid://135784552253221",
 	Oxygen = "rbxassetid://91867121545247",
 	DoubleOxygen = "rbxassetid://91867121545247",
+	AutoRefill = "rbxassetid://91867121545247",
 	Track_Oxygen = "rbxassetid://91867121545247",
 	Down = "rbxassetid://102370487423456",
 	Depth = "rbxassetid://85157137912493",
@@ -143,6 +144,7 @@ Icons.Names = {
 	-- passes
 	VIP = "crown",
 	DoubleOxygen = "oxygen",
+	AutoRefill = "oxygen",
 	Drone = "drone",
 	LuckySonar = "sonar",
 	VaultLock = "lock",
@@ -272,6 +274,7 @@ Icons.Assets = {
 	Down = "down_arrow.png", -- generated, new upload
 	Oxygen = "oxygen_tank.png", -- generated, new upload
 	DoubleOxygen = "oxygen_tank.png", -- generated, new upload
+	AutoRefill = "oxygen_tank.png", -- same art as DoubleOxygen
 	Track_Oxygen = "oxygen_tank.png", -- generated, new upload
 	Sonar = "sonar.png", -- generated, new upload
 	Track_Sonar = "sonar.png", -- generated, new upload
@@ -298,6 +301,80 @@ Icons.Assets = {
 }
 
 -- Icon to draw for a key: an uploaded image id if one exists, else a drawn icon name
+-- The visible art box of each uploaded icon image, measured from the PNGs in docs/images/icons
+-- (alpha > 40): { centre x, centre y as a fraction of the image from its middle, fill = the
+-- art's larger side as a fraction of the image }. Kit.HudTile uses it to give every icon the
+-- same visible size and to centre the art itself, not the image. Regenerate after new uploads.
+Icons.ArtBox = {
+	["rbxassetid://100712342260045"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://101680853593077"] = { 0.0, 0.0, 0.691 },
+	["rbxassetid://102370487423456"] = { -0.002, -0.008, 0.938 },
+	["rbxassetid://103034979948920"] = { 0.0, -0.001, 0.59 },
+	["rbxassetid://103443307902747"] = { -0.003, 0.0, 0.725 },
+	["rbxassetid://104508470460341"] = { -0.001, 0.0, 0.59 },
+	["rbxassetid://104674586239639"] = { 0.001, 0.001, 0.592 },
+	["rbxassetid://108240344244873"] = { 0.0, -0.005, 0.717 },
+	["rbxassetid://108570397572772"] = { -0.002, 0.0, 0.586 },
+	["rbxassetid://108682083515808"] = { 0.002, 0.0, 0.59 },
+	["rbxassetid://109915477384817"] = { -0.001, 0.0, 0.59 },
+	["rbxassetid://110395315412543"] = { 0.001, -0.001, 0.592 },
+	["rbxassetid://111536123340989"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://111731423038857"] = { -0.001, 0.001, 0.588 },
+	["rbxassetid://112325229043758"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://116876038873005"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://117098340088835"] = { 0.001, -0.001, 0.592 },
+	["rbxassetid://117352761541784"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://117407744719958"] = { -0.001, 0.0, 0.592 },
+	["rbxassetid://117639543567698"] = { 0.0, -0.001, 0.59 },
+	["rbxassetid://120949298255544"] = { -0.001, -0.002, 0.592 },
+	["rbxassetid://121164669021535"] = { 0.001, -0.001, 0.592 },
+	["rbxassetid://121964385798330"] = { 0.0, -0.001, 0.59 },
+	["rbxassetid://122152167010136"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://123019840126341"] = { -0.001, 0.0, 0.59 },
+	["rbxassetid://123142086477282"] = { 0.0, -0.001, 0.59 },
+	["rbxassetid://123647815219439"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://123796637775234"] = { -0.001, 0.0, 0.59 },
+	["rbxassetid://125852389766549"] = { 0.001, -0.001, 0.592 },
+	["rbxassetid://127330292845945"] = { -0.001, 0.0, 0.59 },
+	["rbxassetid://130978661751413"] = { -0.001, -0.001, 0.592 },
+	["rbxassetid://132195310374616"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://132467493447317"] = { 0.0, -0.001, 0.592 },
+	["rbxassetid://133416690832494"] = { -0.001, 0.0, 0.59 },
+	["rbxassetid://135744061303258"] = { 0.0, -0.001, 0.59 },
+	["rbxassetid://135784552253221"] = { 0.0, -0.008, 0.945 },
+	["rbxassetid://135982358299300"] = { 0.0, -0.001, 0.59 },
+	["rbxassetid://136494440748266"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://137356013887733"] = { -0.001, 0.0, 0.59 },
+	["rbxassetid://138447094925944"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://71750803916378"] = { 0.0, 0.0, 0.707 },
+	["rbxassetid://73449395303226"] = { 0.009, 0.0, 0.705 },
+	["rbxassetid://74396665267697"] = { 0.001, 0.001, 0.592 },
+	["rbxassetid://74553671078937"] = { 0.0, -0.001, 0.59 },
+	["rbxassetid://75852992602063"] = { -0.001, -0.001, 0.592 },
+	["rbxassetid://77592086527601"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://80376520414969"] = { 0.0, 0.001, 0.74 },
+	["rbxassetid://81732948169640"] = { 0.0, 0.004, 0.664 },
+	["rbxassetid://81785715211820"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://83073303398010"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://84100041625995"] = { 0.0, 0.0, 0.602 },
+	["rbxassetid://84914034624589"] = { 0.0, 0.0, 0.645 },
+	["rbxassetid://85157137912493"] = { 0.0, 0.0, 0.859 },
+	["rbxassetid://85316293036285"] = { -0.014, -0.001, 0.713 },
+	["rbxassetid://87664558933928"] = { 0.0, -0.002, 0.59 },
+	["rbxassetid://87996566246409"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://88981052485838"] = { 0.0, 0.0, 0.809 },
+	["rbxassetid://89453560194597"] = { -0.001, -0.002, 0.588 },
+	["rbxassetid://90961952774320"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://91520035481341"] = { 0.0, 0.005, 0.711 },
+	["rbxassetid://91867121545247"] = { 0.0, 0.0, 0.953 },
+	["rbxassetid://91910925303039"] = { -0.001, 0.001, 0.592 },
+	["rbxassetid://94240516134395"] = { 0.001, 0.0, 0.59 },
+	["rbxassetid://94955132178691"] = { 0.0, 0.0, 0.59 },
+	["rbxassetid://95786100205708"] = { 0.001, -0.002, 0.592 },
+	["rbxassetid://97792539620288"] = { 0.001, -0.001, 0.592 },
+	["rbxassetid://98636717555346"] = { -0.001, 0.0, 0.59 },
+}
+
 function Icons.Get(key: string): string
 	return Icons.Images[key] or Icons.Names[key] or "info"
 end
@@ -321,6 +398,11 @@ Icons.Colors = {
 	Trade = Color3.fromRGB(245, 192, 74),
 	Diver = Color3.fromRGB(63, 214, 230),
 	Dev = Color3.fromRGB(255, 110, 190),
+	Suits = Color3.fromRGB(226, 72, 196), -- magenta band, like the reference Animal Index
 }
+
+-- The Suit Shop reuses the diver helmet icon
+Icons.Images.Suits = Icons.Images.Suits or Icons.Images.Diver
+Icons.Names.Suits = Icons.Names.Suits or "diver"
 
 return Icons

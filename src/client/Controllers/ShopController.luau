@@ -1,6 +1,9 @@
 -- ShopController (Master Plan §15, §18.2): tabs for Passes, Boosts, Coins, Pearls, Crates and
--- Abyss Pass+. VIP banner always on top. Every prompt previews its benefit first (§18.3).
--- Crate odds are displayed from the exact table the server rolls (§16).
+-- Abyss Pass+. VIP is always one tap away: its button sits in the title band. Every prompt
+-- previews its benefit first (§18.3). Crate odds are displayed from the exact table the server
+-- rolls (§16).
+-- Look (owner reference docs/reference/shop_upgrades): flat coloured tabs, a dark well, and
+-- gradient cards with a thin bright border. The whole card is the buy button.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -15,14 +18,21 @@ local Kit = require(script.Parent.Parent.UI.Kit)
 local Icons = require(script.Parent.Parent.UI.Icons)
 
 local New, T = Kit.New, Kit.Theme
+local C = Kit.Clean
 local ShopController = {}
 local controllers
 local content: ScrollingFrame
+local grid: UIGridLayout
+local note: TextLabel
 local currentTab = "Passes"
-local vipPrice: TextLabel? = nil
+local vipButton: TextButton? = nil
+-- the current tab's card shape: wide cards (icon left, text right) or small ones (icon in the
+-- middle), and how tall a card is
+local shape = { wide = true, height = 138 }
 
 local PASS_ORDER = {
 	"VIP",
+	"AutoRefill",
 	"DoubleOxygen",
 	"Drone",
 	"LuckySonar",
@@ -42,6 +52,33 @@ local BOOSTS =
 local COINS = { "CoinsS", "CoinsM", "CoinsL", "CoinsXL", "CoinsXXL" }
 local PEARLS = { "Pearls100", "Pearls550", "Pearls1200", "Pearls2600", "Pearls7000" }
 
+-- card colours: passes and boosts take the next one in turn, so a tab reads as a row of
+-- different things; the best deal is always gold
+local PALETTE = {
+	Color3.fromRGB(53, 214, 245),
+	Color3.fromRGB(75, 139, 255),
+	Color3.fromRGB(180, 123, 255),
+	Color3.fromRGB(75, 224, 106),
+	Color3.fromRGB(255, 92, 108),
+	Color3.fromRGB(108, 125, 255),
+	Color3.fromRGB(255, 138, 61),
+	Color3.fromRGB(57, 184, 255),
+	Color3.fromRGB(255, 111, 181),
+	Color3.fromRGB(53, 224, 176),
+}
+local GOLD = Color3.fromRGB(255, 190, 46)
+local SKY = Color3.fromRGB(92, 200, 255)
+local PINK = Color3.fromRGB(255, 111, 181)
+-- Event shop pictures: the uploaded image of what you get (the config only names a drawn icon)
+local EVENT_ICONS = {
+	Flares5 = "Flares5",
+	Luck5 = "LuckPotion",
+	Mutation5 = "MutationPotion",
+	Pearls30 = "Pearls",
+	RareRelic = "CrateSingle",
+	EpicRelic = "CrateTriple",
+}
+
 function ShopController.Init(c)
 	controllers = c
 end
@@ -49,7 +86,9 @@ end
 -- §18.3 concrete previews
 local function preview(key: string): string?
 	local S = controllers.State
-	if key == "DoubleOxygen" then
+	if key == "AutoRefill" then
+		return "No more walking to the tank rack"
+	elseif key == "DoubleOxygen" then
 		local o = S.Derived("MaxOxygen") or 60
 		return `Dive time {math.floor(o)}s → {math.floor(o + 60)}s`
 	elseif key == "BigBag" then
@@ -68,94 +107,73 @@ local function preview(key: string): string?
 	return nil
 end
 
--- Shop tile: the whole card is the buy button. Big icon, outlined name, what you get, and a
--- price plate along the bottom (green = buy, gold check = owned). 3 per row.
-local function card(
+-- One shop card. The whole card is the buy button; an owned card says so instead.
+local function card(o: {
 	order: number,
 	title: string,
-	desc: string,
-	priceText: string,
-	owned: boolean,
-	onBuy,
-	highlight: Color3?,
+	desc: string?,
+	sub: string?,
+	price: string,
+	priceColor: Color3?,
+	owned: boolean?,
+	onBuy: (() -> ())?,
+	color: Color3?,
 	icon: string?,
-	tag: string?
-)
-	local accent = highlight or T.Accent
-	local _, f = Kit.GameCard(
-		if highlight then Kit.Darken(highlight, 0.62) else T.Slab,
-		{ LayoutOrder = order, Parent = content },
-		function()
-			if owned then
-				controllers.UIController.Toast(`You own {title}!`, "info")
-			elseif onBuy then
-				onBuy()
+	tag: string?,
+	tagColor: Color3?,
+})
+	return Kit.ShopCard({
+		Name = o.title,
+		Desc = o.desc,
+		Sub = o.sub,
+		Price = o.price,
+		PriceColor = o.priceColor,
+		Icon = o.icon,
+		Color = o.color or PALETTE[(o.order - 1) % #PALETTE + 1],
+		Tag = o.tag,
+		TagColor = o.tagColor,
+		Owned = o.owned,
+		Wide = shape.wide,
+		LayoutOrder = o.order,
+		Parent = content,
+		OnClick = function()
+			if o.owned then
+				controllers.UIController.Toast(`You own {o.title}!`, "info")
+			elseif o.onBuy then
+				o.onBuy()
 			end
-		end
-	)
-	if highlight then
-		local s = f:FindFirstChildOfClass("UIStroke")
-		if s then
-			s.Color = highlight
-			s.Thickness = 3
-		end
-		Kit.Pill(tag or "BEST", highlight, {
-			Icon = "star",
-			AnchorPoint = Vector2.new(1, 0),
-			Position = UDim2.new(1, -8, 0, 8),
-			TextSize = 12,
-			ZIndex = 5,
-			Parent = f,
-		})
-		Kit.Shine(f, 3)
-	end
-	Kit.Glow(f, accent, 110, { Position = UDim2.new(0.5, 0, 0, 46), ZIndex = 2 })
-	Kit.IconBadge(
-		icon or "star",
-		accent,
-		68,
-		{ AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 12), ZIndex = 3, Parent = f }
-	)
-	local t = Kit.Title({
-		Text = title,
-		TextSize = 20,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		Position = UDim2.fromOffset(8, 86),
-		Size = UDim2.new(1, -16, 0, 24),
-		TextScaled = true,
-		ZIndex = 3,
-		Parent = f,
+		end,
 	})
-	New("UITextSizeConstraint", { MaxTextSize = 20, MinTextSize = 12, Parent = t })
-	Kit.Label({
-		Text = desc,
-		Font = T.Bold,
-		TextColor3 = Kit.Lighten(T.Muted, 0.25),
-		TextSize = 13,
-		TextXAlignment = Enum.TextXAlignment.Center,
-		TextYAlignment = Enum.TextYAlignment.Top,
-		Position = UDim2.fromOffset(10, 114),
-		Size = UDim2.new(1, -20, 1, -170),
-		ZIndex = 3,
-		Parent = f,
-	})
-	Kit.PricePlate(
-		if owned then "OWNED" else priceText,
-		if owned then T.Gold else T.Good,
-		if owned then "check" else nil,
-		{
-			AnchorPoint = Vector2.new(0.5, 1),
-			Position = UDim2.new(0.5, 0, 1, -10),
-			Size = UDim2.new(1, -20, 0, 44),
-			TextSize = 21,
-			Parent = f,
-		}
-	)
-	return f
 end
 
 local function buy(kind: string, key: string)
 	Net.RequestPurchase:FireServer(kind, key)
+end
+
+-- Columns stretch to fill the width: up to 3 wide cards or 5 small ones, fewer on a phone
+local function fit()
+	local w = content.AbsoluteSize.X - 20 -- side padding and the scroll bar
+	if w <= 0 then
+		return
+	end
+	local pad = 10
+	local minW = if shape.wide then 216 else 122
+	local cols = math.clamp(math.floor((w + pad) / (minW + pad)), 1, if shape.wide then 3 else 5)
+	grid.CellSize = UDim2.fromOffset(math.floor((w - pad * (cols - 1)) / cols), shape.height)
+end
+
+local function setShape(wide: boolean, height: number)
+	shape.wide, shape.height = wide, height
+	fit()
+end
+
+-- A line of text across the top of the well (the Event tab's token count, region notices)
+local function setNote(text: string?)
+	note.Visible = text ~= nil
+	note.Text = text or ""
+	local top = if text then 50 else 0
+	content.Position = UDim2.fromOffset(0, top)
+	content.Size = UDim2.new(1, 0, 1, -top)
 end
 
 local paintTabs: ((string) -> ())? = nil -- set in build(); declared before render() uses it
@@ -166,27 +184,33 @@ local function render()
 		paintTabs(currentTab)
 	end
 	local S = controllers.State
-	if vipPrice then
-		vipPrice.Text = if S.Owns("VIP") then "OWNED" else "249 R$"
-		vipPrice.BackgroundColor3 = if S.Owns("VIP") then Color3.fromRGB(70, 34, 0) else T.Good
-		vipPrice.TextColor3 = if S.Owns("VIP") then T.Gold else T.DarkText
+	if vipButton then
+		vipButton.Text = if S.Owns("VIP") then "VIP owned" else "VIP  249 R$"
 	end
-	local order = 0
-	local function nextOrder()
-		order += 1
-		return order
-	end
+	setNote(nil)
 	if currentTab == "Passes" then
-		for _, key in PASS_ORDER do
+		setShape(true, 138)
+		for i, key in PASS_ORDER do
 			local def = Passes[key]
 			local extra = preview(key)
-			local desc = def.desc .. (if extra then "\n" .. extra else "")
-			card(nextOrder(), def.name, desc, `{def.price} R$`, S.Owns(key), function()
-				buy("Pass", key)
-			end, if key == "VIP" or def.grants then T.Gold else nil, Icons.Get(key))
+			local best = key == "VIP" or def.grants ~= nil
+			card({
+				order = i,
+				title = def.name,
+				desc = def.desc .. (if extra then "\n" .. extra else ""),
+				price = `{def.price} R$`,
+				owned = S.Owns(key),
+				onBuy = function()
+					buy("Pass", key)
+				end,
+				color = if best then GOLD else nil,
+				icon = Icons.Get(key),
+				tag = if key == "VIP" then "Best value!" elseif def.grants then "Bundle!" else nil,
+			})
 		end
 	elseif currentTab == "Boosts" then
-		for _, key in BOOSTS do
+		setShape(true, 138)
+		for i, key in BOOSTS do
 			local def = Products[key]
 			local desc = ({
 				LuckPotion = "2x luck for 10 minutes",
@@ -198,271 +222,245 @@ local function render()
 				TierSkip = "+1 Tide Pass tier",
 				RenameDock = "Custom dock sign (filtered)",
 			})[key] or ""
-			card(nextOrder(), def.name, desc, `{def.price} R$`, false, function()
-				buy("Product", key)
-			end, if key == "ServerLuck" then T.Accent else nil, Icons.Get(key))
+			card({
+				order = i,
+				title = def.name,
+				desc = desc,
+				price = `{def.price} R$`,
+				onBuy = function()
+					buy("Product", key)
+				end,
+				color = if key == "ServerLuck" then GOLD else nil,
+				icon = Icons.Get(key),
+				tag = if key == "ServerLuck" then "Whole server!" else nil,
+			})
 		end
 	elseif currentTab == "Coins" then
+		setShape(false, 190)
 		local income = S.Get("IncomePerSecond") or 0
-		for _, key in COINS do
+		for i, key in COINS do
 			local def = Products[key]
 			local amount = math.max(income * def.incomeMinutes * 60, def.floor)
-			card(
-				nextOrder(),
-				`{NumberFormat.short(amount)} Coins`,
-				`{NumberFormat.time(def.incomeMinutes * 60)} of your current income`,
-				`{def.price} R$`,
-				false,
-				function()
+			card({
+				order = i,
+				title = `{NumberFormat.short(amount)} Coins`,
+				sub = `{NumberFormat.time(def.incomeMinutes * 60)} of income`,
+				price = `{def.price} R$`,
+				onBuy = function()
 					buy("Product", key)
 				end,
-				if key == "CoinsXL" then T.Gold else nil,
-				Icons.Get("Coins")
-			)
+				color = GOLD,
+				icon = Icons.Get("Coins"),
+				tag = if key == "CoinsXL" then "Best value!" else nil,
+			})
 		end
 	elseif currentTab == "Pearls" then
-		for _, key in PEARLS do
+		setShape(false, 190)
+		for i, key in PEARLS do
 			local def = Products[key]
-			card(
-				nextOrder(),
-				def.name,
-				"Premium currency for cosmetics, crates and the Tide Pass",
-				`{def.price} R$`,
-				false,
-				function()
+			card({
+				order = i,
+				title = def.name,
+				price = `{def.price} R$`,
+				onBuy = function()
 					buy("Product", key)
 				end,
-				if key == "Pearls2600" then T.Gold else nil,
-				Icons.Get("Pearls")
-			)
+				color = SKY,
+				icon = Icons.Get("Pearls"),
+				tag = if key == "Pearls2600" then "Best value!" else nil,
+			})
 		end
 	elseif currentTab == "Crates" then
 		if S.Derived("CanBuyRandom") == false then
-			Kit.Label({
-				Text = "Mystery Crates aren't available in your region. Every item is also sold directly in the other tabs.",
-				TextSize = 16,
-				Size = UDim2.new(1, -8, 0, 60),
-				Parent = content,
-			})
+			setNote(
+				"Mystery Crates aren't available in your region. Every item is also sold directly in the other tabs."
+			)
 			return
 		end
+		setShape(true, 160)
 		local odds = WeightedRandom.percentages(Economy.Crate)
 		local lines = {}
 		for i, e in odds do
 			table.insert(lines, `{Economy.Crate[i].label}: {NumberFormat.percent(e.percent)}`)
 		end
-		card(
-			nextOrder(),
-			Products.CrateSingle.name,
-			"One random reward from the odds table",
-			`{Products.CrateSingle.price} R$`,
-			false,
-			function()
+		card({
+			order = 1,
+			title = Products.CrateSingle.name,
+			desc = "One random reward from the odds table",
+			price = `{Products.CrateSingle.price} R$`,
+			onBuy = function()
 				buy("Product", "CrateSingle")
 			end,
-			nil,
-			Icons.Get("CrateSingle")
-		)
-		card(
-			nextOrder(),
-			Products.CrateTriple.name,
-			"Three rolls on the odds table",
-			`{Products.CrateTriple.price} R$`,
-			false,
-			function()
+			color = Color3.fromRGB(255, 138, 61),
+			icon = Icons.Get("CrateSingle"),
+		})
+		card({
+			order = 2,
+			title = Products.CrateTriple.name,
+			desc = "Three rolls on the odds table",
+			price = `{Products.CrateTriple.price} R$`,
+			onBuy = function()
 				buy("Product", "CrateTriple")
 			end,
-			T.Gold,
-			Icons.Get("CrateTriple")
-		)
-		local oddsCard = Kit.Card({ LayoutOrder = nextOrder(), Parent = content }, { Kit.Padding(10) })
-		Kit.Title({ Text = "Exact odds", TextSize = 16, Size = UDim2.new(1, 0, 0, 20), Parent = oddsCard })
-		Kit.Label({
-			Text = table.concat(lines, "\n"),
-			TextSize = 12,
-			TextYAlignment = Enum.TextYAlignment.Top,
-			Position = UDim2.fromOffset(0, 24),
-			Size = UDim2.new(1, 0, 1, -24),
-			TextScaled = #lines > 9,
+			color = GOLD,
+			icon = Icons.Get("CrateTriple"),
+			tag = "Best value!",
+		})
+		-- the exact odds, as the third card in the row
+		local oddsCard = New("Frame", {
+			Name = "Odds",
+			BackgroundColor3 = C.Row,
+			LayoutOrder = 3,
+			Parent = content,
+		}, {
+			New("UICorner", { CornerRadius = UDim.new(0, 18) }),
+			New("UIStroke", { Color = C.RowEdge, Thickness = 2, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
+		})
+		Kit.Text("Exact odds", 18, {
+			Position = UDim2.fromOffset(0, 8),
+			Size = UDim2.new(1, 0, 0, 24),
 			Parent = oddsCard,
 		})
+		local list = New("TextLabel", {
+			BackgroundTransparency = 1,
+			Text = table.concat(lines, "\n"),
+			Font = T.Bold,
+			TextColor3 = Color3.fromRGB(214, 219, 230),
+			TextScaled = true,
+			TextWrapped = true,
+			TextYAlignment = Enum.TextYAlignment.Top,
+			Position = UDim2.fromOffset(12, 38),
+			Size = UDim2.new(1, -24, 1, -48),
+			Parent = oddsCard,
+		})
+		New("UITextSizeConstraint", { MaxTextSize = 13, MinTextSize = 8, Parent = list })
 	elseif currentTab == "Event" then
 		-- Event shop: Event Tokens are earned only by salvaging during live events
+		setShape(false, 190)
 		local tokens = S.Get("EventTokens") or 0
-		local info = Kit.Card(
-			{ LayoutOrder = nextOrder(), BackgroundColor3 = T.PanelDark, Parent = content },
-			{ Kit.Padding(14) }
+		setNote(
+			`You have {tokens} Event Tokens. Earn them by salvaging while an event is live: +1 per relic, +2 Rare+, +5 Epic+. Never sold for Robux.`
 		)
-		Kit.Icon.new("event", 40, T.Gold, { Parent = info })
-		Kit.Title({
-			Text = tostring(tokens),
-			TextSize = 34,
-			Position = UDim2.fromOffset(0, 48),
-			Size = UDim2.new(1, 0, 0, 38),
-			Parent = info,
-		})
-		Kit.Label({
-			Text = "Event Tokens",
-			Font = T.Bold,
-			TextSize = 13,
-			TextColor3 = T.Gold,
-			Position = UDim2.fromOffset(0, 88),
-			Size = UDim2.new(1, 0, 0, 16),
-			Parent = info,
-		})
-		Kit.Label({
-			Text = "Earn them by salvaging while an event is live: +1 per relic, +2 Rare+, +5 Epic+. Never sold for Robux.",
-			TextSize = 11,
-			TextColor3 = T.Muted,
-			TextYAlignment = Enum.TextYAlignment.Top,
-			Position = UDim2.fromOffset(0, 110),
-			Size = UDim2.new(1, 0, 1, -110),
-			Parent = info,
-		})
-		for _, item in Economy.EventShop do
-			card(nextOrder(), item.Name, `{item.Cost} Event Tokens`, `{item.Cost} tokens`, false, function()
-				Net.RequestEventShopBuy:FireServer(item.Id)
-			end, if tokens >= item.Cost then T.Gold else nil, item.Icon, "CAN BUY")
+		for i, item in Economy.EventShop do
+			local can = tokens >= item.Cost
+			card({
+				order = i,
+				title = item.Name,
+				price = `{item.Cost} tokens`,
+				priceColor = if can then C.Go else C.Off,
+				onBuy = function()
+					Net.RequestEventShopBuy:FireServer(item.Id)
+				end,
+				color = PINK,
+				icon = if EVENT_ICONS[item.Id] then Icons.Get(EVENT_ICONS[item.Id]) else item.Icon,
+				tag = if can then "Can buy!" else nil,
+				tagColor = C.Go,
+			})
 		end
 	elseif currentTab == "Pass+" then
-		card(
-			nextOrder(),
-			"Abyss Pass+ (monthly)",
-			"60 Pearls/day · +10% Coins · +10% luck · 1 free revive/day · +4h offline cap · 2x offline claim · keeps your login streak",
-			"Subscribe",
-			S.Get("Subscribed") == true,
-			function()
+		setShape(true, 176)
+		card({
+			order = 1,
+			title = "Abyss Pass+ (monthly)",
+			desc = "60 Pearls/day · +10% Coins · +10% luck · 1 free revive/day · +4h offline cap · 2x offline claim · keeps your login streak",
+			price = "Subscribe",
+			owned = S.Get("Subscribed") == true,
+			onBuy = function()
 				buy("Subscription", "PassPlus")
 			end,
-			T.Accent,
-			Icons.Get("PassPlus")
-		)
-		card(
-			nextOrder(),
-			"Roblox Premium",
-			"+10% Coins and a Premium Chest every 24h",
-			"Get Premium",
-			S.Get("Premium") == true,
-			function()
+			color = Color3.fromRGB(53, 224, 224),
+			icon = Icons.Get("PassPlus"),
+		})
+		card({
+			order = 2,
+			title = "Roblox Premium",
+			desc = "+10% Coins and a Premium Chest every 24h",
+			price = "Get Premium",
+			owned = S.Get("Premium") == true,
+			onBuy = function()
 				buy("Premium", "Premium")
 			end,
-			nil,
-			Icons.Get("Premium")
-		)
+			icon = Icons.Get("Premium"),
+		})
 		if S.Derived("StarterPackAvailable") then
 			local remaining = Products.StarterPack.offerHours * 3600
 				- (os.time() - (S.Derived("StarterPackShownAt") or os.time()))
-			card(
-				nextOrder(),
-				"Starter Pack",
-				`10K Coins · 100 Pearls · Neoprene suit · Rare relic\nOffer ends in {NumberFormat.time(remaining)}`,
-				`{Products.StarterPack.price} R$`,
-				false,
-				function()
+			card({
+				order = 3,
+				title = "Starter Pack",
+				desc = `10K Coins · 100 Pearls · Neoprene suit · Rare relic\nOffer ends in {NumberFormat.time(remaining)}`,
+				price = `{Products.StarterPack.price} R$`,
+				onBuy = function()
 					buy("Product", "StarterPack")
 				end,
-				T.Gold,
-				Icons.Get("StarterPack")
-			)
+				color = GOLD,
+				icon = Icons.Get("StarterPack"),
+				tag = "Limited!",
+			})
 		end
 	end
 end
 
 local TABS = {
-	{ id = "Passes", text = "Passes", icon = "ticket", color = T.Gold },
-	{ id = "Boosts", text = "Boosts", icon = "potion", color = Color3.fromRGB(180, 140, 255) },
-	{ id = "Coins", text = "Coins", icon = "coin", color = T.Gold },
-	{ id = "Pearls", text = "Pearls", icon = "pearl", color = T.Pearl },
-	{ id = "Crates", text = "Crates", icon = "box", color = Color3.fromRGB(255, 150, 70) },
-	{ id = "Pass+", text = "Pass+", icon = "star", color = T.Accent },
-	{ id = "Event", text = "Event", icon = "event", color = Color3.fromRGB(255, 130, 180) },
+	{ id = "Passes", text = "Passes", color = Color3.fromRGB(255, 181, 46) },
+	{ id = "Boosts", text = "Boosts", color = Color3.fromRGB(180, 123, 255) },
+	{ id = "Coins", text = "Coins", color = Color3.fromRGB(255, 205, 50) },
+	{ id = "Pearls", text = "Pearls", color = Color3.fromRGB(70, 180, 255) },
+	{ id = "Crates", text = "Crates", color = Color3.fromRGB(255, 138, 61) },
+	{ id = "Pass+", text = "Pass+", color = Color3.fromRGB(40, 214, 214) },
+	{ id = "Event", text = "Event", color = Color3.fromRGB(255, 111, 181) },
 }
 
 local function build(body: Frame)
-	-- VIP banner: one big gold slab, name + perks on two lines, price plate on the right
-	local _, banner = Kit.GameCard(
-		Color3.fromRGB(255, 176, 50),
-		{ Size = UDim2.new(1, 0, 0, 70), Parent = body },
-		function()
-			buy("Pass", "VIP")
-		end
-	)
-	New("UIGradient", {
-		Name = "Bevel",
-		Rotation = 0,
-		Color = ColorSequence.new({
-			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 240, 160)),
-			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 200, 80)),
-			ColorSequenceKeypoint.new(1, Color3.fromRGB(240, 130, 40)),
-		}),
-		Parent = banner,
-	}):SetAttribute("Keep", true)
-	for _, g in banner:GetChildren() do
-		if g:IsA("UIGradient") and not g:GetAttribute("Keep") then
-			g:Destroy() -- one gradient per object: keep the gold sweep
-		end
-	end
-	Kit.IconBadge(
-		Icons.Get("VIP"),
-		Color3.fromRGB(255, 120, 40),
-		50,
-		{ AnchorPoint = Vector2.new(0, 0.5), Position = UDim2.new(0, 10, 0.5, 0), ZIndex = 3, Parent = banner }
-	)
-	Kit.Title({
-		Text = "VIP DIVER",
-		TextSize = 26,
-		TextColor3 = Color3.new(1, 1, 1),
-		Position = UDim2.fromOffset(72, 6),
-		Size = UDim2.new(1, -220, 0, 30),
-		TextWrapped = false,
-		ZIndex = 3,
-		Parent = banner,
-	})
-	Kit.Label({
-		Text = "1.5x Coins  ·  VIP lounge  ·  daily chest",
-		Font = T.Bold,
-		TextSize = 14,
-		TextColor3 = Color3.fromRGB(70, 34, 0),
-		Position = UDim2.fromOffset(72, 38),
-		Size = UDim2.new(1, -220, 0, 18),
-		TextWrapped = false,
-		TextTruncate = Enum.TextTruncate.AtEnd,
-		ZIndex = 3,
-		Parent = banner,
-	})
-	vipPrice = Kit.PricePlate("249 R$", T.Good, nil, {
-		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -12, 0.5, 0),
-		Size = UDim2.fromOffset(124, 46),
-		TextSize = 22,
-		Parent = banner,
-	})
-	Kit.Shine(banner, 1.8)
-
+	-- the tab strip scrolls sideways when the window is too narrow for all seven
 	local tabScroll = Kit.Scroll({
-		Position = UDim2.fromOffset(0, 80),
-		Size = UDim2.new(1, 0, 0, 54),
+		Size = UDim2.new(1, 0, 0, 44),
 		ScrollingDirection = Enum.ScrollingDirection.X,
 		AutomaticCanvasSize = Enum.AutomaticSize.X,
-		ScrollBarThickness = 3,
+		ScrollBarThickness = 0,
 		Parent = body,
 	})
-	local _, paint = Kit.Tabs(tabScroll, TABS, currentTab, function(id)
+	local _, paint = Kit.FlatTabs(tabScroll, TABS, currentTab, function(id)
 		currentTab = id
 		render()
-	end, { Size = UDim2.new(0, 0, 0, 48), AutomaticSize = Enum.AutomaticSize.X, TabWidth = 104 })
+	end, { Size = UDim2.new(0, 0, 0, 40), AutomaticSize = Enum.AutomaticSize.X })
 	paintTabs = paint
-	content = Kit.Scroll({ Position = UDim2.fromOffset(0, 140), Size = UDim2.new(1, 0, 1, -140), Parent = body })
-	New("UIGridLayout", {
-		CellSize = UDim2.new(1 / 3, -10, 0, 232),
-		CellPadding = UDim2.fromOffset(10, 12),
+
+	local well = Kit.Well({ Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 1, -48), Parent = body })
+	note = New("TextLabel", {
+		Name = "Note",
+		BackgroundTransparency = 1,
+		Text = "",
+		Font = T.Bold,
+		TextSize = 13,
+		TextColor3 = Color3.fromRGB(214, 219, 230),
+		TextWrapped = true,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Position = UDim2.fromOffset(14, 8),
+		Size = UDim2.new(1, -28, 0, 40),
+		Visible = false,
+		Parent = well,
+	})
+	content = Kit.Scroll({
+		ScrollBarImageColor3 = Color3.new(1, 1, 1),
+		ScrollBarImageTransparency = 0.6,
+		Parent = well,
+	})
+	grid = New("UIGridLayout", {
+		CellSize = UDim2.fromOffset(240, shape.height),
+		CellPadding = UDim2.fromOffset(10, 16),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		Parent = content,
 	})
-	New(
-		"UIPadding",
-		{ PaddingTop = UDim.new(0, 6), PaddingLeft = UDim.new(0, 2), PaddingRight = UDim.new(0, 8), Parent = content }
-	)
+	-- room above the first row for the "Best value!" tags, which sit over a card's top edge
+	New("UIPadding", {
+		PaddingTop = UDim.new(0, 18),
+		PaddingBottom = UDim.new(0, 10),
+		PaddingLeft = UDim.new(0, 8),
+		PaddingRight = UDim.new(0, 12),
+		Parent = content,
+	})
+	content:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
 end
 
 function ShopController.OpenTab(tab: string)
@@ -471,7 +469,20 @@ function ShopController.OpenTab(tab: string)
 end
 
 function ShopController.Start()
-	controllers.UIController.RegisterWindow("Shop", "Shop", build, render)
+	controllers.UIController.RegisterWindow("Shop", "Shop", build, render, {
+		-- VIP, always one tap away
+		Header = function(holder)
+			vipButton = Kit.Button("VIP  249 R$", Color3.fromRGB(112, 66, 255), function()
+				if controllers.State.Owns("VIP") then
+					controllers.UIController.Toast("You own VIP Diver!", "info")
+				else
+					buy("Pass", "VIP")
+				end
+			end, { Size = UDim2.fromOffset(164, 38), TextSize = 17, Parent = holder })
+			-- the crown image has a wide empty margin, so it is drawn larger than the text
+			Kit.AttachIcon(vipButton :: TextButton, Icons.Get("VIP"), Color3.new(1, 1, 1), 34)
+		end,
+	})
 	controllers.State.Changed:Connect(function(keys)
 		if keys.Passes or keys.Derived or keys.Subscribed or keys.EventTokens then
 			controllers.UIController.Refresh("Shop")

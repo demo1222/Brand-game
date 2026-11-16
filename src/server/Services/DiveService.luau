@@ -10,6 +10,7 @@ local RateLimiter = require(Shared.RateLimiter)
 local Formulas = require(Shared.Formulas)
 local NumberFormat = require(Shared.NumberFormat)
 local Zones = require(Shared.Config.Zones)
+local Upgrades = require(Shared.Config.Upgrades)
 local World = require(Shared.Config.World)
 local Economy = require(Shared.Config.Economy)
 local Build = require(script.Parent.Parent.Util.Build)
@@ -72,6 +73,31 @@ function DiveService.RefillOxygen(player: Player): boolean
 	return true
 end
 
+-- The tank rack on every dock (WorldService.buildDiveStation): fills the tank to the top.
+-- Without the Auto Refill pass this is the only way to refill at the surface.
+function DiveService.RefillAtRack(player: Player)
+	local s = state[player]
+	if not s then
+		return
+	end
+	local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hrp or World.WaterSurfaceY - hrp.Position.Y > 0 then
+		return -- only out of the water
+	end
+	if s.oxygen >= s.maxOxygen - 0.5 then
+		Net.Notify:FireClient(player, "Your tank is already full.", "info")
+		return
+	end
+	s.oxygen = s.maxOxygen
+	s.lowWarned = false
+	Net.Notify:FireClient(player, `Tank refilled: {math.floor(s.maxOxygen)}s of air.`, "reward")
+	Net.WorldFX:FireClient(player, "AirRefill", hrp.Position)
+end
+
+local function autoRefill(player: Player): boolean
+	return services.MonetizationService.Owns(player, "AutoRefill")
+end
+
 function DiveService.AddOxygen(player: Player, seconds: number)
 	local s = state[player]
 	if s then
@@ -121,7 +147,18 @@ local function escape(player: Player, s)
 		services.DataService.Replicate(player, "Stats")
 		services.CurrencyService.RefreshLeaderstats(player, data)
 	end
-	s.oxygen = s.maxOxygen
+	-- the tank is NOT refilled here: use the tank rack on your dock (or the Auto Refill pass)
+	if autoRefill(player) then
+		s.oxygen = s.maxOxygen
+	elseif s.oxygen < s.maxOxygen * 0.5 then
+		Net.Notify:FireClient(player, "Low on air. Refill at the tank rack on your dock!", "info")
+		if not data.Flags.AutoRefillOfferShown then
+			data.Flags.AutoRefillOfferShown = true
+			task.delay(3, function()
+				Net.Offer:FireClient(player, "AutoRefill")
+			end)
+		end
+	end
 end
 
 ------------------------------------------------------------------------------------------
@@ -336,7 +373,7 @@ local function tickPlayer(player: Player, s, dt: number, sendStatus: boolean)
 				Net.Offer:FireClient(player, "DoubleOxygen")
 			end
 		end
-		if data.Suit < zone.SuitIndex then
+		if Upgrades.SuitZone(data.Suit) < zone.SuitIndex then
 			s.lastCause = "Pressure"
 			hum:TakeDamage(hum.MaxHealth * Zones.PressureDamagePerSec * dt)
 		end
@@ -352,7 +389,10 @@ local function tickPlayer(player: Player, s, dt: number, sendStatus: boolean)
 			end
 		end
 	else
-		s.oxygen = math.min(s.maxOxygen, s.oxygen + s.maxOxygen * 0.35 * dt)
+		-- at the surface the tank only refills by itself with the Auto Refill pass
+		if autoRefill(player) then
+			s.oxygen = math.min(s.maxOxygen, s.oxygen + s.maxOxygen * 0.35 * dt)
+		end
 		s.zone = 0
 		if s.diving then
 			local dock = services.DockService.GetDock(player)
@@ -379,7 +419,7 @@ local function tickPlayer(player: Player, s, dt: number, sendStatus: boolean)
 			Max = s.maxOxygen,
 			Depth = depth,
 			Zone = if underwater and zone then zone.Index else 0,
-			Pressure = underwater and zone ~= nil and data.Suit < zone.SuitIndex,
+			Pressure = underwater and zone ~= nil and Upgrades.SuitZone(data.Suit) < zone.SuitIndex,
 			Diving = s.diving,
 		})
 	end

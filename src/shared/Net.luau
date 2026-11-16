@@ -13,6 +13,7 @@ local EVENTS = {
 	"UseFlare",
 	"RequestUpgrade",
 	"RequestBuySuit",
+	"RequestEquipSuit",
 	"RequestSell",
 	"RequestSellCommons",
 	"RequestToggleLock",
@@ -65,6 +66,7 @@ local EVENTS = {
 	"Leaderboards",
 	"CarryChanged",
 	"CoinBurst", -- (amount, worldPosition?, caption?): coin pop-up + fly-to-HUD effect
+	"WorldFX", -- (kind, worldPosition, extra?): one-shot client effect (AirRefill, Bite, ...)
 }
 
 local UNRELIABLE = {

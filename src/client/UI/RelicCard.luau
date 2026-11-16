@@ -1,6 +1,7 @@
--- RelicCard: collectible card with a live 3D render (UI design canvas "Bag & Dock window").
--- Flat rarity-tinted card, rarity name in small caps (+ its symbol, colour-blind safe §18.3),
--- 3D model over a soft glow, name and income at the bottom.
+-- RelicCard: collectible card with a live 3D render (docs/UI_STYLE_GUIDE.md, "Animal Index").
+-- A slab filled with the rarity colour (lighter top), thick dark outline, the name outlined at
+-- the top, the 3D model turning slowly in the middle, the rarity word and a subtitle at the
+-- bottom. Undiscovered entries are grey slabs with a black silhouette.
 --
 --   RelicCard.new(props) -> TextButton
 --     props.Relic      { id, rarity, mutations, size, locked }  (inventory relic)
@@ -9,6 +10,7 @@
 --     props.Selected   white border
 --     props.OnClick    callback
 --     props.LazyModel  defer the 3D render until RelicCard.Realize(card) is called
+--     props.Still      don't turn the model (default: slow turntable, random start angle)
 --     + Size, LayoutOrder, Parent
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -17,6 +19,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Relics = require(Shared.Config.Relics)
 local Rarities = require(Shared.Config.Rarities)
 local Mutations = require(Shared.Config.Mutations)
+local Materials = require(Shared.Config.Materials)
 local Kit = require(script.Parent.Kit)
 local Icon = require(script.Parent.Icon)
 local RelicView = require(script.Parent.RelicView)
@@ -36,15 +39,29 @@ end
 
 local pending: { [TextButton]: any } = setmetatable({}, { __mode = "k" }) :: any
 
+-- The card fill for a rarity: bright, like the reference index cards
+local GREY = Color3.fromRGB(120, 128, 142)
+function RelicCard.Fill(rarityName: string, discovered: boolean): Color3
+	if not discovered then
+		return GREY
+	end
+	if rarityName == "Secret" then
+		return Color3.fromRGB(40, 34, 58)
+	end
+	return Kit.Darken(Kit.RarityColor(rarityName, Rarities), 0.12)
+end
+
 local function mountModel(card: TextButton, args)
 	RelicView.new({
 		Relic = args.relic,
 		Silhouette = args.silhouette,
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 20),
-		Size = UDim2.new(1, -16, 1, -66),
+		Position = UDim2.new(0.5, 0, 0, 24),
+		Size = UDim2.new(1, -14, 1, -64),
 		ZIndex = 2,
 		Spin = args.spin,
+		Bob = args.spin ~= nil,
+		Angle = args.angle,
 		Parent = card,
 	})
 end
@@ -71,41 +88,70 @@ function RelicCard.new(props): TextButton
 	local rColor = Kit.RarityColor(rarityName, Rarities)
 	local tier = rarity and rarity.Tier or 1
 
-	local bg = RelicCard.RarityBackground(rarityName, not discovered)
+	local fill = RelicCard.Fill(rarityName, discovered)
 	local card = New("TextButton", {
 		Name = if relic and relic.uid then relic.uid else def.Id,
 		Text = "",
 		AutoButtonColor = false,
-		BackgroundColor3 = bg,
+		BackgroundColor3 = fill,
 		Size = props.Size or UDim2.fromOffset(112, 150),
 		LayoutOrder = props.LayoutOrder or 0,
-	}, { Kit.Corner(14) })
+	}, {
+		Kit.Corner(14),
+		-- lighter top, darker bottom band: reads as a raised slab
+		New("UIGradient", {
+			Rotation = 90,
+			Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+				ColorSequenceKeypoint.new(0.6, Color3.fromRGB(225, 225, 225)),
+				ColorSequenceKeypoint.new(1, Color3.fromRGB(160, 160, 165)),
+			}),
+		}),
+	})
 	Kit.Stroke(
-		if props.Selected then Color3.new(1, 1, 1) else rColor,
-		if props.Selected then 2 else 1,
-		if props.Selected then 0 elseif discovered then 0.35 else 0.75
+		if props.Selected then Color3.new(1, 1, 1) else T.Outline,
+		if props.Selected then 3 else 2,
+		0
 	).Parent =
 		card
+	-- inner rim in a lighter tint of the fill
+	New("Frame", {
+		Name = "Rim",
+		BackgroundTransparency = 1,
+		Position = UDim2.fromOffset(2, 2),
+		Size = UDim2.new(1, -4, 1, -4),
+		ZIndex = 1,
+		Parent = card,
+	}, { Kit.Corner(12), Kit.Stroke(Kit.Lighten(fill, 0.45), 2, 0.35) })
 	Kit.Juice(card)
 
 	if discovered then
-		Kit.Glow(card, rColor, 84, { Position = UDim2.new(0.5, 0, 0, 58) })
+		Kit.Glow(card, Kit.Lighten(rColor, 0.4), 84, { Position = UDim2.new(0.5, 0, 0, 66) })
 	end
-	local args = { relic = relic or { id = def.Id }, silhouette = not discovered, spin = props.Spin }
+	local spin = props.Spin
+	if spin == nil and not props.Still then
+		spin = 24
+	end
+	local args = {
+		relic = relic or { id = def.Id },
+		silhouette = not discovered,
+		spin = spin,
+		angle = math.random(0, 359),
+	}
 	if props.LazyModel then
 		pending[card] = args
 	else
 		mountModel(card, args)
 	end
 
-	-- Rarity in small caps, top-left (symbol keeps it readable for colour-blind players)
-	Kit.Label({
-		Text = `{rarity and rarity.Icon or ""} {string.upper(rarityName)}`,
-		Font = T.Bold,
-		TextSize = 10,
-		TextColor3 = Kit.Lighten(rColor, 0.45),
-		Position = UDim2.fromOffset(8, 6),
-		Size = UDim2.new(1, -16, 0, 14),
+	-- Rarity word at the bottom (the word, not the glyph: rarity glyphs render as boxes)
+	Kit.Title({
+		Text = if discovered then rarityName else "???",
+		TextSize = 12,
+		TextColor3 = Color3.new(1, 1, 1),
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Position = UDim2.new(0, 6, 1, if props.Subtitle then -36 else -24),
+		Size = UDim2.new(1, -12, 0, 16),
 		TextWrapped = false,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 		ZIndex = 3,
@@ -116,16 +162,25 @@ function RelicCard.new(props): TextButton
 	local tr = New("Frame", {
 		BackgroundTransparency = 1,
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -6, 0, 22),
+		Position = UDim2.new(1, -6, 0, 26),
 		Size = UDim2.fromOffset(80, 18),
 		ZIndex = 3,
 		Parent = card,
 	}, { Kit.List(3, true, Enum.HorizontalAlignment.Right) })
-	if relic and relic.size and relic.size >= 1.35 then
+	local sizeTier = relic and Materials.SizeTier(relic.size)
+	if sizeTier and sizeTier.Label and sizeTier.Id ~= "Tiny" then
 		Kit.Pill(
-			"HUGE",
-			T.Bad,
+			sizeTier.Label,
+			sizeTier.Color,
 			{ TextSize = 9, Size = UDim2.fromOffset(0, 16), ZIndex = 3, LayoutOrder = 1, Parent = tr }
+		)
+	end
+	local matDef = relic and relic.material and Materials.ById[relic.material]
+	if matDef then
+		Kit.Pill(
+			matDef.Name,
+			matDef.Color,
+			{ TextSize = 9, Size = UDim2.fromOffset(0, 16), ZIndex = 3, LayoutOrder = 0, Parent = tr }
 		)
 	end
 	if relic and relic.locked then
@@ -146,7 +201,7 @@ function RelicCard.new(props): TextButton
 	if relic and relic.mutations and #relic.mutations > 0 then
 		local dots = New("Frame", {
 			BackgroundTransparency = 1,
-			Position = UDim2.new(0, 8, 1, -54),
+			Position = UDim2.new(0, 8, 0, 28),
 			Size = UDim2.fromOffset(80, 10),
 			ZIndex = 3,
 			Parent = card,
@@ -166,33 +221,38 @@ function RelicCard.new(props): TextButton
 	end
 
 	-- Name + subtitle
-	local mutPrefix = if relic and relic.mutations and #relic.mutations > 0 then relic.mutations[1] .. " " else ""
+	local mutPrefix = if relic and relic.material and Materials.ById[relic.material]
+		then relic.material .. " "
+		elseif relic and relic.mutations and #relic.mutations > 0 then relic.mutations[1] .. " "
+		else ""
 	local name = Kit.Title({
 		Text = if discovered then mutPrefix .. def.Name else "???",
-		TextSize = 13,
-		TextColor3 = if discovered then T.Text else T.Muted,
-		Position = UDim2.new(0, 8, 1, -40),
-		Size = UDim2.new(1, -16, 0, 18),
+		TextSize = 15,
+		TextColor3 = Color3.new(1, 1, 1),
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Position = UDim2.new(0, 6, 0, 6),
+		Size = UDim2.new(1, -12, 0, 18),
+		TextScaled = true,
 		TextWrapped = false,
-		TextTruncate = Enum.TextTruncate.AtEnd,
 		ZIndex = 3,
 		Parent = card,
 	})
-	New("UITextSizeConstraint", { MaxTextSize = 13, MinTextSize = 9, Parent = name })
+	New("UITextSizeConstraint", { MaxTextSize = 15, MinTextSize = 9, Parent = name })
 	if props.Subtitle then
-		Kit.Label({
+		Kit.Title({
 			Text = props.Subtitle,
-			Font = T.Bold,
-			TextSize = 11,
-			TextColor3 = if discovered then T.Good else T.Muted,
-			Position = UDim2.new(0, 8, 1, -22),
-			Size = UDim2.new(1, -16, 0, 14),
+			TextSize = 12,
+			TextColor3 = if discovered then Color3.fromRGB(200, 255, 170) else Color3.fromRGB(225, 230, 240),
+			TextXAlignment = Enum.TextXAlignment.Center,
+			Position = UDim2.new(0, 6, 1, -21),
+			Size = UDim2.new(1, -12, 0, 15),
 			TextWrapped = false,
 			TextTruncate = Enum.TextTruncate.AtEnd,
 			ZIndex = 3,
 			Parent = card,
 		})
 	end
+
 
 	if discovered and tier >= 5 then
 		Kit.Shine(card, 3 + (7 - tier))

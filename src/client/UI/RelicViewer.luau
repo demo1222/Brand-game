@@ -1,7 +1,8 @@
 -- RelicViewer: full-screen showcase of one relic (Codex "View").
 -- The game behind blurs and dims; the relic sits big in the middle on a rarity glow and turns
 -- slowly. Drag to rotate it yourself. Below: the name, a big rarity word, lore and info chips.
--- Click the backdrop, the close button or press Escape / B to close.
+-- Close with the X button or Escape / B. Clicking the backdrop does nothing (a missed click
+-- must never close a modal: docs/UI_STYLE_GUIDE.md).
 --
 --   RelicViewer.Open({ Id = "R049", Mutations = {..}?, Info = { "Zone: The Abyss", ... }? })
 --   RelicViewer.Close()
@@ -46,6 +47,10 @@ function RelicViewer.Close()
 	local root = c.gui:FindFirstChild("Root") :: Frame?
 	if root then
 		TweenService:Create(root, FADE, { GroupTransparency = 1 } :: any):Play()
+		local stage = root:FindFirstChild("Stage") :: Frame?
+		if stage then
+			Kit.PopOut(stage, nil, 0.7)
+		end
 	end
 	task.delay(0.26, function()
 		c.blur:Destroy()
@@ -90,12 +95,11 @@ function RelicViewer.Open(args)
 	})
 	TweenService:Create(root, FADE, { GroupTransparency = 0 } :: any):Play()
 
-	-- Backdrop: dark tint with a rarity-coloured vertical fade; clicking it closes the viewer
+	-- Backdrop: dark tint with a rarity-coloured vertical fade. Active, so clicks stop here.
 	local _, seq = RelicCard.RarityBackground(def.Rarity)
-	local backdrop = New("TextButton", {
+	New("Frame", {
 		Name = "Backdrop",
-		Text = "",
-		AutoButtonColor = false,
+		Active = true,
 		BackgroundColor3 = Color3.fromRGB(4, 8, 18),
 		BackgroundTransparency = 0.25,
 		Size = UDim2.fromScale(1, 1),
@@ -111,27 +115,6 @@ function RelicViewer.Open(args)
 			}),
 		}),
 	})
-	-- Close only on a click that both starts and ends on the backdrop. The View button fires on
-	-- press, so the release of that same click lands here and used to close the viewer at once.
-	local openedAt = os.clock()
-	local armed = false
-	table.insert(
-		conns,
-		backdrop.InputBegan:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-				armed = os.clock() - openedAt > 0.25
-			end
-		end)
-	)
-	table.insert(
-		conns,
-		backdrop.Activated:Connect(function()
-			if armed then
-				RelicViewer.Close()
-			end
-		end)
-	)
-
 	-- Stage: rarity glow + the relic, a square that fits the screen height
 	local stage = New("Frame", {
 		Name = "Stage",
@@ -141,7 +124,7 @@ function RelicViewer.Open(args)
 		Size = UDim2.fromScale(0.62, 0.62),
 		Parent = root,
 	}, { New("UIAspectRatioConstraint", { AspectRatio = 1 }) })
-	Kit.Glow(stage, rColor, 10, { Size = UDim2.fromScale(1.1, 1.1) })
+	Kit.Glow(stage, rColor, 10, { Size = UDim2.fromScale(1.1, 1.1), Layers = 18 })
 	local vpf = RelicView.new({
 		Relic = { id = def.Id, mutations = args.Mutations },
 		Angle = 28,
@@ -150,9 +133,9 @@ function RelicViewer.Open(args)
 		ZIndex = 3,
 		Parent = stage,
 	})
-	-- Active so a drag on the relic doesn't fall through to the backdrop (which closes)
 	vpf.Active = true
 	stage.ZIndex = 2
+	Kit.Pop(stage, 0.6, 0.35)
 	-- Drag to rotate; otherwise turn slowly on its own
 	local cam = vpf.CurrentCamera
 	local dist = if cam then cam.CFrame.Position.Magnitude else 10
@@ -258,7 +241,7 @@ function RelicViewer.Open(args)
 		Kit.Pill(text, if i == 1 then rColor else T.PanelLight, { LayoutOrder = i, Parent = chips })
 	end
 	Kit.Label({
-		Text = "Drag to rotate · Click anywhere to close",
+		Text = "Drag to rotate · X or Esc to close",
 		TextSize = 13,
 		TextColor3 = Color3.fromRGB(150, 165, 190),
 		TextXAlignment = Enum.TextXAlignment.Center,

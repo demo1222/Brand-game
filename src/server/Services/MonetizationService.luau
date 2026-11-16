@@ -22,6 +22,7 @@ local RateLimiter = require(Shared.RateLimiter)
 local Passes = require(Shared.Config.Passes)
 local Products = require(Shared.Config.Products)
 local Economy = require(Shared.Config.Economy)
+local Upgrades = require(Shared.Config.Upgrades)
 local Formulas = require(Shared.Formulas)
 local WeightedRandom = require(Shared.WeightedRandom)
 
@@ -205,8 +206,8 @@ local handlers: { [string]: (Player, any) -> boolean } = {
 		data.StarterPackBought = true
 		services.CurrencyService.AddCoins(player, Products.StarterPack.coins, "StarterPack")
 		services.CurrencyService.AddPearls(player, Products.StarterPack.pearls, "StarterPack")
-		if data.Suit < 2 then
-			data.Suit = 2
+		if data.Suit < Upgrades.SuitIndex.Neoprene then
+			data.Suit = Upgrades.SuitIndex.Neoprene
 			services.DataService.Replicate(player, "Suit")
 			services.UpgradeService.PushDerived(player)
 			services.UpgradeService.ApplySuitVisual(player)

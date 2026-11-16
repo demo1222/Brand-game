@@ -184,15 +184,15 @@ describe("Formulas", function()
 		expect(Formulas.VaultCount(data, { VaultLock = true }) == 2)
 	end)
 	test("upgrade cost curve (§11.1)", function()
-		expect(Upgrades.Cost("Oxygen", 0) == 50)
-		expect(Upgrades.Cost("Oxygen", 1) == math.floor(50 * 1.45))
-		expect(Upgrades.Cost("Bag", 3) == math.floor(200 * 1.8 ^ 3))
+		expect(Upgrades.Cost("Oxygen", 0) == 100)
+		expect(Upgrades.Cost("Oxygen", 1) == math.floor(100 * 1.65))
+		expect(Upgrades.Cost("Bag", 3) == math.floor(500 * 2.3 ^ 3))
 	end)
 	test("rebirth multipliers (§12)", function()
 		expect(Formulas.RebirthMultiplier(0) == 1)
 		expect(Formulas.RebirthMultiplier(3) == 2.5)
 		near(Formulas.RebirthLuck(50), 1.30, 1e-9, "luck cap")
-		expect(Formulas.RebirthRequirement(1) == 15e6)
+		expect(Formulas.RebirthRequirement(1) == 300e6)
 	end)
 	test("relic CPS and sell price (§8.2, §13.2)", function()
 		local relic = { id = "R021", size = 1.2, mutations = { "Gilded" } }
@@ -258,6 +258,43 @@ describe("RelicArt (UI overhaul)", function()
 			end
 		end
 		expect(n >= 40, `only {n} archetypes`)
+	end)
+end)
+
+describe("Suits, materials and guardians", function()
+	local Materials = H.require("src/shared/Config/Materials")
+	local Monsters = H.require("src/shared/Config/Monsters")
+	test("suit costs rise and every suit has its perks", function()
+		for i, s in Upgrades.Suits do
+			if i > 1 then
+				expect(s.Cost > Upgrades.Suits[i - 1].Cost, `cost rises at {s.Id}`)
+			end
+			expect(type(s.Income) == "number" and type(s.Luck) == "number", `perks on {s.Id}`)
+		end
+		expect(Upgrades.Suits[Upgrades.SuitRemapV4[7]].Id == "PressureMk2", "v4 remap keeps Mk II")
+		expect(Upgrades.Suits[Economy.Rebirth.RequiredSuit].Id == "PressureMk2", "rebirth gate is Mk II")
+	end)
+	test("a material multiplies CPS and leads the look list", function()
+		local relic = { id = "R021", size = 1.2, mutations = { "Gilded" }, material = "Emerald" }
+		near(Formulas.RelicCPS(relic), 55 * 1.2 * 2 * 6, 1e-9, "CPS with Emerald")
+		local look = Materials.LookList({ material = "Diamond", mutations = { "Frozen" } })
+		expect(look[1] == "Diamond" and look[2] == "Frozen", "material first")
+		expect(Materials.Prefix({ size = 1.4, material = "Gold", mutations = { "Cursed" } }) == "HUGE Gold Cursed ", "prefix")
+	end)
+	test("material odds match the table", function()
+		local rng = H.Random.new(7)
+		local gold, N = 0, 50000
+		for _ = 1, N do
+			if LootRoll.RollMaterial(rng, nil) == "Gold" then
+				gold += 1
+			end
+		end
+		near(gold / N, 0.04, 0.005, "Gold rate")
+	end)
+	test("one guardian per zone", function()
+		for z = 1, #Zones.List do
+			expect(Monsters.ByZone[z] ~= nil, `zone {z} has a guardian`)
+		end
 	end)
 end)
 

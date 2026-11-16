@@ -140,6 +140,7 @@ type Display = {
 	base: CFrame,
 	phase: number,
 	extras: { Instance },
+	popping: boolean?,
 }
 local displays: { [Model]: Display } = {}
 local extrasFolder: Folder
@@ -154,7 +155,73 @@ local function removeDisplay(model: Model)
 	end
 end
 
-local function addDisplay(model: Model)
+-- A relic just placed on a stand pops out of the pedestal: it springs up with an overshoot
+-- and a fast spin that settles, a rarity-coloured shockwave ring spreads over the pedestal,
+-- and a burst of sparkles. Local only.
+local function popDisplay(d: Display)
+	local model = d.model
+	local color = Kit.RarityColor(model:GetAttribute("Rarity"), Rarities)
+	local _, size = model:GetBoundingBox()
+	local floorY = d.base.Position.Y - size.Y / 2 - 0.6
+
+	local ring = Instance.new("Part")
+	ring.Name = "PopRing"
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Anchored, ring.CanCollide, ring.CanQuery, ring.CanTouch = true, false, false, false
+	ring.CastShadow = false
+	ring.Material = Enum.Material.Neon
+	ring.Color = color
+	ring.Transparency = 0.15
+	ring.Size = Vector3.new(0.15, 1, 1)
+	ring.CFrame = CFrame.new(d.base.Position.X, floorY, d.base.Position.Z) * CFrame.Angles(0, 0, math.rad(90))
+	ring.Parent = extrasFolder
+	local grow = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	TweenService:Create(ring, grow, { Size = Vector3.new(0.15, 7, 7), Transparency = 1 }):Play()
+
+	local attach = Instance.new("Attachment")
+	attach.WorldPosition = d.base.Position
+	attach.Parent = Workspace.Terrain
+	local pe = Instance.new("ParticleEmitter")
+	pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	pe.Color = ColorSequence.new(Kit.Lighten(color, 0.3))
+	pe.LightEmission = 1
+	pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.7), NumberSequenceKeypoint.new(1, 0) })
+	pe.Lifetime = NumberRange.new(0.5, 0.9)
+	pe.Speed = NumberRange.new(6, 12)
+	pe.SpreadAngle = Vector2.new(180, 180)
+	pe.Drag = 4
+	pe.Rate = 0
+	pe.Parent = attach
+	pe:Emit(28)
+	task.delay(1.2, function()
+		ring:Destroy()
+		attach:Destroy()
+	end)
+
+	d.popping = true
+	local start = os.clock()
+	local DURATION = 0.7
+	local conn
+	conn = RunService.RenderStepped:Connect(function()
+		local e = (os.clock() - start) / DURATION
+		if e >= 1 or model.Parent == nil then
+			conn:Disconnect()
+			d.popping = false
+			return
+		end
+		-- back-out spring from inside the pedestal, plus a spin that settles
+		local s = 1.9
+		local k = e - 1
+		local rise = 1 + (s + 1) * k * k * k + s * k * k
+		-- ends exactly on the idle turntable pose (animate), so there's no snap afterwards
+		local t = os.clock()
+		local y = (rise - 1) * 2.2 + math.sin(t * 1.6 + d.phase) * 0.25 * e
+		local spin = t * 0.7 + d.phase - (1 - e) ^ 3 * math.pi * 2
+		model:PivotTo(d.base * CFrame.new(0, y, 0) * CFrame.Angles(0, spin, 0))
+	end)
+end
+
+local function addDisplay(model: Model, pop: boolean?)
 	if displays[model] then
 		return
 	end
@@ -163,12 +230,16 @@ local function addDisplay(model: Model)
 	-- The pedestal (WorldService) and RelicAura now carry the rarity glow, light, sparkles and
 	-- pillar. This only adds the turntable motion; the old ring/sparkle/pillar extras are off.
 	if model:FindFirstChild("Pedestal", true) == nil and model.Parent and model.Parent:FindFirstChild("Pedestal") then
-		displays[model] = { model = model, base = base, phase = math.random() * math.pi * 2, extras = extras }
+		local d = { model = model, base = base, phase = math.random() * math.pi * 2, extras = extras }
+		displays[model] = d
 		model.AncestryChanged:Connect(function(_, parent)
 			if not parent then
 				removeDisplay(model)
 			end
 		end)
+		if pop then
+			popDisplay(d)
+		end
 		return
 	end
 	local rarityName = model:GetAttribute("Rarity")
@@ -242,7 +313,7 @@ local function watchDocks(docks: Instance)
 			-- wait a frame so the model's parts and pivot have replicated
 			task.delay(0.1, function()
 				if d.Parent then
-					addDisplay(d)
+					addDisplay(d, true)
 				end
 			end)
 		end
@@ -267,7 +338,7 @@ local function animate(dt: number)
 		if animated >= MAX_ANIMATED then
 			break
 		end
-		if (d.base.Position - camPos).Magnitude < DISPLAY_RANGE then
+		if not d.popping and (d.base.Position - camPos).Magnitude < DISPLAY_RANGE then
 			animated += 1
 			local bob = math.sin(t * 1.6 + d.phase) * 0.25
 			model:PivotTo(d.base * CFrame.new(0, bob, 0) * CFrame.Angles(0, t * 0.7 + d.phase, 0))
@@ -275,8 +346,47 @@ local function animate(dt: number)
 	end
 end
 
+-- One-shot world effects from the server (Net.WorldFX): a burst of particles at a point.
+--   AirRefill  white-blue air puff (tank rack)
+--   Bite       red flash and bubbles (a monster bit you)
+local WORLD_FX = {
+	AirRefill = { color = Color3.fromRGB(200, 240, 255), count = 40, speed = 9, size = 0.6 },
+	Bite = { color = Color3.fromRGB(255, 70, 70), count = 30, speed = 14, size = 0.8 },
+}
+
+function FXController.WorldFX(kind: string, pos: Vector3)
+	local fx = WORLD_FX[kind]
+	if not fx or typeof(pos) ~= "Vector3" then
+		return
+	end
+	local part = Instance.new("Part")
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanQuery = false
+	part.CanTouch = false
+	part.Transparency = 1
+	part.Size = Vector3.one
+	part.CFrame = CFrame.new(pos)
+	part.Parent = workspace
+	local pe = Instance.new("ParticleEmitter")
+	pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	pe.Color = ColorSequence.new(fx.color)
+	pe.LightEmission = 0.8
+	pe.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, fx.size), NumberSequenceKeypoint.new(1, 0) })
+	pe.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+	pe.Lifetime = NumberRange.new(0.5, 1)
+	pe.Speed = NumberRange.new(fx.speed * 0.5, fx.speed)
+	pe.SpreadAngle = Vector2.new(180, 180)
+	pe.Acceleration = Vector3.new(0, 6, 0)
+	pe.Enabled = false
+	pe.Parent = part
+	pe:Emit(fx.count)
+	game:GetService("Debris"):AddItem(part, 1.5)
+end
+
 function FXController.Start()
 	Net.CoinBurst.OnClientEvent:Connect(FXController.CoinBurst)
+	Net.WorldFX.OnClientEvent:Connect(FXController.WorldFX)
 	extrasFolder = Instance.new("Folder")
 	extrasFolder.Name = "LocalDisplayFX"
 	extrasFolder.Parent = Workspace

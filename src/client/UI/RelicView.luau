@@ -6,6 +6,7 @@
 --     props.Spin        orbit the camera (detail panel, reveal)
 --     props.Silhouette  render as a black shape (undiscovered Codex entries)
 --     props.Angle       static yaw in degrees (default 28)
+--     props.Bob         gently tilt up and down while spinning (grid cards)
 --     + any ViewportFrame property (Size, Position, AnchorPoint, ZIndex, Parent, ...)
 --   RelicView.Archetype(archetype, palette, props) -> ViewportFrame (suit helmets etc.)
 
@@ -16,6 +17,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local RelicArt = require(Shared.RelicArt)
 local Relics = require(Shared.Config.Relics)
 local Mutations = require(Shared.Config.Mutations)
+local Materials = require(Shared.Config.Materials)
 local RelicAura = require(Shared.RelicAura)
 
 local RelicView = {}
@@ -35,6 +37,36 @@ local FOV = 32
 local templates: { [string]: Model } = {}
 local spinning = setmetatable({}, { __mode = "k" }) :: { [ViewportFrame]: { cam: Camera, dist: number, pitch: number, speed: number, yaw: number } }
 local spinConn: RBXScriptConnection? = nil
+local spinClock = 0
+
+-- Is this view actually on screen? (window open, ancestors visible, inside its scroll area).
+-- Grids can hold dozens of turning models, so hidden or scrolled-away ones are skipped.
+local function onScreen(vpf: ViewportFrame): boolean
+	local node: Instance? = vpf
+	local clip: GuiObject? = nil
+	while node and not node:IsA("LayerCollector") do
+		if node:IsA("GuiObject") then
+			if not node.Visible then
+				return false
+			end
+			if clip == nil and node ~= vpf and node:IsA("ScrollingFrame") then
+				clip = node
+			end
+		end
+		node = node.Parent
+	end
+	if not node or ((node :: any).Enabled == false) then
+		return false
+	end
+	if clip then
+		local a, as = vpf.AbsolutePosition, vpf.AbsoluteSize
+		local b, bs = clip.AbsolutePosition, clip.AbsoluteSize
+		if a.Y > b.Y + bs.Y or a.Y + as.Y < b.Y or a.X > b.X + bs.X or a.X + as.X < b.X then
+			return false
+		end
+	end
+	return true
+end
 
 local function cameraCFrame(yawDeg: number, pitchDeg: number, dist: number): CFrame
 	local rot = CFrame.Angles(0, math.rad(yawDeg), 0) * CFrame.Angles(math.rad(-pitchDeg), 0, 0)
@@ -46,14 +78,21 @@ local function ensureSpinLoop()
 		return
 	end
 	spinConn = RunService.RenderStepped:Connect(function(dt)
+		-- 30 updates a second is smooth for a slow turntable and halves the re-render cost
+		spinClock += dt
+		if spinClock < 1 / 30 then
+			return
+		end
+		dt, spinClock = spinClock, 0
 		local any = false
 		for vpf, s in spinning do
 			any = true
 			if vpf.Parent == nil then
 				spinning[vpf] = nil
-			elseif vpf.Visible then
+			elseif onScreen(vpf) then
 				s.yaw = (s.yaw + dt * s.speed) % 360
-				s.cam.CFrame = cameraCFrame(s.yaw, s.pitch, s.dist)
+				local bob = if s.bob then math.sin(os.clock() * 1.7 + s.yaw * 0.01) * 4 else 0
+				s.cam.CFrame = cameraCFrame(s.yaw, s.pitch + bob, s.dist)
 			end
 		end
 		if not any and spinConn then
@@ -74,7 +113,7 @@ local function templateFor(id: string, mutations: { string }?): Model?
 	if not t then
 		t = RelicArt.Build(def, {
 			mutations = if m1 ~= "" then { m1 } else nil,
-			mutationDefs = Mutations.ById,
+			mutationDefs = Materials.LookDefs,
 			targetSize = TARGET,
 			forViewport = true,
 			light = false,
@@ -181,6 +220,7 @@ local function mount(model: Model, props, rarity: string?)
 			and k ~= "Pitch"
 			and k ~= "Parent"
 			and k ~= "Zoom"
+			and k ~= "Bob"
 		then
 			(vpf :: any)[k] = v
 		end
@@ -211,6 +251,7 @@ local function mount(model: Model, props, rarity: string?)
 			pitch = pitch,
 			speed = if type(props.Spin) == "number" then props.Spin else 40,
 			yaw = yaw,
+			bob = props.Bob,
 		}
 		ensureSpinLoop()
 	end
@@ -242,7 +283,7 @@ end
 
 function RelicView.new(props): ViewportFrame
 	local relic = props.Relic or { id = props.Id }
-	local t = templateFor(relic.id, relic.mutations)
+	local t = templateFor(relic.id, Materials.LookList(relic))
 	if not t then
 		local empty = Instance.new("ViewportFrame")
 		empty.BackgroundTransparency = 1

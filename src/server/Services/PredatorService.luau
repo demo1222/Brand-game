@@ -429,6 +429,9 @@ local function useFlare(player: Player)
 			lev.flarePos = flarePos
 		end
 	end
+	if services.GuardianService then
+		services.GuardianService.Scare(flarePos)
+	end
 end
 
 ------------------------------------------------------------------------------------------

@@ -4,6 +4,7 @@
 local Config = script.Parent.Config
 local Rarities = require(Config.Rarities)
 local Mutations = require(Config.Mutations)
+local Materials = require(Config.Materials)
 local Relics = require(Config.Relics)
 local Zones = require(Config.Zones)
 local WeightedRandom = require(script.Parent.WeightedRandom)
@@ -17,6 +18,7 @@ export type Modifiers = {
 	mutationMult: number?, -- global mutation-chance multiplier (potions)
 	mutationById: { [string]: number }?, -- per-mutation multipliers (events)
 	mutationAdd: { [string]: number }?, -- flat chance added (event-only mutations)
+	materialMult: number?, -- multiplies every material chance (events, potions)
 }
 
 function LootRoll.RarityTable(zoneIndex: number, mods: Modifiers?)
@@ -93,6 +95,34 @@ function LootRoll.RollMutations(rng: Random, mods: Modifiers?): { string }
 	return result
 end
 
+-- Material (Gold / Emerald / Diamond / Rainbow, Config.Materials): at most one per relic.
+-- Luck makes materials likelier too (half as strongly as it boosts Epic+ odds).
+function LootRoll.MaterialTable(mods: Modifiers?)
+	local m = mods or {}
+	local mult = (m.materialMult or 1) * (1 + ((m.luck or 1) - 1) * 0.5)
+	local entries = {}
+	local total = 0
+	for _, def in Materials.List do
+		local c = def.Chance * mult
+		table.insert(entries, { item = def.Id, weight = c })
+		total += c
+	end
+	if total > 60 then
+		local scale = 60 / total
+		for _, e in entries do
+			e.weight *= scale
+		end
+		total = 60
+	end
+	table.insert(entries, 1, { item = "None", weight = 100 - total })
+	return entries
+end
+
+function LootRoll.RollMaterial(rng: Random, mods: Modifiers?): string?
+	local pick = WeightedRandom.pick(LootRoll.MaterialTable(mods), rng)
+	return if pick == "None" then nil else pick
+end
+
 -- §7.5 size 0.8–1.5, approximately normal (Box–Muller), "Huge" above 1.35
 function LootRoll.RollSize(rng: Random): number
 	local u1 = math.max(rng:NextNumber(), 1e-9)
@@ -117,6 +147,7 @@ function LootRoll.Roll(rng: Random, zoneIndex: number, mods: Modifiers?)
 		id = LootRoll.RollRelicId(rng, zoneIndex, rarity),
 		rarity = rarity,
 		mutations = LootRoll.RollMutations(rng, mods),
+		material = LootRoll.RollMaterial(rng, mods),
 		size = LootRoll.RollSize(rng),
 	}
 end

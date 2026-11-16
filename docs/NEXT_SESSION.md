@@ -201,6 +201,298 @@ Delivered as patches, applied by the owner up to commit `205e99a` ("phase 3"):
   and run `lune run tools/relic_art_check` before the owner judges them. The mesh hook and
   export spec are still proposals.
 
+- **UI round 3 (2026-11-15, owner's reference screenshots):**
+  - `docs/UI_STYLE_GUIDE.md` (also in the Obsidian vault as "UI Style Guide") is now the UI
+    contract: Throw Power for buttons and layout, Animal Index for windows, Food Shop for shops.
+  - **Windows and modals:**
+    - They never close on a click outside, only through the X, gamepad B or their own buttons.
+    - They pop in from 0.85 and pop out (`Kit.PopOut`) instead of vanishing. This covers
+      UIController windows, OfferController modals and RelicViewer.
+    - The title band has diagonal stripes (`Kit.Stripes`, a CanvasGroup), and the body has a
+      lighter top.
+  - **Relic cards** (`UI/RelicCard`): bright rarity-coloured slabs with a dark outline, the
+    name on top and the rarity and subtitle at the bottom. Models turn slowly (each card starts
+    at a random angle). `RelicView` spinners run at 30 Hz and skip views that are hidden or
+    scrolled out of view.
+  - **Dock stands:**
+    - Prompt reach is 6 studs (`STAND_REACH`; it was 12).
+    - The always-on Info label is gone. The server sets `Relic*` attributes on the stand, and
+      `StandHoverController` shows a hover card: on mouse-over, or near the stand on
+      touch/gamepad. The card pops in with an overshoot, a wobble and a shine.
+    - Placing a relic pops it out of the pedestal: a spring, a spin, a shockwave ring and
+      sparkles (FXController `popDisplay`).
+  - **Suits:**
+    - There are 12 tiers (`Config/Upgrades.Suits`, each with Zone, Tier, Air, Swim, Desc).
+    - The zone gate uses `Upgrades.SuitZone(data.Suit)`, not the raw index.
+    - Data v3 migrates old suit indices (1, 3, 5, 7, 9, 12).
+    - `data.SuitLook` lets you wear any owned suit (`RequestEquipSuit`).
+    - New art flags: `crest`, `jets`, `spikes`, `tankColor`, and lamps on domes.
+  - **Suit Shop:**
+    - `SuitShopController` window: Food Shop cards with your own avatar in each suit.
+    - A market stall on every dock (`WorldService.buildSuitStall`, a keeper visual) opens it.
+    - The Upgrades suit card and the Diver window now link to the shop instead of buying
+      directly.
+  - **Verified in a Studio play test:**
+    - the hover card
+    - the place pop
+    - the stall prompt
+    - buying through the UI (perks apply: air 60s to 63s)
+    - an outside click doesn't close the window
+    - the X pop-out
+    - Codex cards turning
+    - no client errors
+
+    Not checked: phone sizes, the late-tier suit art (crest, jets, spikes), and the hover card
+    with the mouse (it was checked through the proximity path).
+  - Screenshot tip: the Studio MCP capture doesn't draw AlwaysOnTop billboards, and its mouse
+    y is in GUI space (screen y minus the 58 px top bar).
+
+- **UI round 3b (game buttons):**
+  - Figma file "Abyss Salvage - Game Buttons" (https://www.figma.com/design/zFdUG7hvixMW2FDAeloS0b)
+    holds the `HudTile` and `ActionButton` component sets.
+  - Code: `Kit.HudTile` (the HUD rail, with title-case labels and a gold "Shop") and
+    `Kit.ActionButton` (the Suit Shop buttons). Specs are in `docs/UI_STYLE_GUIDE.md` section 8.
+  - Converted everywhere on the owner's go-ahead:
+    - the HUD actions are tiles
+    - every `Kit.Button`, `Kit.GameButton` and `Kit.PricePlate` is restyled in place (see the
+      style guide, section 8)
+  - Currencies and the bag count are `Kit.Readout`: a big icon next to an outlined gradient
+    number, with no capsule. Figma has a `Readout` component.
+  - Tabs (Animal Index style), pills, the oxygen bar and the event cards were converted too. The
+    HUD has no glass capsules left.
+  - Not yet checked on phone sizes: the taller tab text and the bigger HUD readouts.
+  - Studio tip: Rojo sometimes misses one of several quick edits. Before a play test, grep the
+    synced script for the new line.
+
+- **World and economy round (2026-11-15):**
+  - **Sea:** the water is now an 8-stud slab of Terrain water (real waves, glints and
+    reflections). The old flat `WaterSurface` part is gone. New `WaterController`: ripple rings
+    round dock pillars, buoys that bob (tag `Bob`), surface sparkles and faint light shafts
+    underwater. Note: EditableMesh waves would need "Allow Mesh / Image APIs" in Game Settings
+    > Security; we don't use it.
+  - **Relics:** nodes no longer spawn inside props (`WorldService.clearOfProps`, using the prop
+    spots that `placeProp` records). Every node has a soft light pillar and a diamond marker
+    (AlwaysOnTop, 110 studs) so it can be found through coral.
+  - **Reef art:** new Reef props (brain coral with ridges, branching coral with glowing tips,
+    sea fans, tube sponges, table coral, anemone, plus a sea-grass foot) and Kelp props (tall
+    strands with leaves). Fish are multi-part models (body, stripe, forked tail, dorsal fin,
+    eye) moved with one `BulkMoveTo`.
+  - **Dock (keeper visuals):** the name sign is on a raised entrance arch. `buildDiveStation`
+    adds rope rails, lamp posts, a tank rack, a compressor, a diver-down flag, a life ring, a
+    moored dinghy, buoys and crates. The Suit Shop stall has bulbs and lights, and its floor pad
+    (tag `SuitShopDisc`) opens the shop when you step on it.
+  - **Ghost Thief removed** (the raid tutorial in RaidService).
+  - **Suit Shop:** cards show the suit on a plain grey mannequin, and a small TRY ON button
+    shows it on your own avatar. The cards show the coins and luck perks in gold.
+  - **Economy:** 16 suits (new: Snorkeler, Tidecaller, Salvage Master, Anglerlight) with the
+    new `Income` and `Luck` perks (`Formulas.SuitIncome` / `SuitLuck`), steeper suit and
+    upgrade prices, rebirth at Pressure Mk II (index 10) plus 100M. Data v4 remaps old suit
+    indices. The full scheme is in `docs/ECONOMY.md`, including planned relic material
+    modifiers (Gold, Emerald, Diamond).
+  - **Checked in a Studio play test:** the water, the dock arch and dressing, the stall pad
+    opening the shop, the shop cards, the reef props and relic placement, and no errors after
+    the fish fix. **Not checked:**
+    - the stall glow after toning it down
+    - the fainter light shafts
+    - swimming at the surface with Terrain water (watch for buoyancy jitter near y = 0)
+    - the node markers (the capture doesn't draw AlwaysOnTop billboards)
+    - the new suit art
+    - Lune unit tests (Lune isn't installed on this machine; tests were updated for the new
+      costs)
+  - **Next (owner's list):** sharks that guard relic clusters and attack, diver weapons
+    (harpoon / knife) with real models, relic material modifiers, more Wrecks/Abyss/Trench
+    props.
+
+- **Round 2 (2026-11-15, same day):**
+  - **Fixes:**
+    - Double water: underwater, `WaterController` makes the Terrain water invisible and shows
+      a flat local `SurfaceFromBelow` ceiling instead.
+    - Roblox's default Swimming and Splash sounds are muted.
+    - The starter guide is off (`TutorialController.ENABLED = false`).
+    - Spire caps are flat stepped plateaus with rim rocks, not giant sand balls.
+  - **Air:** the surface no longer refills your tank. Use the tank rack on your dock (prompt
+    `AirRefillPrompt`, `DiveService.RefillAtRack`) or the new **Auto Refill** pass (49 R$,
+    first in the Shop's pass list, offered once when you surface low). **Its pass `id` is 0:
+    create the pass in Creator Hub and paste the ID into `Config/Passes.luau`.**
+  - **Relic materials** (`Config/Materials`): Gold x3, Emerald x6, Diamond x12, Rainbow x30
+    (luck boosts the odds). They stack with mutations and size. Size tiers: Tiny, Big, HUGE,
+    TITANIC. Materials show on cards, the reveal, the stand hover card, the stand look
+    (material first in the look list) and announcements.
+  - **Zone guardians** (`Config/Monsters`, `GuardianService`, `GuardianController`,
+    `shared/MonsterArt`):
+    - One monster per zone: Reef Shark, Kelp Barracuda, Wreck Shark (glowing eyes, scars),
+      Abyss Angler (glowing lure) and Magma Serpent (a segmented body that follows a trail).
+    - Each guards a lair of red-marked relic nodes that roll with x1.5 to x2.5 luck.
+    - Behaviour: patrol, chase (leashed to the lair), telegraphed wind-up, lunge and bite,
+      cooldown. Flares scare them off.
+    - The server moves one invisible root per monster; clients draw and animate the body.
+  - **Blender:** `tools/blender/world_builds.py` and `run_world.py` build the four fish
+    monsters, five corals, kelp and the air rack. Outputs: `models/monsters/*.glb`,
+    `models/world/*.glb`, the bundles `monsters_bundle_1.glb` and `world_bundle_1.glb`, and
+    the previews (`models/world/previews/sheet.png`). **Upload the two bundles and paste their
+    IDs into `Config/WorldMeshes.Bundles`.** Until then the code-built versions show. The
+    serpent stays code-built.
+  - **Checked in Studio:**
+    - Guardians spawn (21 lairs, 77 guarded nodes), and a full chase, wind-up, lunge and bite
+      took HP 100 to 74 with the toast.
+    - The tank rack refill and the Auto Refill offer, and no refill at the surface.
+    - No double water at 20 m. Surface swimming is smooth (PlatformStand), and the default
+      sounds are muted.
+    - The new suit art in the world (Snorkeler, Salvage Master, Anglerlight, Leviathan, Coral
+      Emperor).
+    - Node markers: every node the client sees has one.
+    - The unit-test expectations, run inside Studio (Lune is still not installed;
+      `aftman install` needs the owner).
+  - **Blender models are in the place:** the owner imported both bundles with Import 3D, and
+    the 11 models now live in `ReplicatedStorage.WorldMeshes`, saved with the place, like
+    RelicMeshes. Studio drops the glTF colours, so `WorldMeshes.Paint` colours every clone by
+    role. MonsterArt turns imported monsters 180 degrees (they come in facing +Z).
+    - Checked in play: 180 Blender corals, 88 kelp, the rack on all 16 docks, and the four
+      fish monsters facing forward with the right colours.
+    - Node lights are dimmer now: three or four lights at a lair blew the guardian out to
+      white.
+  - **Round 3 fixes:**
+    - Floating corals, kelp and tank rack: the imported models' pivots sat at their slot in
+      the bundle (up to 36 units off). `meshProp` now re-centres the pivot on the geometry,
+      and the stored templates were fixed too.
+    - Refill works again: the rack is back on its prompt.
+    - Light shafts are off (`SHAFTS = 0`); they flickered.
+    - Double water from above: the Terrain slab is 16 studs thick with WaterTransparency
+      0.25, so its bottom face no longer shows through.
+    - The 5-zone bar is gone. A big zone banner (icon, name, depth range) pops in on entering
+      a zone (`HUDController.zoneBanner`).
+    - Roll reel before salvage reveals (`RevealController.rollReel`): 26 tiles from the zone's
+      real odds. Undiscovered relics are grey silhouettes that keep their rarity label. Tap
+      to skip.
+    - All checked in Studio play.
+  - **Round 4:**
+    - **Double water fixed properly.** Roblox draws a water slab's bottom face even at
+      WaterTransparency 1. The Terrain water is now filled by each client
+      (`WaterController.fillWater`): it is cleared while the camera is underwater (a flat
+      ceiling part stands in) and refilled on surfacing. Each swap costs about 8 ms. The place
+      has no other terrain (`CountCells` = 0); if you ever add some, change the `Terrain:Clear()`
+      there.
+    - **Chest opening** (`UI/RelicOpening`) replaces the tile reel, designed with the
+      roblox-vfx skill's method:
+      - A blocky chest drops in front of the camera, and the world dims.
+      - Rarity tease: one step per tier (COMMON... RARE!!), seam colour, hop, pulse ring,
+        rising shake and light leaks.
+      - Release: suck-in and a dark beat, a 2-frame white flash, an FOV punch, the lid blasts
+        off, rays, a shockwave ring, sparks and a fireball puff. Confetti for Epic+, a tinted
+        whiteout and letterbox for Legendary+.
+      - The relic rises out, then the reveal card plays. Tap to skip.
+      - It uses stock textures only. The skill's generated texture library and upload route
+        are not set up: no `LOCAL.md`, and they need an Open Cloud key.
+  - **Round 5: A/B chest openings** (owner wants to compare two approaches):
+    - Both share the chest, timeline, rarity words and relic rise in `UI/RelicOpening`
+      (`opts.style`).
+    - **A = "lihfolk":** LihFolk's ready-made ability VFX, vendored to
+      `UI/Vendor/LihFolkVFX_Abilities.luau`:
+      - `Buff` on each tease step
+      - `Teleport` for the suck-in and burst
+      - `LevelUp` for Epic+
+      - its `CameraShake`
+      - Its texture pack isn't on this PC, so it uses its built-in looks (warnings in the
+        output are expected). Tested in Studio.
+    - **B = "custom" (the default in real salvages):** our layers with 8 textures generated by the
+      roblox-vfx skill and uploaded through the Studio MCP (`TEX` ids): streak sparks, stars,
+      a flare flash, a shockwave flipbook, a tinted explosion flipbook, a charge-in flipbook,
+      a ring pulse and a comic burst behind the rarity words. **Not seen in Studio yet:** the
+      auto-mode check kept timing out on stop and play.
+    - Dev panel, Relics tab, top section "Opening test": A/B x Common/Epic/Mythic.
+    - **Round 5b (owner feedback: "switching back to my character is uncomfortable"):**
+      - **Camera:** the opening no longer takes the camera. The chest stands in front of the
+        diver on the camera side, faces the camera and follows them smoothly.
+      - **Blur and HUD:** the world behind the chest is blurred (DepthOfField focused on the
+        chest each frame) and the HUD is hidden during the show.
+      - **Shake:** added on top of the player's camera (BindToRenderStep at Camera+1). FOV
+        punch on the custom camera.
+      - **Version B:** 6 more of our textures uploaded: focus lines, a spinning magic circle
+        (glowing SurfaceGui) under the chest for Rare+, glitter round the rising relic, embers
+        after the burst, a lens streak on the flash, and flipbook landing dust.
+      - Verified in Studio: B tease and burst, A burst, the HUD, blur and camera restored, no
+        errors.
+      - Studio MCP quirk: an `execute_luau` that overlaps the intro fly-over makes the tool
+        "restore" CameraType Scriptable. That's the tool, not the game.
+    - roblox-vfx setup is in the skill's `LOCAL.md` (memory limits on this PC; how to build per
+      family; how to upload).
+    - **Round 6 (2026-11-16): summon-style opening** (reference: `docs/reference/chest_opening`):
+      - **On the camera:** the chest is placed relative to the camera every frame
+        (`stageTarget`: 7.5 studs out, centred at eye level, top tilted 16 degrees towards you).
+        The camera is not changed (only the FOV punch and push-in). The diver and their name
+        tag are hidden while they stand between the camera and the chest or just behind it.
+      - **Reveal in the world:** after the burst the chest shrinks away. The relic pops out where
+        it was (Back-eased scale, a fast spin that settles, a bob), inside a rarity bubble flash
+        (a ForceField shell and a Neon core). Big sparkle stars pop at the screen edges.
+      - **Hold:** a god-ray backdrop (rays plus a flare glow card) turns slowly behind the relic,
+        and the FOV pushes in (up to 7 degrees). The magic circle stays on as the pad (B). Text:
+        the name on top (outlined Fredoka, a line with diamond ends), the rarity word in its
+        colour, chips (material, mutations, +Coins/s on display), and "(Click anywhere to
+        continue)". **Nothing auto-closes:** a click, tap, gamepad A or Enter ends it (with a
+        0.35 s grace). A tap during the tease still skips to the release.
+      - The presentation is in the shared base, so A (lihfolk) and B (custom) both get it.
+      - `RevealController` no longer shows the old full-screen card after a salvage opening; the
+        next queued reveal plays after the click. Other sources still use the card.
+      - In the opening only, the relic is built without its PointLight, and Neon parts larger
+        than 1.6 studs become SmoothPlastic: at this size and distance they bloomed into a
+        white blob (the Secret Nautilus).
+      - **Checked in Studio play:** B Mythic and A Rare on the dock, B Common then Secret queued
+        underwater, B Secret on the dock. The hold stayed up over a minute until a real click,
+        then the cleanup was complete (blur, grade, HUD, FOV 70, folder, diver). No console
+        errors. **Not checked:** phone sizes (long names use TextScaled, capped at 56 px), a
+        wall right behind the camera, and gamepad A.
+    - **Round 7 (2026-11-16): B kept, A removed; neon HUD buttons:**
+      - The owner picked B. The LihFolk version A is gone: `opts.style`, the vendored
+        `UI/Vendor/LihFolkVFX_Abilities.luau` and the A buttons. The Dev panel "Opening test"
+        now has one button per rarity (Common, Rare, Epic, Legendary, Mythic, Secret).
+      - New HUD buttons from the owner's reference clip (`docs/reference/hud_buttons`: the clip,
+        14 frames at 3 fps, and a crop sheet). The design is the Figma component set `NeonTile`
+        and the frame "HUD Rail — Neon (preview)" in "Abyss Salvage - Game Buttons". The code
+        is `Kit.HudTile` (see `docs/UI_STYLE_GUIDE.md` section 8). The rail and the action
+        buttons use it, with key letters (M, B, U; Q, G, R).
+      - The Quests red dot is now the tile's badge ("!"). The flare count moved from the label
+        to the badge.
+      - Checked in Studio play: the rail and the actions render, the badges show, the opening
+        still works, and no console errors. **Not checked:** hover in a real mouse session,
+        phone sizes (key letters are hidden on touch-only devices), and the Up/Down tiles
+        underwater.
+    - **Round 8 (2026-11-16): glow fix, and clean Shop, Upgrades and Settings windows**
+      (reference: `docs/reference/shop_upgrades`; Studio screenshots of the result in its
+      `after/` folder):
+      - **Icon glow fixed.** The HUD tiles had two see-through squares behind them and three
+        hard discs behind the icon, which read as a second border and a bullseye. Glows are now
+        many thin layers (`Kit.GlowLayers`); `Kit.Glow` uses the same method, so shop cards,
+        offers, relic cards and the reveal are fixed too.
+      - **New window look for every window** (`UIController.RegisterWindow`): a black panel
+        with a glow in the window's colour, a slanted colour band over the top-left corner, a
+        red X over the top-right corner, and a blurred world behind. The inside of the other
+        windows (Bag, Codex, Quests and so on) is unchanged.
+      - **Shop:** flat tabs, a dark well, gradient cards (`Kit.ShopCard`). Passes, Boosts,
+        Crates and Pass+ use wide cards; Coins, Pearls and Event use small ones. The VIP banner
+        became a VIP button in the title band. Same remotes and purchases as before.
+      - **Upgrades:** gradient cards per track, the price along the bottom (green when you can
+        pay), an "Upgrade!" tag, centred section names, and your coins in the title band.
+      - **Settings:** a plain charcoal panel, rows with a title and a grey line, sliders for
+        the two volumes (sent once, on release) and a green pill switch. The Diver window gets
+        the same rows and switch.
+      - The spec is section 9 of `docs/UI_STYLE_GUIDE.md`.
+      - Figma: the frames "Shop — new (Passes)", "Shop — new (Coins)", "Upgrades — new" and
+        "Settings — new" plus their components were created in "Abyss Salvage - Game Buttons",
+        then the Figma MCP hit the Starter plan's tool-call limit, so they were never
+        screenshotted or checked. The code is the source of truth.
+      - **Checked in Studio play:** the Shop's Passes, Coins, Crates and Event tabs; an upgrade
+        bought with dev coins (Oxygen Tank to Lv 2); a switch flipped and
+        a slider dragged in Settings, both kept after closing and reopening; the Quests, Dev
+        and Diver windows in the new chrome (the Diver rows and switches too); no console
+        errors. **Not checked:** phone sizes, the Boosts, Pearls and Pass+ tabs, an owned pass
+        card, a real Robux purchase prompt, and gamepad. StyLua and Selene are not installed on
+        this PC, so the new code is not formatted or linted.
+  - **Not checked:**
+    - the Kelp to Trench guardians up close
+    - the material look on stands
+    - the Auto Refill purchase itself (no pass ID)
+    - phone layout
+
 ## Still to do (priority order)
 
 1. **Modal redesign** for the remaining windows, from the owner's screenshots (above).

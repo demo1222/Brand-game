@@ -13,6 +13,7 @@ local RateLimiter = require(Shared.RateLimiter)
 local Formulas = require(Shared.Formulas)
 local NumberFormat = require(Shared.NumberFormat)
 local Economy = require(Shared.Config.Economy)
+local Upgrades = require(Shared.Config.Upgrades)
 
 local RB = Economy.Rebirth
 local RebirthService = {}
@@ -25,7 +26,7 @@ end
 
 function RebirthService.CanRebirth(data): (boolean, string?)
 	if data.Suit < RB.RequiredSuit then
-		return false, "Requires the Pressure Mk II suit"
+		return false, `Requires the {Upgrades.Suits[RB.RequiredSuit].Name} suit`
 	end
 	local need = Formulas.RebirthRequirement(data.Rebirths)
 	if data.LifetimeCoins < need then
@@ -52,14 +53,15 @@ local function rebirth(player: Player)
 	data.Coins = 0
 	data.Uncollected = 0
 	data.Upgrades = { Display = keepDisplay }
-	data.Suit = if (data.Talents.StartNeoprene or 0) > 0 then 2 else 1
+	data.Suit = if (data.Talents.StartNeoprene or 0) > 0 then Upgrades.SuitIndex.Neoprene else 1
+	data.SuitLook = 0
 	for _, relic in data.Bag do
 		table.insert(data.Storage, relic)
 	end
 	data.Bag = {}
 	data.Rebirths += 1
 	data.RebirthTokens += 1
-	services.DataService.Replicate(player, "Coins", "Uncollected", "Upgrades", "Suit", "Bag", "Storage", "Rebirths", "RebirthTokens")
+	services.DataService.Replicate(player, "Coins", "Uncollected", "Upgrades", "Suit", "SuitLook", "Bag", "Storage", "Rebirths", "RebirthTokens")
 	services.CurrencyService.RefreshLeaderstats(player, data)
 	services.UpgradeService.PushDerived(player)
 	services.UpgradeService.ApplySuitVisual(player)

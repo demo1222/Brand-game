@@ -1,0 +1,376 @@
+{
+ "slash_cel_4x4": {
+  "use": "crescent slash (cel), head at right, OneShot Grid4x4, VelocityPerpendicular",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "slash_ink_4x4": {
+  "use": "crescent slash (ink), head at right, OneShot Grid4x4, VelocityPerpendicular",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "slash_glow": {
+  "use": "slash glow copy (single)",
+  "grey": true,
+  "size": [
+   512,
+   512
+  ]
+ },
+ "impact_burst_4x4": {
+  "use": "cel impact burst, hollows out into spike tips, OneShot Grid4x4",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "impact_star4_2x2": {
+  "use": "4-point glint variants, Grid2x2 + FlipbookStartRandom, framerate 0",
+  "flipbook": "Grid2x2",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "ring_cel_4x4": {
+  "use": "cel shock ring, outer radius fixed, Size does the expansion, OneShot Grid4x4",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "ring_energy": {
+  "use": "energy ring strands + halo (single), LightEmission 1",
+  "grey": true,
+  "size": [
+   512,
+   512
+  ]
+ },
+ "fire_cel_4x4": {
+  "use": "cel fire puff, grey, OneShot Grid4x4",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "fire_hot_4x4": {
+  "use": "cel fire puff, PRE-COLOURED hot (cream/orange/red -> smoke)",
+  "flipbook": "Grid4x4",
+  "grey": false,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "smoke_cel_4x4": {
+  "use": "cel smoke puff, inked rim, darkens with age, OneShot Grid4x4",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "smoke_soft_4x4": {
+  "use": "soft smoke puff with wisps, OneShot Grid4x4",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "smoke_dust_4x4": {
+  "use": "dust wall puff (flatter, low rise), tint tan",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "spark_needle": {
+  "use": "spark streak, VelocityParallel (long axis = V)",
+  "grey": true,
+  "size": [
+   256,
+   256
+  ]
+ },
+ "spark_star4": {
+  "use": "small 4-point twinkle",
+  "grey": true,
+  "size": [
+   256,
+   256
+  ]
+ },
+ "spark_ember_8x8": {
+  "use": "curling ember, Loop Grid8x8",
+  "flipbook": "Grid8x8",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "bolt_2x2": {
+  "use": "lightning bolt variants, Grid2x2 Random or StartRandom",
+  "flipbook": "Grid2x2",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "wind_swirl_4x4": {
+  "use": "3-arm wind spiral, Loop or OneShot Grid4x4",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "beam_energy": {
+  "use": "beam strip, tiles along U (Wrap), streaky energy",
+  "grey": true,
+  "size": [
+   512,
+   128
+  ]
+ },
+ "beam_slash": {
+  "use": "curved-beam slash stroke, hard edge on the +width side",
+  "grey": true,
+  "size": [
+   512,
+   128
+  ]
+ },
+ "crack_glow": {
+  "use": "radial ground cracks + glow (decal / flat particle)",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "debris_rock_8x8": {
+  "use": "tumbling rock, Loop Grid8x8 (StartRandom for variety)",
+  "flipbook": "Grid8x8",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "glow_bubble": {
+  "use": "energy bubble / shield sprite",
+  "grey": true,
+  "size": [
+   512,
+   512
+  ]
+ },
+ "glow_soft": {
+  "use": "soft glow, hard-ish core + halo",
+  "grey": true,
+  "size": [
+   512,
+   512
+  ]
+ },
+ "glow_falloff": {
+  "use": "pure radial falloff, no core, for huge glow planes and ColorMap/EmissiveMask",
+  "grey": true,
+  "size": [
+   512,
+   512
+  ]
+ },
+ "eclipse_disc": {
+  "use": "dark disc + hot rim + corona (residue glyph); tint rim via Color",
+  "grey": true,
+  "size": [
+   512,
+   512
+  ]
+ },
+ "mesh_shock_ring": {
+  "use": "ring mesh ColorMap (U around, V inner->outer), AlphaMode Transparency + EmissiveMask",
+  "mesh": "ring",
+  "size": [
+   1024,
+   256
+  ]
+ },
+ "mesh_fire_shell": {
+  "use": "fireball shell ColorMap, 3 cel levels, holes; tint via SurfaceAppearance.Color",
+  "mesh": "lumpy_sphere",
+  "size": [
+   1024,
+   512
+  ]
+ },
+ "mesh_smoke_shell": {
+  "use": "mushroom cap / column smoke ColorMap",
+  "mesh": "lumpy_sphere, stem",
+  "size": [
+   1024,
+   512
+  ]
+ },
+ "mesh_pillar": {
+  "use": "light/fire pillar ColorMap (cylinder), fades upward",
+  "mesh": "cylinder",
+  "size": [
+   512,
+   1024
+  ]
+ },
+ "mesh_spike_skirt": {
+  "use": "downward spike skirt ColorMap (cone apex down)",
+  "mesh": "cone",
+  "size": [
+   1024,
+   512
+  ]
+ },
+ "mesh_scorch": {
+  "use": "ground scorch decal (plane mesh)",
+  "mesh": "plane",
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "hex_shield": {
+  "use": "barrier dome ColorMap/EmissiveMask (hex grid, U wraps)",
+  "mesh": "dome",
+  "grey": true,
+  "size": [
+   512,
+   512
+  ]
+ },
+ "hex_cell": {
+  "use": "single hex plate sprite (shield hits, cracks)",
+  "grey": true,
+  "size": [
+   256,
+   256
+  ]
+ },
+ "petal_2x2": {
+  "use": "flower petals, Grid2x2 start random, tint per spell",
+  "flipbook": "Grid2x2",
+  "grey": true,
+  "size": [
+   512,
+   512
+  ]
+ },
+ "glyph_2x2": {
+  "use": "rune glyphs drifting off a circle, Grid2x2 start random",
+  "flipbook": "Grid2x2",
+  "grey": true,
+  "size": [
+   512,
+   512
+  ]
+ },
+ "water_body": {
+  "use": "creature water skin ColorMap/EmissiveMask (U around, V along, U wraps); tint deep blue",
+  "grey": true,
+  "size": [
+   512,
+   512
+  ]
+ },
+ "water_foam": {
+  "use": "foam streak shell over a water body (mostly transparent), U wraps",
+  "grey": true,
+  "size": [
+   512,
+   512
+  ]
+ },
+ "slash_paint_4x4": {
+  "use": "PAINTED crescent slash, head at right sweeping over the top, OneShot Grid4x4",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "slash_paint_b_4x4": {
+  "use": "PAINTED crescent slash, head at right sweeping over the top, OneShot Grid4x4",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "slash_paint_rim_4x4": {
+  "use": "PAINTED crescent slash, head at right sweeping over the top, OneShot Grid4x4",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "eclipse_paint": {
+  "use": "PAINTED eclipse: dark warped disc, uneven rim, curling corona; tint via Color",
+  "grey": true,
+  "size": [
+   512,
+   512
+  ]
+ },
+ "smoke_wisp_4x4": {
+  "use": "PAINTED ink-wash smoke wisps, OneShot Grid4x4, tint",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "ring_paint_4x4": {
+  "use": "PAINTED shock ring: uneven arc strokes, outer radius fixed, Size expands; OneShot Grid4x4",
+  "flipbook": "Grid4x4",
+  "grey": true,
+  "size": [
+   1024,
+   1024
+  ]
+ },
+ "beam_paint": {
+  "use": "PAINTED energy beam strip, Wrap along U",
+  "grey": true,
+  "size": [
+   512,
+   128
+  ]
+ }
+}

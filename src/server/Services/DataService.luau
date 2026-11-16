@@ -16,13 +16,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Net = require(Shared.Net)
 local Signal = require(Shared.Signal)
+local UpgradesConfig = require(Shared.Config.Upgrades)
 
 local STORE_NAME = "AbyssSalvage_Profiles_v1"
 local LOCK_STALE = 180
 local AUTOSAVE_SECONDS = 90
 local LOAD_ATTEMPTS = 7
 local PURCHASE_HISTORY_MAX = 500
-local CURRENT_VERSION = 2
+local CURRENT_VERSION = 4
 
 local DataService = {}
 DataService.ProfileLoaded = Signal.new() -- (player, profile)
@@ -47,6 +48,7 @@ local TEMPLATE = {
 	Talents = {},
 	Upgrades = {},
 	Suit = 1,
+	SuitLook = 0, -- suit worn (any owned index); 0 = the newest owned
 	Bag = {},
 	Storage = {},
 	Stands = {},
@@ -97,6 +99,23 @@ local MIGRATIONS = {
 				map[tostring(i)] = relic
 			end
 			data.Stands = map
+		end
+	end,
+	[2] = function(data)
+		-- v3: 6 suits became 12 (two per zone). Keep each player on the same suit.
+		local remap = { 1, 3, 5, 7, 9, 12 }
+		if type(data.Suit) == "number" then
+			data.Suit = remap[math.clamp(math.floor(data.Suit), 1, 6)]
+		end
+	end,
+	[3] = function(data)
+		-- v4: 12 suits became 16 (three per zone). Keep each player on the same suit and look.
+		local remap = UpgradesConfig.SuitRemapV4
+		if type(data.Suit) == "number" then
+			data.Suit = remap[math.clamp(math.floor(data.Suit), 1, #remap)]
+		end
+		if type(data.SuitLook) == "number" and data.SuitLook >= 1 then
+			data.SuitLook = remap[math.clamp(math.floor(data.SuitLook), 1, #remap)]
 		end
 	end,
 }

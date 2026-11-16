@@ -24,6 +24,8 @@ local folder: Folder
 local snowPart: Part
 local snow: ParticleEmitter
 local schools = {}
+local movers: { BasePart } = {}
+local moveTo: { CFrame } = {}
 
 local FISH_COLORS = {
 	{ Color3.fromRGB(255, 170, 60), Color3.fromRGB(255, 255, 255) },
@@ -32,22 +34,41 @@ local FISH_COLORS = {
 	{ Color3.fromRGB(120, 230, 200), Color3.fromRGB(40, 80, 90) },
 }
 
-local function makeFish(color: Color3): Part
+-- A blocky cartoon fish: an egg body, a forked tail, a dorsal fin and two eyes. The pieces
+-- are separate anchored parts moved together each frame with one BulkMoveTo (cheap).
+-- Body faces -Z (CFrame.lookAt forward). `shape` 1 = round reef fish, 2 = slim darter.
+local function fishPart(name: string, size: Vector3, color: Color3, material: Enum.Material?, sphere: boolean?): Part
 	local p = Instance.new("Part")
-	p.Name = "Fish"
+	p.Name = name
 	p.Anchored = true
 	p.CanCollide = false
 	p.CanQuery = false
 	p.CanTouch = false
 	p.CastShadow = false
-	p.Size = Vector3.new(0.5, 0.8, 1.4)
+	p.Size = size
 	p.Color = color
-	p.Material = Enum.Material.SmoothPlastic
-	local mesh = Instance.new("SpecialMesh")
-	mesh.MeshType = Enum.MeshType.Sphere
-	mesh.Parent = p
+	p.Material = material or Enum.Material.SmoothPlastic
+	if sphere then
+		local mesh = Instance.new("SpecialMesh")
+		mesh.MeshType = Enum.MeshType.Sphere
+		mesh.Parent = p
+	end
 	p.Parent = folder
 	return p
+end
+
+local function makeFish(color: Color3, stripe: Color3, shape: number)
+	local tall = if shape == 1 then 1.1 else 0.6
+	local long = if shape == 1 then 1.4 else 1.9
+	local pieces = {
+		{ fishPart("Fish", Vector3.new(0.55, tall, long), color, nil, true), CFrame.identity },
+		{ fishPart("Stripe", Vector3.new(0.6, tall * 0.92, 0.22), stripe, nil, true), CFrame.new(0, 0, -long * 0.12) },
+		{ fishPart("Tail", Vector3.new(0.12, tall * 0.75, 0.6), color, nil, false), CFrame.new(0, tall * 0.18, long * 0.55) * CFrame.Angles(math.rad(-30), 0, 0) },
+		{ fishPart("Tail", Vector3.new(0.12, tall * 0.75, 0.6), color, nil, false), CFrame.new(0, -tall * 0.18, long * 0.55) * CFrame.Angles(math.rad(30), 0, 0) },
+		{ fishPart("Dorsal", Vector3.new(0.1, tall * 0.4, long * 0.4), stripe, nil, false), CFrame.new(0, tall * 0.5, 0.05) * CFrame.Angles(math.rad(-15), 0, 0) },
+		{ fishPart("Eye", Vector3.new(0.6, 0.2, 0.2), Color3.fromRGB(20, 20, 26), Enum.Material.SmoothPlastic, true), CFrame.new(0, tall * 0.12, -long * 0.32) },
+	}
+	return pieces
 end
 
 local function newSchool(i: number, camPos: Vector3)
@@ -61,7 +82,7 @@ local function newSchool(i: number, camPos: Vector3)
 		phase = math.random() * 10,
 	}
 	for f = 1, FISH_PER_SCHOOL do
-		table.insert(s.fish, makeFish(if f % 3 == 0 then palette[2] else palette[1]))
+		table.insert(s.fish, makeFish(palette[1], palette[2], if i % 2 == 0 then 1 else 2))
 		table.insert(
 			s.offsets,
 			Vector3.new(math.random(-40, 40) / 10, math.random(-20, 20) / 10, math.random(-40, 40) / 10)
@@ -73,7 +94,9 @@ end
 local function setSchoolsVisible(on: boolean)
 	for _, s in schools do
 		for _, f in s.fish do
-			f.Transparency = if on then 0 else 1
+			for _, piece in f do
+				piece[1].Transparency = if on then 0 else 1
+			end
 		end
 	end
 end
@@ -115,6 +138,8 @@ local function step(dt: number)
 		diver = hrp.Position
 	end
 	local t = os.clock()
+	table.clear(movers)
+	table.clear(moveTo)
 	for _, s in schools do
 		-- wander, stay near the camera, stay in the water column, flee the diver
 		local toCam = camPos - s.center
@@ -145,10 +170,17 @@ local function step(dt: number)
 			local o = s.offsets[i]
 			local wobble = Vector3.new(math.sin(t * 2 + i), math.sin(t * 1.3 + i * 2) * 0.5, math.cos(t * 1.7 + i))
 			local pos = s.center + look * (o + wobble * 0.6)
-			local wag = math.sin(t * 14 + i) * 0.25
-			fish.CFrame = CFrame.lookAt(pos, pos + s.heading) * CFrame.Angles(0, wag, 0)
+			local wag = math.sin(t * (if fast then 22 else 12) + i) * 0.25
+			local body = CFrame.lookAt(pos, pos + s.heading) * CFrame.Angles(0, wag, 0)
+			for _, piece in fish do
+				-- the tail swings the other way to the body, so the fish swims rather than spins
+				local extra = if piece[1].Name == "Tail" then CFrame.Angles(0, -wag * 2.2, 0) else CFrame.identity
+				movers[#movers + 1] = piece[1]
+				moveTo[#movers] = body * extra * piece[2]
+			end
 		end
 	end
+	Workspace:BulkMoveTo(movers, moveTo, Enum.BulkMoveMode.FireCFrameChanged)
 end
 
 function AmbientController.Start()

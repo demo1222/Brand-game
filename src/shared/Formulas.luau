@@ -6,6 +6,7 @@ local Upgrades = require(Config.Upgrades)
 local Economy = require(Config.Economy)
 local Relics = require(Config.Relics)
 local Mutations = require(Config.Mutations)
+local Materials = require(Config.Materials)
 
 local B = Upgrades.Base
 local Formulas = {}
@@ -24,7 +25,8 @@ function Formulas.MaxOxygen(data, passes): number
 	if passes and passes.DoubleOxygen then
 		o *= 2
 	end
-	return o + lvl(data, "Oxygen") * B.OxygenPerLevel + talent(data, "Lungs") * 10
+	o += lvl(data, "Oxygen") * B.OxygenPerLevel + talent(data, "Lungs") * 10
+	return o * (1 + Upgrades.Suit(data.Suit).Air) -- suit perk
 end
 
 -- Diving board: how deep a jump off your dock's board plunges you (UI/Visual plan, Phase 4)
@@ -49,8 +51,17 @@ function Formulas.BoardSkin(level: number)
 	return dive.Skins[i]
 end
 
+-- Suit perks (Config/Upgrades.Suits): x(1 + Income) on all coins, x(1 + Luck) on Epic+ odds
+function Formulas.SuitIncome(data): number
+	return 1 + (Upgrades.Suit(data.Suit).Income or 0)
+end
+
+function Formulas.SuitLuck(data): number
+	return 1 + (Upgrades.Suit(data.Suit).Luck or 0)
+end
+
 function Formulas.SwimSpeed(data, passes): number
-	local s = B.SwimSpeed * (1 + lvl(data, "Fins") * B.FinsPerLevel)
+	local s = B.SwimSpeed * (1 + lvl(data, "Fins") * B.FinsPerLevel + Upgrades.Suit(data.Suit).Swim)
 	if passes and passes.SpeedFins then
 		s *= 1.3
 	end
@@ -114,7 +125,10 @@ function Formulas.RelicCPS(relic): number
 	if not def then
 		return 0
 	end
-	return def.BaseCPS * (relic.size or 1) * Mutations.MultiplierOf(relic.mutations)
+	return def.BaseCPS
+		* (relic.size or 1)
+		* Mutations.MultiplierOf(relic.mutations)
+		* Materials.MultiplierOf(relic.material)
 end
 
 function Formulas.SellPrice(relic, coinMult: number?): number

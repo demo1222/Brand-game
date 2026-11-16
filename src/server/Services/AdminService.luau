@@ -18,6 +18,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage.Shared
 local Net = require(Shared.Net)
 local Economy = require(Shared.Config.Economy)
+local Upgrades = require(Shared.Config.Upgrades)
 
 local LIVE_TOPIC = "AbyssSalvage_Live"
 local AdminService = {}
@@ -116,7 +117,7 @@ COMMANDS.suit = function(player, args)
 	local data = services.DataService.GetData(player)
 	local n = tonumber(args[1])
 	if data and n then
-		data.Suit = math.clamp(math.floor(n), 1, 5)
+		data.Suit = math.clamp(math.floor(n), 1, #Upgrades.Suits)
 		services.DataService.Replicate(player, "Suit")
 		services.UpgradeService.PushDerived(player)
 		services.UpgradeService.ApplySuitVisual(player)

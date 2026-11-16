@@ -4,6 +4,7 @@
 -- because the player can simply dismiss them.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Net = require(Shared.Net)
@@ -25,6 +26,7 @@ local UNPROMPTED = { StarterPack = true, Drone = true }
 
 local OFFER_TEXT = {
 	DoubleOxygen = "Out of air? Double your tank — forever.",
+	AutoRefill = "Tired of the tank rack? Refill at the surface, automatically.",
 	BigBag = "Bag full! Carry 4 more relics every dive.",
 	ExtraSlots = "Stands full! Add 4 more display stands.",
 	VaultLock = "Protect your best relics: 2 unstealable vault slots + keep 1 relic when you die.",
@@ -47,12 +49,34 @@ function OfferController.Init(c)
 	controllers = c
 end
 
+-- Modals leave with a pop-out (shrink + fade), never by vanishing
 local function closeCurrent()
-	if currentHolder then
-		currentHolder:Destroy()
-	end
+	local holder, panel = currentHolder, current
 	currentHolder = nil
 	current = nil
+	if not holder then
+		return
+	end
+	holder.Active = false
+	TweenService:Create(holder, TweenInfo.new(0.14), { BackgroundTransparency = 1 }):Play()
+	for _, d in holder:GetDescendants() do
+		if d:IsA("GuiButton") then
+			d.Active = false
+			d.Interactable = false
+		end
+	end
+	if panel then
+		Kit.PopOut(panel, function()
+			holder:Destroy()
+		end)
+		task.delay(0.4, function()
+			if holder.Parent then
+				holder:Destroy()
+			end
+		end)
+	else
+		holder:Destroy()
+	end
 end
 
 -- Modal with a dim backdrop, a hero icon badge overlapping the top edge and a soft glow.
@@ -100,8 +124,8 @@ local function modal(height: number?, icon: string?, color: Color3?): Frame
 		ZIndex = 23,
 		Parent = holder,
 	})
-	Kit.Pop(f)
-	Kit.Pop(badge)
+	Kit.Pop(f, 0.85, 0.22)
+	Kit.Pop(badge, 0.5, 0.3)
 	current = f
 	currentHolder = holder
 	return f
@@ -196,7 +220,11 @@ local function deathScreen(info)
 		Eel = { "Shocked by an eel" },
 		Jellyfish = { "Stung by jellyfish" },
 		Anglerfish = { "An anglerfish got you", "Never follow the light!" },
-	})[info.Cause] or { "You were knocked out" }
+	})[info.Cause] or (
+		if type(info.Cause) == "string" and string.sub(info.Cause, 1, 9) == "Guardian:"
+			then { `The {string.sub(info.Cause, 10)} got you`, "Red relics are guarded. A flare scares guardians off!" }
+			else { "You were knocked out" }
+	)
 	local head = title(f, cause[1], Kit.Lighten(T.Bad, 0.3), 1)
 	head.TextScaled = true
 	head.TextWrapped = false

@@ -13,18 +13,76 @@ local SuitArt = {}
 
 local rgb = Color3.fromRGB
 
--- Per tier: which builder each category uses and the materials
+-- Per tier (same order as Config/Upgrades.Suits, 16 suits): which builder each category uses and the
+-- materials. Extra pieces on top of the base builders:
+--   crest   a dorsal fin along the helmet (Kelp Stalker, Leviathan Hide)
+--   jets    twin thrusters with glowing nozzles under the air supply
+--   spikes  shoulder spikes on the armour
+--   lamps   head lamps (SpotLights) in `glow` or warm white
 SuitArt.Tiers = {
+	-- Basic Wetsuit
 	{ helmet = "mask", tank = nil, feet = "fins", gear = nil, metal = rgb(40, 40, 46), metalMat = "SmoothPlastic" },
+	-- Snorkeler: sky-blue snorkel set, wrist computer, short fins
+	{ helmet = "mask", tank = nil, feet = "fins", gear = "wrist", metal = rgb(40, 130, 190), metalMat = "SmoothPlastic" },
+	-- Reef Runner: snorkel mask, a coral single tank, short fins
 	{
 		helmet = "mask",
 		tank = "single",
+		tankColor = rgb(255, 120, 90),
+		feet = "fins",
+		gear = nil,
+		metal = rgb(60, 50, 50),
+		metalMat = "SmoothPlastic",
+	},
+	-- Neoprene
+	{ helmet = "mask", tank = "single", feet = "longfins", gear = "wrist", metal = rgb(60, 64, 72), metalMat = "Metal" },
+	-- Kelp Stalker: camo green, a fin crest, long fins
+	{
+		helmet = "mask",
+		crest = true,
+		tank = "single",
+		tankColor = rgb(70, 150, 70),
 		feet = "longfins",
 		gear = "wrist",
-		metal = rgb(60, 64, 72),
+		metal = rgb(40, 70, 44),
 		metalMat = "Metal",
 	},
+	-- Tidecaller: sea-glass twin tanks with jets, long fins
+	{
+		helmet = "mask",
+		tank = "twin",
+		tankColor = rgb(70, 220, 230),
+		jets = true,
+		feet = "longfins",
+		gear = "wrist",
+		metal = rgb(40, 110, 120),
+		metalMat = "Metal",
+		glow = rgb(90, 240, 255),
+	},
+	-- Pressure Mk I
 	{ helmet = "dome", tank = "twin", feet = "boots", gear = "plate", metal = rgb(200, 145, 70), metalMat = "Metal" },
+	-- Wreck Diver: rusty copper dome with head lamps
+	{
+		helmet = "dome",
+		tank = "twin",
+		feet = "boots",
+		gear = "plate",
+		metal = rgb(185, 95, 55),
+		metalMat = "CorrodedMetal",
+		lamps = true,
+	},
+	-- Salvage Master: hazard-orange tanks, diamond-plate armour, head lamps
+	{
+		helmet = "dome",
+		tank = "twin",
+		tankColor = rgb(255, 170, 30),
+		feet = "boots",
+		gear = "armor",
+		metal = rgb(230, 160, 40),
+		metalMat = "DiamondPlate",
+		lamps = true,
+	},
+	-- Pressure Mk II
 	{
 		helmet = "dome",
 		tank = "twin",
@@ -33,6 +91,30 @@ SuitArt.Tiers = {
 		metal = rgb(160, 166, 178),
 		metalMat = "DiamondPlate",
 	},
+	-- Lantern Rig: teal glow, lamps, a rebreather and long fins
+	{
+		helmet = "dome",
+		tank = "rebreather",
+		feet = "longfins",
+		gear = "armor",
+		metal = rgb(30, 70, 80),
+		metalMat = "Metal",
+		glow = rgb(60, 240, 210),
+		lamps = true,
+	},
+	-- Anglerlight: dark armour with a gold lure glow, jets
+	{
+		helmet = "abyssal",
+		tank = "rebreather",
+		jets = true,
+		feet = "longfins",
+		gear = "armor",
+		metal = rgb(44, 38, 30),
+		metalMat = "Metal",
+		glow = rgb(255, 220, 90),
+		lamps = true,
+	},
+	-- Abyssal Rig
 	{
 		helmet = "abyssal",
 		tank = "rebreather",
@@ -43,11 +125,42 @@ SuitArt.Tiers = {
 		glow = rgb(80, 230, 255),
 		lamps = true,
 	},
+	-- Leviathan Hide: violet glow, crest, jets, spiked shoulders
+	{
+		helmet = "abyssal",
+		crest = true,
+		tank = "rebreather",
+		jets = true,
+		feet = "longfins",
+		gear = "armor",
+		spikes = true,
+		metal = rgb(48, 28, 70),
+		metalMat = "Metal",
+		glow = rgb(180, 100, 255),
+		lamps = true,
+	},
+	-- Coral Emperor: gold armour, pink glow, big helmet, jets and spikes
 	{
 		helmet = "titan",
 		tank = "rebreather",
+		jets = true,
 		feet = "boots",
 		gear = "armor",
+		spikes = true,
+		metal = rgb(235, 180, 80),
+		metalMat = "Metal",
+		glow = rgb(255, 110, 180),
+		lamps = true,
+	},
+	-- Titan Suit
+	{
+		helmet = "titan",
+		crest = true,
+		tank = "rebreather",
+		jets = true,
+		feet = "boots",
+		gear = "armor",
+		spikes = true,
 		metal = rgb(255, 196, 64),
 		metalMat = "Foil",
 		glow = rgb(255, 170, 60),
@@ -60,10 +173,20 @@ SuitArt.Categories = { "Helmet", "Tank", "Fins", "Gear", "Suit" }
 -- Wetsuit base colour per tier (the suit colour from Config/Upgrades becomes the accent trim)
 SuitArt.WetsuitBase = {
 	rgb(26, 26, 32), -- Basic: black neoprene, yellow trim
+	rgb(20, 40, 60), -- Snorkeler: deep blue, sky trim
+	rgb(30, 38, 52), -- Reef Runner: slate, coral trim
 	rgb(20, 30, 52), -- Neoprene: navy, blue trim
+	rgb(22, 44, 30), -- Kelp Stalker: kelp green, lime trim
+	rgb(14, 40, 50), -- Tidecaller: sea teal, glass trim
 	rgb(96, 76, 56), -- Pressure Mk I: brown canvas, brass trim
+	rgb(70, 44, 32), -- Wreck Diver: rust canvas, copper trim
+	rgb(40, 36, 30), -- Salvage Master: work grey, hazard trim
 	rgb(72, 76, 84), -- Pressure Mk II: grey canvas, steel trim
+	rgb(14, 38, 44), -- Lantern Rig: deep teal, teal glow
+	rgb(22, 18, 14), -- Anglerlight: dark umber, gold glow
 	rgb(16, 17, 22), -- Abyssal Rig: abyss black, neon trim
+	rgb(26, 16, 38), -- Leviathan Hide: violet black, violet glow
+	rgb(60, 20, 42), -- Coral Emperor: wine red, pink glow
 	rgb(42, 34, 20), -- Titan: dark bronze, gold trim
 }
 
@@ -135,6 +258,13 @@ end
 ------------------------------------------------------------------------------------------
 -- Helmets (sized from the head)
 ------------------------------------------------------------------------------------------
+-- Dorsal fin along the top of the head, front to back (a wedge pointing backwards)
+local function crest(folder: Instance, head: BasePart, top: number, tier, suitColor: Color3)
+	local s = math.max(head.Size.X, head.Size.Z)
+	local color = tier.glow or suitColor
+	piece(folder, head, "Wedge", Vector3.new(s * 0.12, s * 0.55, s * 0.9), cf(0, top + s * 0.22, s * 0.12, 0, 180, 0), color, if tier.glow then "Neon" else "SmoothPlastic")
+end
+
 local function helmet(folder: Instance, char: Model, tier, suitColor: Color3)
 	local head = first(char, "Head")
 	if not head then
@@ -142,6 +272,10 @@ local function helmet(folder: Instance, char: Model, tier, suitColor: Color3)
 	end
 	local s = math.max(head.Size.X, head.Size.Z)
 	local m, mat = tier.metal, tier.metalMat
+	if tier.crest then
+		local top = if tier.helmet == "mask" then s * 0.5 else s * 0.08 + s * 1.55 * (if tier.helmet == "titan" then 1.25 else 1) / 2 - s * 0.1
+		crest(folder, head, top, tier, suitColor)
+	end
 	if tier.helmet == "mask" then
 		-- dive mask + snorkel
 		piece(
@@ -258,25 +392,31 @@ local function helmet(folder: Instance, char: Model, tier, suitColor: Color3)
 			m:Lerp(rgb(0, 0, 0), 0.2),
 			mat
 		)
-		if tier.lamps then
-			for _, x in { -1, 1 } do
-				local lamp = piece(
-					folder,
-					head,
-					"Cyl",
-					Vector3.new(s * 0.22, s * 0.3, s * 0.3),
-					cf(x * d * 0.48, s * 0.35, -d * 0.12, 0, 90, 0),
-					tier.glow or GLASS,
-					"Neon"
-				)
-				local light = Instance.new("SpotLight")
-				light.Face = Enum.NormalId.Right
-				light.Angle = 50
-				light.Range = 40
-				light.Brightness = 3
-				light.Color = tier.glow or Color3.new(1, 1, 1)
-				light.Parent = lamp
-			end
+	end
+	if tier.lamps then
+		-- head lamps: on the sides of armoured helmets, up on the brow of a dome (clear of
+		-- its side ports)
+		local dome = tier.helmet == "dome"
+		for _, x in { -1, 1 } do
+			local pos = if dome
+				then cf(x * d * 0.28, d * 0.36, -d * 0.3, 0, 90, -25)
+				else cf(x * d * 0.48, s * 0.35, -d * 0.12, 0, 90, 0)
+			local lamp = piece(
+				folder,
+				head,
+				"Cyl",
+				Vector3.new(s * 0.22, s * 0.26, s * 0.26),
+				pos,
+				tier.glow or rgb(255, 236, 190),
+				"Neon"
+			)
+			local light = Instance.new("SpotLight")
+			light.Face = Enum.NormalId.Right
+			light.Angle = 50
+			light.Range = 40
+			light.Brightness = 3
+			light.Color = tier.glow or Color3.fromRGB(255, 236, 190)
+			light.Parent = lamp
 		end
 	end
 end
@@ -299,7 +439,7 @@ local function tank(folder: Instance, char: Model, tier, suitColor: Color3)
 			"Cyl",
 			Vector3.new(h * 1.1, dia, dia),
 			cf(0, 0, dz / 2 + dia / 2, 0, 0, 90),
-			rgb(250, 200, 40),
+			tier.tankColor or rgb(250, 200, 40),
 			"Metal"
 		)
 		piece(
@@ -364,6 +504,15 @@ local function tank(folder: Instance, char: Model, tier, suitColor: Color3)
 				tier.glow or suitColor,
 				"Neon"
 			)
+		end
+	end
+	if tier.jets then
+		-- twin thrusters below the pack, nozzles glowing downwards
+		local back = dz / 2 + dz * 0.55
+		for _, x in { -1, 1 } do
+			local dia = w * 0.26
+			piece(folder, torso, "Cyl", Vector3.new(h * 0.5, dia, dia), cf(x * w * 0.3, -h * 0.55, back, 0, 0, 90), m:Lerp(rgb(0, 0, 0), 0.3), mat)
+			piece(folder, torso, "Cyl", Vector3.new(h * 0.08, dia * 0.8, dia * 0.8), cf(x * w * 0.3, -h * 0.82, back, 0, 0, 90), tier.glow or suitColor, "Neon")
 		end
 	end
 end
@@ -502,6 +651,22 @@ local function gear(folder: Instance, char: Model, tier, suitColor: Color3)
 					m,
 					mat
 				)
+				if tier.spikes then
+					-- three spikes fanning up and out from the shoulder pad
+					local u = upper.Size
+					for i, z in { -0.32, 0, 0.32 } do
+						local len = u.Y * (if i == 2 then 0.55 else 0.4)
+						piece(
+							folder,
+							upper,
+							"Wedge",
+							Vector3.new(u.X * 0.18, len, u.Z * 0.22),
+							cf(x * u.X * 0.25, u.Y * 0.55 + len / 2, z * u.Z, 0, 0, -x * 25),
+							tier.glow or m,
+							if tier.glow then "Neon" else mat
+						)
+					end
+				end
 			end
 			local hand = first(char, side .. "Hand")
 			if hand then

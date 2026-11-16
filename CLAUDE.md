@@ -3,6 +3,8 @@
 ## Before starting
 
 Read `docs/NEXT_SESSION.md` first: how the owner works, current state, and what's next.
+For any UI work, follow `docs/UI_STYLE_GUIDE.md` (the owner's reference look: buttons, windows,
+shop cards, motion, and "never close on a backdrop click").
 
 ## Workflow: hybrid (code in files, visuals in Studio)
 

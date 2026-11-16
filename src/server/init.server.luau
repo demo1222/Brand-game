@@ -24,6 +24,7 @@ local ORDER = {
 	"LootService",
 	"DiveService",
 	"PredatorService",
+	"GuardianService",
 	"RaidService",
 	"TradeService",
 	"SocialService",

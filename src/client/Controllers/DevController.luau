@@ -14,6 +14,7 @@ local Zones = require(Shared.Config.Zones)
 local Events = require(Shared.Config.Events)
 local Kit = require(script.Parent.Parent.UI.Kit)
 local Icons = require(script.Parent.Parent.UI.Icons)
+local RelicOpening = require(script.Parent.Parent.UI.RelicOpening)
 
 local New, T = Kit.New, Kit.Theme
 local player = Players.LocalPlayer
@@ -134,7 +135,28 @@ end
 ------------------------------------------------------------------------------------------
 -- Pages
 ------------------------------------------------------------------------------------------
+-- Opening test (client only): play the chest opening for one rarity. See UI/RelicOpening.
+local function openingButton(grid: Instance, rarity: string)
+	return Kit.Button(rarity, Kit.RarityColor(rarity, Rarities), function()
+		local pool = Relics.ByRarity[rarity]
+		local pick = pool and pool[math.random(1, #pool)]
+		if not pick then
+			return
+		end
+		pcall(function()
+			controllers.UIController.Close()
+		end)
+		task.delay(0.2, function()
+			RelicOpening.Play({ id = pick.item, rarity = rarity, mutations = {}, size = 1.1 })
+		end)
+	end, { Size = UDim2.fromScale(1, 1), TextSize = 16, Parent = grid })
+end
+
 local function buildRelics(page: ScrollingFrame)
+	local test = section(page, "Opening test", Color3.fromRGB(255, 170, 60))
+	for _, rarity in { "Common", "Rare", "Epic", "Legendary", "Mythic", "Secret" } do
+		openingButton(test, rarity)
+	end
 	local bulk = section(page, "Bulk (goes to Storage, ignores the cap)")
 	action(bulk, "Give all relics", T.Accent, "GiveAllRelics")
 	action(bulk, "All relics x every mutation", Color3.fromRGB(180, 140, 255), "GiveAllMutations")
