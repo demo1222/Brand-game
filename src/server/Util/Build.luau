@@ -83,12 +83,25 @@ function Build.Billboard(parent: Instance, text: string, size: UDim2?, offset: V
 	pad.PaddingBottom = UDim.new(0.12, 0)
 	pad.Parent = label
 	label.Parent = bb
-	bb.Enabled = text ~= ""
+	bb:SetAttribute("AutoHide", true)
+	Build.WireAutoHide(bb)
+	bb.Parent = parent
+	return bb
+end
+
+-- A chip made by Build.Billboard hides while its text is empty. The hook is not saved with the
+-- place, so WorldService calls this again for chips in a baked (Studio-saved) map.
+local wiredChips = setmetatable({}, { __mode = "k" })
+function Build.WireAutoHide(bb: BillboardGui)
+	local label = bb:FindFirstChild("Label")
+	if wiredChips[bb] or not bb:GetAttribute("AutoHide") or not (label and label:IsA("TextLabel")) then
+		return
+	end
+	wiredChips[bb] = true
+	bb.Enabled = label.Text ~= ""
 	label:GetPropertyChangedSignal("Text"):Connect(function()
 		bb.Enabled = label.Text ~= ""
 	end)
-	bb.Parent = parent
-	return bb
 end
 
 -- Text panel painted onto a part face (dock signs, boards)

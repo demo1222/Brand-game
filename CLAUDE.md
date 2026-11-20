@@ -10,9 +10,16 @@ shop cards, motion, and "never close on a backdrop click").
 
 - **Code** (logic, UI, physics, systems) is written only in `src/`. Rojo syncs it into Studio.
   Never edit synced scripts inside Studio; the next sync overwrites them.
-- **Visuals** (layout, props, lighting, placement, tuning) may be iterated in Studio through the
-  Roblox Studio MCP, with screenshots.
-- **Keep in history only the most important visual pieces:** the dock layout, the diving board,
-  the sea, and anything the owner calls a keeper. Export each one to a rebuild script in `src/`,
-  and record it in the commit. Skip small tweaks; they stay in Studio and are not versioned.
-- Keep screenshot use lean: check only what changed, not the whole scene every time.
+- **The map lives in the place, not in code.** `Workspace.AbyssWorld` (attribute `Baked = true`)
+  is saved in the Studio place and edited by hand there. At runtime `WorldService` adopts it and
+  reads gameplay data back from the instances (`scan()`); it only builds from code when no baked
+  map exists. Do not move map visuals back into rebuild scripts.
+- What the code finds by name or marker, so keep these when editing the map: `Docks/DockN`
+  (with `Platform`, `StandN`, `VaultN`, `CollectorPad`, `Sign`, `GateButton`, `LaserGate`,
+  `DiveRamp`, `AirRefillPrompt`), `LootAnchor` attachments (where loot spawns; they move with
+  their part), `Prop` models with a `Zone` attribute, `Landmark` parts, `AirPocket` parts, and
+  the `Plaza` objects `LuckTotem`, `VipDoor`, `VipLounge`.
+- To rebuild the map from code (wipes hand edits): in edit mode,
+  `require(game.ServerScriptService.Server.Services.WorldService).Bake(require(game.ServerScriptService.Server.Services.RelicMeshService))`, then save the place.
+- Visual tuning in Studio can go through the Roblox Studio MCP. Keep screenshot use lean: check
+  only what changed, not the whole scene every time.

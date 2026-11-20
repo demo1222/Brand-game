@@ -53,9 +53,15 @@ local propSpots: { [number]: { Vector3 } } = {}
 -- How much room a zone's props take (brain corals are up to 13 studs wide)
 local PROP_CLEAR = { 9, 4, 7, 5, 5 }
 
-local function addAnchor(zoneIndex: number, pos: Vector3, radius: number)
-	anchors[zoneIndex] = anchors[zoneIndex] or {}
-	table.insert(anchors[zoneIndex], { pos = pos, radius = radius })
+-- Loot anchors are Attachments inside the surface part, so they move with it when the part is
+-- moved in Studio. scan() reads them back (for a fresh build and for a baked map alike).
+local function addAnchor(zoneIndex: number, part: BasePart, pos: Vector3, radius: number)
+	local a = Instance.new("Attachment")
+	a.Name = "LootAnchor"
+	a.CFrame = part.CFrame:ToObjectSpace(CFrame.new(pos))
+	a:SetAttribute("Zone", zoneIndex)
+	a:SetAttribute("Radius", radius)
+	a.Parent = part
 end
 
 local function clearOfProps(zoneIndex: number, p: Vector3): boolean
@@ -367,9 +373,12 @@ end
 
 -- Place a prop and remember the spot (relics keep clear of it: clearOfProps)
 local function placeProp(zoneIndex: number, parent: Instance, p: Vector3, g: Random)
-	propSpots[zoneIndex] = propSpots[zoneIndex] or {}
-	table.insert(propSpots[zoneIndex], p)
-	PROPS[zoneIndex](parent, p, g)
+	local m = Instance.new("Model")
+	m.Name = "Prop"
+	m:SetAttribute("Zone", zoneIndex)
+	PROPS[zoneIndex](m, p, g)
+	m.WorldPivot = CFrame.new(p)
+	m.Parent = parent
 end
 
 local function buildOcean()
@@ -466,7 +475,7 @@ local function buildOcean()
 				local depthOut = rng:NextNumber(26, 48)
 				local shelfTop = bottom + 6
 				local shelfCenter = Vector3.new(base.X, shelfTop - 3, base.Z) + normal * (14 + depthOut / 2)
-				deco({
+				local shelf = deco({
 					Name = "Shelf",
 					CanCollide = true,
 					Size = Vector3.new(SEG + 6, 6, depthOut),
@@ -476,7 +485,7 @@ local function buildOcean()
 					Parent = walls,
 				})
 				local shelfSurface = Vector3.new(shelfCenter.X, shelfTop, shelfCenter.Z)
-				addAnchor(zone.Index, shelfSurface, math.min(SEG, depthOut) * 0.35)
+				addAnchor(zone.Index, shelf, shelfSurface, math.min(SEG, depthOut) * 0.35)
 				for _ = 1, (if zone.Index == 1 then 3 else 1) do
 					if zone.Index > 1 and rng:NextNumber() > 0.55 then
 						continue
@@ -514,7 +523,7 @@ local function buildOcean()
 				local y = SURFACE - rng:NextNumber(ledgeDepth, zone.MaxDepth - 20)
 				local style = ZONE_STYLE[zone.Index]
 				local lr = radius + rng:NextNumber(10, 22)
-				deco({
+				local ledge = deco({
 					Name = "Ledge",
 					CanCollide = true,
 					Shape = Enum.PartType.Cylinder,
@@ -529,7 +538,7 @@ local function buildOcean()
 					local r = rng:NextNumber(radius + 2, lr - 3)
 					local p = Vector3.new(x + math.cos(ang) * r, y, z + math.sin(ang) * r)
 					placeProp(zone.Index, spires, p, rng)
-					addAnchor(zone.Index, p, 3)
+					addAnchor(zone.Index, ledge, p, 3)
 				end
 			end
 		end
@@ -541,7 +550,7 @@ local function buildOcean()
 			-- wide rock disc, a smaller sand top and a ring of boulders round the rim
 			local capTop = topY + 4
 			deco({ Name = "SpireCap", CanCollide = true, Shape = Enum.PartType.Cylinder, Size = Vector3.new(4, radius * 2.4, radius * 2.4), CFrame = CFrame.new(x, topY + 1, z) * CFrame.Angles(0, 0, math.rad(90)), Color = capStyle.wall:Lerp(Color3.new(0, 0, 0), 0.1), Material = capStyle.mat, Parent = spires })
-			deco({ Name = "SpireTop", CanCollide = true, Shape = Enum.PartType.Cylinder, Size = Vector3.new(1.6, radius * 2.1, radius * 2.1), CFrame = CFrame.new(x, capTop - 0.8, z) * CFrame.Angles(0, 0, math.rad(90)), Color = capStyle.shelf, Material = capStyle.shelfMat, Parent = spires })
+			local spireTop = deco({ Name = "SpireTop", CanCollide = true, Shape = Enum.PartType.Cylinder, Size = Vector3.new(1.6, radius * 2.1, radius * 2.1), CFrame = CFrame.new(x, capTop - 0.8, z) * CFrame.Angles(0, 0, math.rad(90)), Color = capStyle.shelf, Material = capStyle.shelfMat, Parent = spires })
 			for k = 1, 7 do
 				local ang = k / 7 * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
 				local bs = rng:NextNumber(3, 6)
@@ -553,7 +562,7 @@ local function buildOcean()
 				placeProp(topZone.Index, spires, p, rng)
 			end
 			-- relics sit in the open middle of the plateau, between the props
-			addAnchor(topZone.Index, Vector3.new(x, capTop, z), radius * 0.35)
+			addAnchor(topZone.Index, spireTop, Vector3.new(x, capTop, z), radius * 0.35)
 		end
 	end
 
@@ -582,7 +591,7 @@ local function buildOcean()
 				local p = surface + Vector3.new(rng:NextNumber(-16, 16), 0, rng:NextNumber(-16, 16))
 				placeProp(zone.Index, zf, p, rng)
 			end
-			addAnchor(zone.Index, surface, 15)
+			addAnchor(zone.Index, lm, surface, 15)
 		end
 	end
 
@@ -672,11 +681,7 @@ local function buildPlaza()
 		Parent = plaza,
 	})
 	Build.Billboard(totem, "SERVER LUCK TOTEM\n2x luck for everyone", UDim2.fromOffset(240, 60), Vector3.new(0, 10, 0))
-	local totemPrompt = Build.Prompt(totem, "Boost Server Luck", "199 R$", 0, "LuckPrompt")
-	totemPrompt.Triggered:Connect(function(player)
-		local Net = require(Shared.Net)
-		Net.Offer:FireClient(player, "ServerLuck")
-	end)
+	Build.Prompt(totem, "Boost Server Luck", "199 R$", 0, "LuckPrompt")
 
 	-- VIP lounge (§15.2 "VIP door you can see but not enter")
 	local lounge = Build.Part({
@@ -698,20 +703,7 @@ local function buildPlaza()
 		Parent = plaza,
 	})
 	Build.Billboard(door, "VIP", UDim2.fromOffset(120, 40), Vector3.new(0, 8, 0), Color3.fromRGB(255, 210, 80))
-	local doorPrompt = Build.Prompt(door, "Enter VIP Lounge", "VIP Diver", 0, "VipPrompt")
-	doorPrompt.Triggered:Connect(function(player)
-		if services.MonetizationService.Owns(player, "VIP") then
-			local char = player.Character
-			local hrp = char and char:FindFirstChild("HumanoidRootPart")
-			if hrp then
-				services.SecurityService.AllowTeleport(player)
-				char:PivotTo(lounge.CFrame + Vector3.new(0, 4, 0))
-			end
-		else
-			local Net = require(Shared.Net)
-			Net.Offer:FireClient(player, "VIP")
-		end
-	end)
+	Build.Prompt(door, "Enter VIP Lounge", "VIP Diver", 0, "VipPrompt")
 end
 
 ------------------------------------------------------------------------------------------
@@ -963,9 +955,6 @@ local function buildDiveStation(model: Model, cf: CFrame, size: Vector3)
 	local hit = p("AirRack", Vector3.new(7, 4, 3), rack * CFrame.new(0, 2, 0), DS.Steel, nil, { Transparency = 1, CanCollide = false })
 	local refill = Build.Prompt(hit, "Refill air", "Tank rack", 0.6, "AirRefillPrompt")
 	refill.MaxActivationDistance = 10
-	refill.Triggered:Connect(function(player)
-		services.DiveService.RefillAtRack(player)
-	end)
 	-- air compressor (sea end, right): a box with a grille, gauge and a coiled hose
 	local comp = CFrame.new(16, 0, -hz + 1.8)
 	p("Compressor", Vector3.new(3.6, 2.4, 2.2), comp * CFrame.new(0, 1.2, 0), Color3.fromRGB(40, 120, 200), Enum.Material.Metal)
@@ -1111,11 +1100,8 @@ local function buildDock(index: number)
 	end
 	buildDiveStation(model, cf, size)
 	-- Sign board faces the walkway (+Z, the plaza side); painted on, not a floating label
-	local signGui = Build.SurfaceLabel(sign, "Empty Dock", Enum.NormalId.Back)
-	local signBack = Build.SurfaceLabel(sign, "Empty Dock", Enum.NormalId.Front)
-	signGui.Label:GetPropertyChangedSignal("Text"):Connect(function()
-		signBack.Label.Text = signGui.Label.Text
-	end)
+	Build.SurfaceLabel(sign, "Empty Dock", Enum.NormalId.Back).Name = "SignFront"
+	Build.SurfaceLabel(sign, "Empty Dock", Enum.NormalId.Front).Name = "SignBack"
 
 	-- Stands line both long sides of the dock, leaving a clear corridor from the spawn to the
 	-- diving board. Three lines per side (outer, middle, inner) of six pedestals each. They fill
@@ -1187,6 +1173,7 @@ local function buildDock(index: number)
 		Parent = model,
 	})
 	local padGui = Build.Billboard(pad, "0", UDim2.fromOffset(160, 40), Vector3.new(0, 4, 0), Color3.fromRGB(120, 255, 160))
+	padGui.Name = "PadGui"
 	padGui.MaxDistance = 80
 
 	-- Laser gate visual (§8.4)
@@ -1214,25 +1201,6 @@ local function buildDock(index: number)
 
 	-- Suit Shop stall at the plaza end, right of the spawn, its counter facing the corridor
 	buildSuitStall(model, cf * CFrame.new(size.X / 2 - 12, 0, size.Z / 2 - 3.6) * CFrame.Angles(0, math.rad(90), 0))
-
-	local dock = {
-		Index = index,
-		CFrame = cf,
-		Model = model,
-		Platform = platform,
-		Stands = stands,
-		Vault = vault,
-		Pad = pad,
-		PadLabel = padGui.Label,
-		Sign = signGui.Label,
-		Gate = gate,
-		GatePrompt = gatePrompt,
-		Board = board,
-		SpawnCFrame = cf * CFrame.new(0, 4, size.Z / 2 - 4) * CFrame.Angles(0, math.rad(180), 0),
-		Owner = nil,
-	}
-	docks[index] = dock
-	return dock
 end
 
 function WorldService.GetDocks()
@@ -1301,22 +1269,16 @@ local function removeTemplateLeftovers()
 	end
 end
 
-function WorldService.Start()
-	removeTemplateLeftovers()
+local RUNTIME_FOLDERS = { "Docks", "Relics", "Nodes", "Creatures", "Drops" }
+
+-- Build the whole map from code into a fresh AbyssWorld folder (no gameplay wiring).
+local function buildAll()
 	root = folder("AbyssWorld", Workspace)
-	folder("Docks", root)
-	folder("Relics", root)
-	folder("Nodes", root)
-	folder("Creatures", root)
-	folder("Drops", root)
-
-	Lighting.ClockTime = 14
-	Lighting.Brightness = 2
-	Lighting.FogStart = 0
-	Lighting.FogEnd = 2000
-
+	for _, name in RUNTIME_FOLDERS do
+		folder(name, root)
+	end
 	-- load uploaded Blender props first (none yet = code versions), then build
-	if services.RelicMeshService and services.RelicMeshService.EnsureWorldMeshes then
+	if services and services.RelicMeshService and services.RelicMeshService.EnsureWorldMeshes then
 		pcall(services.RelicMeshService.EnsureWorldMeshes)
 	end
 	buildOcean()
@@ -1324,6 +1286,170 @@ function WorldService.Start()
 	for i = 1, World.DockCount do
 		buildDock(i)
 	end
+end
+
+-- Read the gameplay data back from the instances, so a map edited by hand in Studio works:
+-- docks from Docks/DockN, loot anchors from LootAnchor attachments, prop spots from Prop
+-- models, landmarks from Landmark parts, air pockets from AirPocket parts.
+local function scan()
+	table.clear(docks)
+	table.clear(airPockets)
+	table.clear(landmarks)
+	table.clear(anchors)
+	table.clear(propSpots)
+
+	for _, d in root:GetDescendants() do
+		if d:IsA("Attachment") and d.Name == "LootAnchor" then
+			local z = d:GetAttribute("Zone")
+			if z then
+				anchors[z] = anchors[z] or {}
+				table.insert(anchors[z], { pos = d.WorldPosition, radius = d:GetAttribute("Radius") or 5 })
+			end
+		elseif d:IsA("Model") and d.Name == "Prop" and d:GetAttribute("Zone") then
+			local z = d:GetAttribute("Zone")
+			propSpots[z] = propSpots[z] or {}
+			table.insert(propSpots[z], d:GetPivot().Position)
+		elseif d:IsA("BasePart") and d.Name == "Landmark" and d:GetAttribute("Zone") then
+			table.insert(landmarks, { pos = d.Position, zone = d:GetAttribute("Zone") })
+		elseif d:IsA("BasePart") and d.Name == "AirPocket" then
+			table.insert(airPockets, d)
+		end
+	end
+
+	local size = World.DockSize
+	for _, model in root.Docks:GetChildren() do
+		local index = tonumber(model.Name:match("^Dock(%d+)$"))
+		local platform = model:FindFirstChild("Platform")
+		if not (index and model:IsA("Model") and platform) then
+			continue
+		end
+		-- the platform sits 1 stud below the dock's frame (buildDock)
+		local cf = platform.CFrame * CFrame.new(0, 1, 0)
+		local stands, vault = {}, {}
+		for i = 1, World.MaxStands do
+			stands[i] = model:FindFirstChild("Stand" .. i)
+		end
+		for i = 1, 2 do
+			vault[i] = model:FindFirstChild("Vault" .. i)
+		end
+		local pad = model:FindFirstChild("CollectorPad")
+		local sign = model:FindFirstChild("Sign")
+		local gateButton = model:FindFirstChild("GateButton")
+		docks[index] = {
+			Index = index,
+			CFrame = cf,
+			Model = model,
+			Platform = platform,
+			Stands = stands,
+			Vault = vault,
+			Pad = pad,
+			PadLabel = pad and pad:FindFirstChild("PadGui") and pad.PadGui.Label,
+			Sign = sign and sign:FindFirstChild("SignFront") and sign.SignFront.Label,
+			Gate = model:FindFirstChild("LaserGate"),
+			GatePrompt = gateButton and gateButton:FindFirstChild("GatePrompt"),
+			Board = model:FindFirstChild("DiveRamp"),
+			SpawnCFrame = cf * CFrame.new(0, 4, size.Z / 2 - 4) * CFrame.Angles(0, math.rad(180), 0),
+			Owner = nil,
+		}
+	end
+end
+
+-- Gameplay hooks on world objects. Runs after build or adoption (connections are not saved
+-- with the place, so a baked map needs them made here).
+local function wire()
+	local Net = require(Shared.Net)
+	for _, d in root:GetDescendants() do
+		if d:IsA("BillboardGui") then
+			Build.WireAutoHide(d)
+		end
+	end
+
+	local plaza = root:FindFirstChild("Plaza")
+	local totem = plaza and plaza:FindFirstChild("LuckTotem")
+	local luck = totem and totem:FindFirstChild("LuckPrompt")
+	if luck then
+		luck.Triggered:Connect(function(player)
+			Net.Offer:FireClient(player, "ServerLuck")
+		end)
+	end
+	local door = plaza and plaza:FindFirstChild("VipDoor")
+	local vip = door and door:FindFirstChild("VipPrompt")
+	if vip then
+		vip.Triggered:Connect(function(player)
+			if services.MonetizationService.Owns(player, "VIP") then
+				local char = player.Character
+				local hrp = char and char:FindFirstChild("HumanoidRootPart")
+				local lounge = plaza:FindFirstChild("VipLounge")
+				if hrp and lounge then
+					services.SecurityService.AllowTeleport(player)
+					char:PivotTo(lounge.CFrame + Vector3.new(0, 4, 0))
+				end
+			else
+				Net.Offer:FireClient(player, "VIP")
+			end
+		end)
+	end
+
+	for _, dock in docks do
+		for _, d in dock.Model:GetDescendants() do
+			if d:IsA("ProximityPrompt") and d.Name == "AirRefillPrompt" then
+				d.Triggered:Connect(function(player)
+					services.DiveService.RefillAtRack(player)
+				end)
+			end
+		end
+		-- the sign is painted on both faces: mirror the front text onto the back
+		local sign = dock.Model:FindFirstChild("Sign")
+		local back = sign and sign:FindFirstChild("SignBack")
+		if dock.Sign and back then
+			dock.Sign:GetPropertyChangedSignal("Text"):Connect(function()
+				back.Label.Text = dock.Sign.Text
+			end)
+		end
+	end
+end
+
+function WorldService.Start()
+	removeTemplateLeftovers()
+	local baked = Workspace:FindFirstChild("AbyssWorld")
+	if baked and baked:GetAttribute("Baked") then
+		-- The map was saved in the place (edited in Studio): use it as it is.
+		root = baked
+		for _, name in RUNTIME_FOLDERS do
+			if not root:FindFirstChild(name) then
+				folder(name, root)
+			end
+		end
+		if services.RelicMeshService and services.RelicMeshService.EnsureWorldMeshes then
+			pcall(services.RelicMeshService.EnsureWorldMeshes)
+		end
+	else
+		Lighting.ClockTime = 14
+		Lighting.Brightness = 2
+		Lighting.FogStart = 0
+		Lighting.FogEnd = 2000
+		buildAll()
+	end
+	scan()
+	wire()
+end
+
+-- Edit mode only (Studio command bar / MCP): build the map into the place so it can be
+-- edited by hand and saved. Replaces an existing AbyssWorld. Gameplay then adopts it.
+function WorldService.Bake(meshService)
+	local old = Workspace:FindFirstChild("AbyssWorld")
+	if old then
+		old:Destroy()
+	end
+	removeTemplateLeftovers()
+	services = services or { RelicMeshService = meshService }
+	Lighting.ClockTime = 14
+	Lighting.Brightness = 2
+	Lighting.FogStart = 0
+	Lighting.FogEnd = 2000
+	buildAll()
+	root:SetAttribute("Baked", true)
+	return root
 end
 
 function WorldService.Root(): Folder
